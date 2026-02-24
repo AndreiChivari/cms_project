@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <title>Evidență Dosare Penale</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background-color: #f4f4f9; }
+        h1 { color: #333; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #2c3e50; color: white; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+
+    <h1>Registrul Dosarelor Penale</h1>
+    <p>Aici sunt afișate toate dosarele aflate pe rol.</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Număr Unic</th>
+                <th>Data Înregistrării</th>
+                <th>Infracțiune Cercetată</th>
+                <th>Stadiu</th>
+                <th>Ofițer de Caz</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for dosar in dosare %}
+                <tr>
+                    <td><strong><a href="{% url 'cases:detalii_dosar' dosar.pk %}">{{ dosar.numar_unic }}</a></strong></td>
+                    <td>{{ dosar.data_inregistrarii|date:"d M Y" }}</td>
+                    <td>{{ dosar.infractiune_cercetata }}</td>
+                    <td>{{ dosar.get_stadiu_display }}</td>
+                    <td>
+                        {% if dosar.ofiter_caz %}
+                            {{ dosar.ofiter_caz.get_full_name|default:dosar.ofiter_caz.username }}
+                        {% else %}
+                            Nedelegat
+                        {% endif %}
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="5">Nu există dosare înregistrate în sistem.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</body>
+</html>

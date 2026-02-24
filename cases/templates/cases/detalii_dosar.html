@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <title>Detalii Dosar {{ dosar.numar_unic }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background-color: #f4f4f9; }
+        .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px; }
+        .info-item { background: #ecf0f1; padding: 10px; border-radius: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #34495e; color: white; }
+        a.btn-back { display: inline-block; margin-bottom: 20px; text-decoration: none; color: #3498db; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <a href="{% url 'cases:lista_dosare' %}" class="btn-back">← Înapoi la Lista de Dosare</a>
+
+    <div class="container">
+        <h1>Dosar Penal nr. {{ dosar.numar_unic }}</h1>
+        
+        <div class="info-grid">
+            <div class="info-item"><strong>Data Înregistrării:</strong> {{ dosar.data_inregistrarii|date:"d M Y" }}</div>
+            <div class="info-item"><strong>Stadiu:</strong> {{ dosar.get_stadiu_display }}</div>
+            <div class="info-item"><strong>Ofițer de Caz:</strong> {{ dosar.ofiter_caz.get_full_name|default:"Nedelegat" }}</div>
+            <div class="info-item"><strong>Procuror de Caz:</strong> {{ dosar.procuror_caz.get_full_name|default:"Nedelegat" }}</div>
+            <div class="info-item" style="grid-column: span 2;"><strong>Infracțiune:</strong> {{ dosar.infractiune_cercetata }}</div>
+        </div>
+
+        <h2>Părți Implicate</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Nume Complet</th>
+                    <th>Calitate Procesuală</th>
+                    <th>CNP</th>
+                    <th>Mențiuni</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for parte in dosar.parti_implicate.all %}
+                    <tr>
+                        <td><strong>{{ parte.nume_complet }}</strong></td>
+                        <td>{{ parte.get_calitate_procesuala_display }}</td>
+                        <td>{{ parte.cnp|default:"-" }}</td>
+                        <td>{{ parte.mentiuni|default:"Fără mențiuni." }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="4">Nu există părți implicate înregistrate în acest dosar.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</body>
+</html>
