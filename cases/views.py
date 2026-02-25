@@ -1,19 +1,206 @@
-from django.shortcuts import render, get_object_or_404 # <--- Am adăugat get_object_or_404
-from .models import Dosar
+from django.shortcuts import render, get_object_or_404, redirect
+from .models import Dosar, ParteImplicata
+from documents.forms import DocumentForm # Importăm formularul nou creat
+from .forms import DosarForm, ParteImplicataForm, CreareDosarForm
+from documents.models import ActUrmarire
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
+from django.db.models import Q
 
+@login_required
+def dashboard(request):
+    utilizator = request.user
+    
+    # 1. Statistici Globale (toate dosarele din sistem)
+    total_dosare = Dosar.objects.count()
+    dosare_in_lucru = Dosar.objects.filter(stadiu='IN_LUCRU').count()
+    dosare_judecata = Dosar.objects.filter(stadiu='TRIMIS_IN_JUDECATA').count()
+    
+    # 2. Statistici Personale (Dosarele MELE)
+    # Folosim Q objects pentru a spune: "Adu-mi dosarele unde sunt Ofițer SAU Procuror SAU Grefier"
+    if utilizator.is_superuser or utilizator.rol == 'ADMIN':
+        dosare_mele = total_dosare # Adminul vede tot
+        dosarele_mele_lista = Dosar.objects.all().order_by('-data_inregistrarii')[:5] # Ultimele 5
+    else:
+        # Interogare complexă cu Q
+        conditie_mea = Q(ofiter_caz=utilizator) | Q(procuror_caz=utilizator) | Q(grefier_caz=utilizator)
+        dosare_mele = Dosar.objects.filter(conditie_mea).count()
+        dosarele_mele_lista = Dosar.objects.filter(conditie_mea).order_by('-data_inregistrarii')[:5]
+        
+    context = {
+        'total_dosare': total_dosare,
+        'dosare_in_lucru': dosare_in_lucru,
+        'dosare_judecata': dosare_judecata,
+        'dosare_mele': dosare_mele,
+        'dosarele_mele_lista': dosarele_mele_lista,
+    }
+    
+    return render(request, 'cases/dashboard.html', context)
+
+@login_required
+def adaugare_dosar(request):
+    if request.method == 'POST':
+        form = CreareDosarForm(request.POST)
+        if form.is_valid():
+            dosar_nou = form.save()
+            return redirect('cases:detalii_dosar', pk=dosar_nou.pk)
+    else:
+        form = CreareDosarForm()
+        
+    context = {'form': form}
+    return render(request, 'cases/adaugare_dosar.html', context)
+
+@login_required
 def lista_dosare(request):
     dosare = Dosar.objects.all().order_by('-data_inregistrarii')
     context = {'dosare': dosare}
     return render(request, 'cases/lista_dosare.html', context)
 
-# FUNȚIA NOUĂ:
+@login_required
 def detalii_dosar(request, pk):
-    # Caută dosarul cu ID-ul respectiv. Dacă nu există (ex: cineva scrie manual /cases/999/), 
-    # returnează automat o eroare 404 (Not Found), ceea ce este o practică excelentă de securitate!
     dosar = get_object_or_404(Dosar, pk=pk)
     
+    # Calculăm o singură dată dacă are drepturi, pentru a trimite către HTML
+    poate_edita = dosar.are_drepturi_editare(request.user)
+    
+    form_document = DocumentForm()
+    form_parte = ParteImplicataForm()
+    
+    if request.method == 'POST':
+        if not poate_edita:
+            raise PermissionDenied("Nu ai permisiunea de a modifica acest dosar.")
+        # VERIFICARE 1: A apăsat butonul de adăugare Document?
+        if 'btn_salveaza_document' in request.POST:
+            form_document = DocumentForm(request.POST, request.FILES)
+            if form_document.is_valid():
+                document = form_document.save(commit=False)
+                document.dosar = dosar
+                document.autor = request.user
+                document.save()
+                return redirect('cases:detalii_dosar', pk=dosar.pk)
+                
+        # VERIFICARE 2: A apăsat butonul de adăugare Parte Implicată?
+        elif 'btn_salveaza_parte' in request.POST:
+            form_parte = ParteImplicataForm(request.POST)
+            if form_parte.is_valid():
+                parte = form_parte.save(commit=False)
+                parte.dosar = dosar
+                parte.save()
+                return redirect('cases:detalii_dosar', pk=dosar.pk)
+
     context = {
-        'dosar': dosar
-    }
+            'dosar': dosar,
+            'form_document': form_document, # sau cum le-ai numit
+            'form_parte': form_parte,
+            'poate_edita': poate_edita # <--- VERIFICĂ SĂ AI ACEASTĂ LINIE! Fără ea, HTML-ul crede că e False.
+        }
     
     return render(request, 'cases/detalii_dosar.html', context)
+
+@login_required
+def editare_dosar(request, pk):
+    # Găsim dosarul pe care vrem să-l edităm
+    dosar = get_object_or_404(Dosar, pk=pk)
+
+    # SECURITATE:
+    if not dosar.are_drepturi_editare(request.user):
+        raise PermissionDenied("Nu ai permisiunea de a edita acest dosar.")
+    
+    if request.method == 'POST':
+        # request.POST conține noile date. 
+        # instance=dosar îi spune lui Django: "Nu crea un dosar nou, ci actualizează-l pe acesta!"
+        form = DosarForm(request.POST, instance=dosar)
+        if form.is_valid():
+            form.save()
+            # După salvare, trimitem utilizatorul înapoi pe pagina de detalii a dosarului
+            return redirect('cases:detalii_dosar', pk=dosar.pk)
+    else:
+        # Dacă doar accesăm pagina, populăm formularul cu datele existente ale dosarului
+        form = DosarForm(instance=dosar)
+        
+    context = {
+        'form': form,
+        'dosar': dosar
+    }
+    return render(request, 'cases/editare_dosar.html', context)
+
+@login_required
+def editare_parte(request, pk):
+    # Găsim persoana după ID
+    parte = get_object_or_404(ParteImplicata, pk=pk)
+    # Reținem ID-ul dosarului pentru a ști unde să ne întoarcem
+    dosar_id = parte.dosar.pk 
+
+    # SECURITATE:
+    if not parte.are_drepturi_editare(request.user):
+        raise PermissionDenied("Nu ai permisiunea de a edita acest dosar.")
+    
+    if request.method == 'POST':
+        # Punem instance=parte pentru a suprascrie datele existente, nu a crea una nouă
+        form = ParteImplicataForm(request.POST, instance=parte)
+        if form.is_valid():
+            form.save()
+            return redirect('cases:detalii_dosar', pk=dosar_id)
+    else:
+        form = ParteImplicataForm(instance=parte)
+        
+    context = {'form': form, 'parte': parte}
+    return render(request, 'cases/editare_parte.html', context)
+
+@login_required
+def stergere_parte(request, pk):
+    parte = get_object_or_404(ParteImplicata, pk=pk)
+    dosar_id = parte.dosar.pk
+    
+    # SECURITATE:
+    if not parte.are_drepturi_editare(request.user):
+        raise PermissionDenied("Nu ai permisiunea de a edita acest dosar.")
+
+    # Pentru ștergere, este o bună practică să cerem confirmare printr-un formular POST
+    if request.method == 'POST':
+        parte.delete() # Șterge efectiv din baza de date
+        return redirect('cases:detalii_dosar', pk=dosar_id)
+        
+    context = {'parte': parte}
+    return render(request, 'cases/stergere_parte.html', context)
+
+@login_required
+def editare_document(request, pk):
+    document = get_object_or_404(ActUrmarire, pk=pk)
+    dosar_id = document.dosar.pk
+
+    if not document.are_drepturi_editare(request.user):
+        raise PermissionDenied("Nu ai permisiunea de a edita acest dosar.")
+    
+    if request.method == 'POST':
+        # ATENȚIE: request.FILES este obligatoriu aici pentru a putea schimba PDF-ul/Word-ul!
+        form = DocumentForm(request.POST, request.FILES, instance=document)
+        if form.is_valid():
+            form.save()
+            return redirect('cases:detalii_dosar', pk=dosar_id)
+    else:
+        form = DocumentForm(instance=document)
+        
+    context = {'form': form, 'document': document}
+    return render(request, 'cases/editare_document.html', context)
+
+@login_required
+def stergere_document(request, pk):
+    document = get_object_or_404(ActUrmarire, pk=pk)
+    dosar_id = document.dosar.pk
+
+    if not document.are_drepturi_editare(request.user):
+        raise PermissionDenied("Nu ai permisiunea de a edita acest dosar.")
+    
+    if request.method == 'POST':
+        # TRUC PENTRU LICENȚĂ: Django șterge înregistrarea din baza de date, 
+        # dar în mod implicit NU șterge fișierul fizic de pe hard disk!
+        # Mai jos îi spunem să șteargă și fișierul fizic, dacă există.
+        if document.fisier:
+            document.fisier.delete(save=False)
+            
+        document.delete() # Șterge înregistrarea din tabel
+        return redirect('cases:detalii_dosar', pk=dosar_id)
+        
+    context = {'document': document}
+    return render(request, 'cases/stergere_document.html', context)

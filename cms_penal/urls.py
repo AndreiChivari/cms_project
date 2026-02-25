@@ -15,10 +15,19 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include # Am adăugat 'include'
+from django.urls import path, include
+from django.conf import settings # Adăugat pentru a accesa MEDIA_URL
+from django.conf.urls.static import static # Adăugat pentru a servi fișierele
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    # Orice URL care conține 'cases/' va fi trimis către fișierul urls.py din aplicația cases
-    path('cases/', include('cases.urls')), 
+    path('cases/', include('cases.urls')),
+
+    # RUTA NOUĂ PENTRU AUTENTIFICARE
+    # Va adăuga automat rute precum /conturi/login/, /conturi/logout/
+    path('conturi/', include('django.contrib.auth.urls')),
 ]
+
+# Această condiție adaugă ruta pentru fișiere doar în modul de dezvoltare (DEBUG = True)
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

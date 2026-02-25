@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block title %}Panou de Control{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 mt-3">
+    <h2 class="text-secondary">Bun venit, {{ user.get_full_name|default:user.username }}!</h2>
+    <span class="text-muted">Astăzi este {% now "d F Y" %}</span>
+</div>
+
+<div class="row mb-5">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white shadow-sm h-100">
+            <div class="card-body">
+                <h6 class="card-title text-uppercase text-white-50 fw-bold">Dosarele Mele</h6>
+                <h2 class="display-5 fw-bold mb-0">{{ dosare_mele }}</h2>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-dark text-white shadow-sm h-100">
+            <div class="card-body">
+                <h6 class="card-title text-uppercase text-white-50 fw-bold">Total Sistem</h6>
+                <h2 class="display-5 fw-bold mb-0">{{ total_dosare }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark shadow-sm h-100">
+            <div class="card-body">
+                <h6 class="card-title text-uppercase text-dark-50 fw-bold">În Lucru</h6>
+                <h2 class="display-5 fw-bold mb-0">{{ dosare_in_lucru }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card bg-success text-white shadow-sm h-100">
+            <div class="card-body">
+                <h6 class="card-title text-uppercase text-white-50 fw-bold">În Judecată</h6>
+                <h2 class="display-5 fw-bold mb-0">{{ dosare_judecata }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h4 class="text-secondary mb-3">Ultimele dosare repartizate dvs.</h4>
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Număr Dosar</th>
+                    <th>Data Înregistrării</th>
+                    <th>Infracțiune</th>
+                    <th>Stadiu</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for dosar in dosarele_mele_lista %}
+                    <tr>
+                        <td><strong><a href="{% url 'cases:detalii_dosar' dosar.pk %}" class="text-decoration-none">{{ dosar.numar_unic }}</a></strong></td>
+                        <td>{{ dosar.data_inregistrarii|date:"d.m.Y" }}</td>
+                        <td class="text-truncate" style="max-width: 250px;">{{ dosar.infractiune_cercetata }}</td>
+                        <td><span class="badge bg-secondary">{{ dosar.get_stadiu_display }}</span></td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-4 text-muted">Nu aveți niciun dosar repartizat în acest moment.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="card-footer bg-white text-center">
+        <a href="{% url 'cases:lista_dosare' %}" class="btn btn-sm btn-outline-primary">Vezi toate dosarele</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}Editare Document{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm mt-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">✎ Editare Document: {{ document.titlu }}</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Titlu document</label>
+                        {{ form.titlu }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Tip act</label>
+                        {{ form.tip }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Fișier (Lasă gol pentru a-l păstra pe cel vechi)</label>
+                        {{ form.fisier }}
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Descriere scurtă</label>
+                        {{ form.descriere_scurta }}
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'cases:detalii_dosar' document.dosar.pk %}" class="btn btn-outline-secondary">Anulează</a>
+                        <button type="submit" class="btn btn-success fw-bold">Salvează Modificările</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

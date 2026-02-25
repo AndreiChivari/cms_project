@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block title %}Confirmare Ștergere Document{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm mt-5 border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">⚠️ Confirmare Ștergere Document</h5>
+            </div>
+            <div class="card-body text-center">
+                <p class="fs-5">Ești sigur că vrei să ștergi actul <strong>{{ document.titlu }}</strong> din dosarul nr. {{ document.dosar.numar_unic }}?</p>
+                <p class="text-danger fw-bold">Atenție: Se va șterge permanent și fișierul fizic atașat!</p>
+                
+                <form method="POST" class="mt-4">
+                    {% csrf_token %}
+                    <a href="{% url 'cases:detalii_dosar' document.dosar.pk %}" class="btn btn-secondary me-2">Nu, anulează</a>
+                    <button type="submit" class="btn btn-danger fw-bold">Da, șterge definitiv</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import os # Folosit pentru a salva fisierele media (word, pdf); se poate folosi și BASE_DIR direct.
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -39,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'accounts',
     'cases',
+    'documents',
 ]
 
 MIDDLEWARE = [
@@ -56,7 +58,7 @@ ROOT_URLCONF = 'cms_penal.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -120,3 +122,18 @@ STATIC_URL = 'static/'
 
 # Specificăm modelul de utilizator personalizat
 AUTH_USER_MODEL = 'accounts.CustomUser'
+
+# URL-ul prin care vom accesa fișierele în browser (ex: /media/ordonanta.pdf)
+MEDIA_URL = '/media/'
+
+# Locația fizică de pe disc unde se vor salva fișierele
+MEDIA_ROOT = BASE_DIR / 'media'
+
+# După un login cu succes, mergem la dashboard!
+LOGIN_REDIRECT_URL = 'cases:dashboard'
+
+# După deconectare, ne întoarcem la pagina de login
+LOGOUT_REDIRECT_URL = 'login'
+
+# SPUNEM LUI DJANGO UNDE SĂ TRIMITĂ UTILIZATORII NEAUTENTIFICAȚI:
+LOGIN_URL = 'login'

@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block title %}Autentificare Sistem{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 70vh;">
+    <div class="col-md-4">
+        <div class="card shadow-lg border-0 rounded-lg mt-5">
+            <div class="card-header bg-dark text-white text-center py-4">
+                <h3 class="fw-bold mb-0">⚖️ CMS Penal</h3>
+                <p class="mb-0 small">Autentificare Personal</p>
+            </div>
+            <div class="card-body p-4">
+                
+                {% if form.errors %}
+                    <div class="alert alert-danger small">
+                        Numele de utilizator sau parola sunt incorecte. Vă rugăm să încercați din nou.
+                    </div>
+                {% endif %}
+
+                <form method="POST" action="{% url 'login' %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nume utilizator (Username)</label>
+                        <input type="text" name="username" class="form-control" autofocus required id="id_username">
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Parolă</label>
+                        <input type="password" name="password" class="form-control" required id="id_password">
+                    </div>
+                    <button class="btn btn-primary w-100 fw-bold py-2" type="submit">Conectare la Sistem</button>
+                </form>
+                
+            </div>
+            <div class="card-footer text-center py-3 bg-light">
+                <div class="small text-muted">Accesul neautorizat este strict interzis.</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

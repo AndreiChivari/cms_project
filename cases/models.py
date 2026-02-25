@@ -34,10 +34,44 @@ class Dosar(models.Model):
         related_name='dosare_supravegheate'
     )
 
+    # --- CÂMPUL NOU ---
+    grefier_caz = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='dosare_gestionate'
+    )
+
     class Meta:
         verbose_name = "Dosar Penal"
         verbose_name_plural = "Dosare Penale"
         ordering = ['-data_inregistrarii'] # Sortează descrescător după dată
+
+    def are_drepturi_editare(self, utilizator):
+        # 1. Dacă nu este logat, clar nu are acces
+        if not utilizator.is_authenticated:
+            return False
+            
+        # 2. Adminul sau Superuser-ul au acces total
+        if utilizator.is_superuser or utilizator.rol == 'ADMIN':
+            return True
+            
+        # 3. METODA SIGURĂ: Comparăm ID-ul utilizatorului logat cu ID-urile anchetatorilor
+        # Folosim "_id" la final pentru a lua direct numărul din baza de date, fără a mai face interogări extra
+        utilizator_id = utilizator.pk
+        
+        echipa_dosar_ids = [
+            self.ofiter_caz_id, 
+            self.procuror_caz_id, 
+            self.grefier_caz_id
+        ]
+        
+        # Dacă ID-ul meu se află în lista ID-urilor de pe dosar, am acces!
+        if utilizator_id in echipa_dosar_ids:
+            return True
+            
+        return False
 
     def __str__(self):
         return f"Dosar nr. {self.numar_unic}"

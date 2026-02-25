@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block title %}Confirmare Ștergere{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm mt-5 border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">⚠️ Confirmare Ștergere</h5>
+            </div>
+            <div class="card-body text-center">
+                <p class="fs-5">Ești sigur că vrei să ștergi persoana <strong>{{ parte.nume_complet }}</strong> ({{ parte.get_calitate_procesuala_display }}) din dosarul nr. {{ parte.dosar.numar_unic }}?</p>
+                <p class="text-muted">Această acțiune este ireversibilă!</p>
+                
+                <form method="POST" class="mt-4">
+                    {% csrf_token %}
+                    <a href="{% url 'cases:detalii_dosar' parte.dosar.pk %}" class="btn btn-secondary me-2">Nu, anulează</a>
+                    <button type="submit" class="btn btn-danger fw-bold">Da, șterge definitiv</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

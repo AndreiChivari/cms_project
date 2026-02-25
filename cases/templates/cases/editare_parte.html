@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}Editare {{ parte.nume_complet }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm mt-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">✎ Editare Date: {{ parte.nume_complet }}</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nume Complet</label>
+                        {{ form.nume_complet }}
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Calitate Procesuală</label>
+                            {{ form.calitate_procesuala }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">CNP</label>
+                            {{ form.cnp }}
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Mențiuni</label>
+                        {{ form.mentiuni }}
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'cases:detalii_dosar' parte.dosar.pk %}" class="btn btn-outline-secondary">Anulează</a>
+                        <button type="submit" class="btn btn-primary fw-bold">Salvează Modificările</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

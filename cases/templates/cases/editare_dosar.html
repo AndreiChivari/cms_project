@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block title %}Editare Dosar {{ dosar.numar_unic }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm mt-4">
+            <div class="card-header bg-warning text-dark">
+                <h4 class="mb-0">✎ Editare Dosar nr. {{ dosar.numar_unic }}</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Număr Unic (Nu poate fi modificat)</label>
+                        {{ form.numar_unic }}
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Stadiu Cercetări</label>
+                            {{ form.stadiu }}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Ofițer de Caz</label>
+                            {{ form.ofiter_caz }}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Procuror</label>
+                            {{ form.procuror_caz }}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Grefier</label>
+                            {{ form.grefier_caz }}
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Infracțiune Cercetată</label>
+                        {{ form.infractiune_cercetata }}
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'cases:detalii_dosar' dosar.pk %}" class="btn btn-outline-secondary">Anulează</a>
+                        <button type="submit" class="btn btn-warning fw-bold">Salvează Modificările</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
