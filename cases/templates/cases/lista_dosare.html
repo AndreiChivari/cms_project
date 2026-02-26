@@ -8,6 +8,46 @@
     <a href="{% url 'cases:adaugare_dosar' %}" class="btn btn-primary">+ Dosar Nou</a>
 </div>
 
+<div class="card shadow-sm mb-4 border-0 bg-light">
+    <div class="card-body">
+        <form method="GET" action="{% url 'cases:lista_dosare' %}">
+            <div class="row g-2">
+                
+                <div class="col-md-6">
+                    <input type="text" name="q" class="form-control" 
+                           placeholder="Căutare după număr dosar (ex: 123/P) sau infracțiune (ex: Furt)..." 
+                           value="{{ query_text }}">
+                </div>
+                
+                <div class="col-md-4">
+                    <select name="stadiu" class="form-select">
+                        <option value="">Toate stadiile</option>
+                        {% for key, value in stadii_posibile %}
+                            <option value="{{ key }}" {% if stadiu_filtru == key %}selected{% endif %}>
+                                {{ value }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-2 d-grid">
+                    <button type="submit" class="btn btn-primary fw-bold">🔍 Caută</button>
+                </div>
+                
+            </div>
+            
+            {% if query_text or stadiu_filtru %}
+            <div class="mt-2">
+                <a href="{% url 'cases:lista_dosare' %}" class="text-danger text-decoration-none small">
+                    ✖ Șterge filtrele (Afișează toate dosarele)
+                </a>
+            </div>
+            {% endif %}
+            
+        </form>
+    </div>
+</div>
+
 <div class="card shadow-sm">
     <div class="card-body p-0">
         <table class="table table-hover table-striped mb-0">
@@ -21,7 +61,7 @@
                 </tr>
             </thead>
             <tbody>
-                {% for dosar in dosare %}
+                {% for dosar in page_obj %}
                     <tr>
                         <td><strong><a href="{% url 'cases:detalii_dosar' dosar.pk %}" class="text-decoration-none">{{ dosar.numar_unic }}</a></strong></td>
                         <td>{{ dosar.data_inregistrarii|date:"d M Y" }}</td>
@@ -44,4 +84,39 @@
         </table>
     </div>
 </div>
+<nav class="mt-4" aria-label="Paginare Dosare">
+    <ul class="pagination justify-content-center">
+        
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ query_text }}&stadiu={{ stadiu_filtru }}">
+                    &laquo; Pagina Anterioară
+                </a>
+            </li>
+        {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">&laquo; Pagina Anterioară</span>
+            </li>
+        {% endif %}
+
+        <li class="page-item active" aria-current="page">
+            <span class="page-link">
+                Pagina {{ page_obj.number }} din {{ page_obj.paginator.num_pages }}
+            </span>
+        </li>
+
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ query_text }}&stadiu={{ stadiu_filtru }}">
+                    Pagina Următoare &raquo;
+                </a>
+            </li>
+        {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">Pagina Următoare &raquo;</span>
+            </li>
+        {% endif %}
+        
+    </ul>
+</nav>
 {% endblock %}

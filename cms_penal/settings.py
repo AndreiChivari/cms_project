@@ -120,6 +120,11 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+# Django va căuta fișiere (fonturi, imagini) în acest folder
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+]
+
 # Specificăm modelul de utilizator personalizat
 AUTH_USER_MODEL = 'accounts.CustomUser'
 

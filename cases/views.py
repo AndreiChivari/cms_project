@@ -1,3 +1,5 @@
+import os
+from django.conf import settings
 from django.shortcuts import render, get_object_or_404, redirect
 from .models import Dosar, ParteImplicata
 from documents.forms import DocumentForm # Importăm formularul nou creat
@@ -6,6 +8,12 @@ from documents.models import ActUrmarire
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
+from django.core.paginator import Paginator
+from .utils import render_to_pdf
+from django.http import HttpResponse # Adaugă și asta dacă nu există
+
+from django.conf import settings # <--- Adaugă și asta sus la importuri
+
 
 @login_required
 def dashboard(request):
@@ -52,8 +60,44 @@ def adaugare_dosar(request):
 
 @login_required
 def lista_dosare(request):
+    # 1. Luăm toate dosarele inițial
     dosare = Dosar.objects.all().order_by('-data_inregistrarii')
-    context = {'dosare': dosare}
+    
+    # 2. Citim ce a scris utilizatorul în bara de căutare (dacă a scris ceva)
+    # request.GET.get('nume_camp', 'valoare_default_daca_e_gol')
+    query_text = request.GET.get('q', '') 
+    stadiu_filtru = request.GET.get('stadiu', '')
+
+    # 3. Aplicăm filtrul de text (Căutare în număr SAU infracțiune)
+    if query_text:
+        # icontains înseamnă "să conțină textul, ignorând majusculele/minusculele"
+        dosare = dosare.filter(
+            Q(numar_unic__icontains=query_text) | 
+            Q(infractiune_cercetata__icontains=query_text)
+        )
+
+    # 4. Aplicăm filtrul de stadiu (Dropdown)
+    if stadiu_filtru:
+        dosare = dosare.filter(stadiu=stadiu_filtru)
+
+    # --- COD NOU PENTRU PAGINARE ---
+    # Împărțim rezultatele (dosare) în pagini de câte 10 (poți pune 2 sau 3 acum pentru testare!)
+    paginator = Paginator(dosare, 10) 
+    
+    # Luăm numărul paginii curente din URL (ex: ?page=2)
+    page_number = request.GET.get('page')
+    
+    # page_obj va conține DOAR dosarele de pe pagina curentă
+    page_obj = paginator.get_page(page_number)  
+
+    # Trimitem datele către HTML, INCLUSIV ce a căutat omul, ca să lăsăm textul în căsuță
+    context = {
+        'page_obj': page_obj,
+        'query_text': query_text,
+        'stadiu_filtru': stadiu_filtru,
+        'stadii_posibile': Dosar.Stadiu.choices, # Trimitem opțiunile pentru dropdown
+    }
+    
     return render(request, 'cases/lista_dosare.html', context)
 
 @login_required
@@ -204,3 +248,28 @@ def stergere_document(request, pk):
         
     context = {'document': document}
     return render(request, 'cases/stergere_document.html', context)
+
+# ... restul funcțiilor tale (lista_dosare, detalii_dosar, dashboard etc.) rămân exact la fel ...
+
+@login_required
+def generare_pdf_dosar(request, pk):
+    dosar = get_object_or_404(Dosar, pk=pk)
+    
+    if not dosar.are_drepturi_editare(request.user) and not request.user.is_superuser:
+        raise PermissionDenied("Nu aveți acces la vizualizarea acestui dosar.")
+
+    context = {
+        'dosar': dosar,
+        'parti_implicate': dosar.parti_implicate.all(),
+        'request': request,
+    }
+    
+    pdf = render_to_pdf('cases/pdf_template.html', context)
+    
+    if pdf:
+        nume_fisier = f"Fisa_Dosar_{dosar.numar_unic.replace('/', '_')}.pdf"
+        response = HttpResponse(pdf, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{nume_fisier}"'
+        return response
+        
+    return HttpResponse("A apărut o eroare la generarea PDF-ului.", status=400)

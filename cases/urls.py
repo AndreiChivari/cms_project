@@ -15,6 +15,9 @@ urlpatterns = [
     # <int:pk> îi spune lui Django să aștepte un număr întreg (Primary Key) în URL
     path('<int:pk>/', views.detalii_dosar, name='detalii_dosar'),
 
+    # RUTA NOUĂ PENTRU PDF:
+    path('<int:pk>/pdf/', views.generare_pdf_dosar, name='generare_pdf_dosar'),
+
     # Ruta NOUĂ pentru editare: ex. /cases/1/editeaza/
     path('<int:pk>/editeaza/', views.editare_dosar, name='editare_dosar'),
 

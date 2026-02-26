@@ -10,6 +10,11 @@
         <h4 class="mb-0">Dosar Penal nr. {{ dosar.numar_unic }}</h4>
         <div>
             <span class="badge bg-light text-dark me-2">{{ dosar.get_stadiu_display }}</span>
+            
+            <a href="{% url 'cases:generare_pdf_dosar' dosar.pk %}" class="btn btn-sm btn-danger fw-bold me-2">
+                📄 Export PDF
+            </a>
+
             {% if poate_edita %}
                 <a href="{% url 'cases:editare_dosar' dosar.pk %}" class="btn btn-sm btn-warning fw-bold">✎ Editează</a>
             {% endif %}
