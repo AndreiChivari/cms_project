@@ -6,9 +6,11 @@ app_name = 'cases' # Util pentru a genera linkuri dinamice mai târziu
 urlpatterns = [
     # Adăugăm ruta pentru dashboard
     path('dashboard/', views.dashboard, name='dashboard'),
+    
     # Această rută reprezintă adresa de bază: http://127.0.0.1:8000/cases/
     path('', views.lista_dosare, name='lista_dosare'),
 
+    # Ruta pentru ADAUGARE
     path('adauga/', views.adaugare_dosar, name='adaugare_dosar'), # <--- RUTA NOUĂ AICI
 
     # Ruta NOUĂ pentru detaliile unui singur dosar
