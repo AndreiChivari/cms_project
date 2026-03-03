@@ -1,9 +1,9 @@
 import os
 from django.conf import settings
 from django.shortcuts import render, get_object_or_404, redirect
-from .models import Dosar, ParteImplicata
+from .models import Dosar, ParteImplicata, Infractiune, MasuraPreventiva
 from documents.forms import DocumentForm # Importăm formularul nou creat
-from .forms import DosarForm, ParteImplicataForm, CreareDosarForm
+from .forms import DosarForm, ParteImplicataForm, CreareDosarForm, InfractiuneForm, MasuraPreventivaForm
 from documents.models import ActUrmarire
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
@@ -11,8 +11,8 @@ from django.db.models import Q
 from django.core.paginator import Paginator
 from .utils import render_to_pdf
 from django.http import HttpResponse # Adaugă și asta dacă nu există
-
 from django.conf import settings # <--- Adaugă și asta sus la importuri
+from datetime import date, timedelta # folosim pentru calculul alertelor
 
 
 @login_required
@@ -21,8 +21,8 @@ def dashboard(request):
     
     # 1. Statistici Globale (toate dosarele din sistem)
     total_dosare = Dosar.objects.count()
-    dosare_in_lucru = Dosar.objects.filter(stadiu='IN_LUCRU').count()
-    dosare_judecata = Dosar.objects.filter(stadiu='TRIMIS_IN_JUDECATA').count()
+    dosare_in_lucru = Dosar.objects.filter(Q(stadiu='POLITIE') | Q(stadiu='PROCUROR')).count()
+    dosare_solutionate = Dosar.objects.filter(stadiu='SOLUTIONAT').count()
     
     # 2. Statistici Personale (Dosarele MELE)
     # Folosim Q objects pentru a spune: "Adu-mi dosarele unde sunt Ofițer SAU Procuror SAU Grefier"
@@ -35,12 +35,35 @@ def dashboard(request):
         dosare_mele = Dosar.objects.filter(conditie_mea).count()
         dosarele_mele_lista = Dosar.objects.filter(conditie_mea).order_by('-data_inregistrarii')[:5]
         
+    # === LOGICA NOUĂ PENTRU ALERTE (10 ZILE) ===
+    azi = date.today()
+    prag_10_zile = azi + timedelta(days=10)
+
+    # Găsim toate măsurile care expiră în max 10 zile, dar nu mai vechi de 5 zile de la expirare
+    alerte_toate = MasuraPreventiva.objects.filter(
+        data_sfarsit__lte=prag_10_zile,
+        data_sfarsit__gte=azi - timedelta(days=5) 
+    ).order_by('data_sfarsit')
+
+    # Filtrăm ca fiecare să vadă doar dosarele lui (Polițist, Procuror sau Grefier)
+    if request.user.is_superuser:
+        alerte_masuri = alerte_toate
+    else:
+        alerte_masuri = alerte_toate.filter(
+            Q(dosar__ofiter_caz=request.user) |
+            Q(dosar__procuror_caz=request.user) |
+            Q(dosar__grefier_caz=request.user)
+        )
+    # ============================================
+
+
     context = {
         'total_dosare': total_dosare,
         'dosare_in_lucru': dosare_in_lucru,
-        'dosare_judecata': dosare_judecata,
+        'dosare_judecata': dosare_solutionate, # Păstrăm numele variabilei pt HTML, dar îi dăm datele noi
         'dosare_mele': dosare_mele,
         'dosarele_mele_lista': dosarele_mele_lista,
+        'alerte_masuri': alerte_masuri, # <--- Trimitem alertele către HTML
     }
     
     return render(request, 'cases/dashboard.html', context)
@@ -109,6 +132,10 @@ def detalii_dosar(request, pk):
     
     form_document = DocumentForm()
     form_parte = ParteImplicataForm()
+    form_infractiune = InfractiuneForm() # <--- 1. INIȚIALIZĂM NOUL FORMULAR
+
+    # 1. Inițializăm formularul NOU, dându-i ID-ul dosarului
+    form_masura = MasuraPreventivaForm(dosar_id=dosar.pk)
     
     if request.method == 'POST':
         if not poate_edita:
@@ -131,11 +158,32 @@ def detalii_dosar(request, pk):
                 parte.dosar = dosar
                 parte.save()
                 return redirect('cases:detalii_dosar', pk=dosar.pk)
+            
+        # 2. LOGICA NOUĂ PENTRU SALVAREA INFRACȚIUNII
+        elif 'btn_salveaza_infractiune' in request.POST:
+            form_infractiune = InfractiuneForm(request.POST)
+            if form_infractiune.is_valid():
+                infractiune = form_infractiune.save(commit=False)
+                infractiune.dosar = dosar  # Legăm infracțiunea de dosarul curent!
+                infractiune.save()
+                return redirect('cases:detalii_dosar', pk=dosar.pk)
+            
+        # 2. Logica pentru Măsuri Preventive
+        elif 'btn_salveaza_masura' in request.POST:
+            # Citim datele trimise și îi dăm din nou ID-ul dosarului pentru validare
+            form_masura = MasuraPreventivaForm(request.POST, dosar_id=dosar.pk)
+            if form_masura.is_valid():
+                masura = form_masura.save(commit=False)
+                masura.dosar = dosar
+                masura.save()
+                return redirect('cases:detalii_dosar', pk=dosar.pk)
 
     context = {
             'dosar': dosar,
             'form_document': form_document, # sau cum le-ai numit
             'form_parte': form_parte,
+            'form_infractiune': form_infractiune, # <--- 3. TRIMITEM CĂTRE HTML
+            'form_masura': form_masura, # <--- 3. Îl trimitem către HTML
             'poate_edita': poate_edita # <--- VERIFICĂ SĂ AI ACEASTĂ LINIE! Fără ea, HTML-ul crede că e False.
         }
     
@@ -235,7 +283,7 @@ def stergere_document(request, pk):
 
     if not document.are_drepturi_editare(request.user):
         raise PermissionDenied("Nu ai permisiunea de a edita acest dosar.")
-    
+     
     if request.method == 'POST':
         # TRUC PENTRU LICENȚĂ: Django șterge înregistrarea din baza de date, 
         # dar în mod implicit NU șterge fișierul fizic de pe hard disk!
@@ -273,3 +321,25 @@ def generare_pdf_dosar(request, pk):
         return response
         
     return HttpResponse("A apărut o eroare la generarea PDF-ului.", status=400)
+
+@login_required
+def stergere_masura(request, pk):
+    # Găsim măsura în baza de date
+    masura = get_object_or_404(MasuraPreventiva, pk=pk)
+    dosar_id = masura.dosar.pk
+    
+    # Securitate: Verificăm dacă utilizatorul are drepturi pe dosarul respectiv
+    if not masura.dosar.are_drepturi_editare(request.user) and not request.user.is_superuser:
+        raise PermissionDenied("Nu ai permisiunea de a șterge date din acest dosar.")
+        
+    # Dacă utilizatorul a apăsat "Da, șterge" (adică a trimis un POST)
+    if request.method == 'POST':
+        masura.delete()
+        return redirect('cases:detalii_dosar', pk=dosar_id)
+        
+    # Dacă a dat doar click pe link, îi afișăm pagina de confirmare
+    context = {
+        'masura': masura,
+        'dosar': masura.dosar
+    }
+    return render(request, 'cases/stergere_masura.html', context)

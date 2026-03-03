@@ -1,20 +1,43 @@
 from django.db import models
 from django.conf import settings # Folosim asta pentru a importa modelul de User corect
+from datetime import date # Folosim pentru calculul alertelor
 
 class Dosar(models.Model):
+# 1. Rescriem stadiile (doar 3 variante)
     class Stadiu(models.TextChoices):
-        IN_LUCRU = 'IN_LUCRU', 'În lucru la Poliție'
-        LA_PROCUROR = 'LA_PROCUROR', 'Înaintat la Procuror'
-        CLASAT = 'CLASAT', 'Clasat'
-        TRIMIS_IN_JUDECATA = 'TRIMIS_IN_JUDECATA', 'Trimis în judecată'
-        SUSPENDAT = 'SUSPENDAT', 'Suspendat'
+        POLITIE = 'POLITIE', 'În lucru la Poliție'
+        PROCUROR = 'PROCUROR', 'În lucru la Procuror'
+        SOLUTIONAT = 'SOLUTIONAT', 'Soluționat'
+
+    # 2. Creăm variantele pentru soluții/propuneri
+    class Solutie(models.TextChoices):
+        TRIMITERE = 'TRIMITERE', 'Trimitere în judecată'
+        CLASARE = 'CLASARE', 'Clasare'
+        RENUNTARE = 'RENUNTARE', 'Renunțare la urmărirea penală'
+        DECLINARE = 'DECLINARE', 'Declinare'
+        SUSPENDARE = 'SUSPENDARE', 'Suspendare'
+        TRECERE = 'TRECERE', 'Trecere la alt organ'
 
     # Datele de identificare ale dosarului
     numar_unic = models.CharField(max_length=50, unique=True, help_text="Ex: 123/P/2026")
     data_inregistrarii = models.DateField(auto_now_add=True) # Se completează automat la creare
     infractiune_cercetata = models.TextField(help_text="Descrierea faptei și încadrarea juridică (ex: Furt calificat, art. 229 C.pen)")
     
-    stadiu = models.CharField(max_length=20, choices=Stadiu.choices, default=Stadiu.IN_LUCRU)
+    # 3. Actualizăm coloana stadiu
+    stadiu = models.CharField(
+        max_length=20, 
+        choices=Stadiu.choices, 
+        default=Stadiu.POLITIE
+    )
+    
+    # 4. Adăugăm coloanele noi
+    tip_solutie = models.CharField(
+        max_length=20, 
+        choices=Solutie.choices, 
+        null=True, 
+        blank=True
+    )
+    data_solutiei = models.DateField(null=True, blank=True)
 
     # Legătura cu anchetatorii (Chei externe către modelul de Utilizator)
     # Folosim related_name pentru a putea accesa ulterior toate dosarele unui polițist cu: politist.dosare_instrumentate.all()
@@ -99,3 +122,38 @@ class ParteImplicata(models.Model):
 
     def __str__(self):
         return f"{self.nume_complet} ({self.get_calitate_procesuala_display()}) - {self.dosar.numar_unic}"
+    
+class Infractiune(models.Model):
+    dosar = models.ForeignKey(Dosar, on_delete=models.CASCADE, related_name='infractiuni')
+    incadrare_juridica = models.CharField(max_length=255, help_text="Ex: Furt calificat")
+    articol_penal = models.CharField(max_length=100, help_text="Ex: art. 228-229 C.pen.")
+    data_comiterii = models.DateField(null=True, blank=True, help_text="Data presupusei fapte")
+
+    def __str__(self):
+        return f"{self.incadrare_juridica} ({self.articol_penal})"
+    
+class MasuraPreventiva(models.Model):
+    class TipMasura(models.TextChoices):
+        RETINERE = 'RETINERE', 'Reținere (24h)'
+        AREST_PREVENTIV = 'AREST_PREVENTIV', 'Arest Preventiv'
+        AREST_DOMICILIU = 'AREST_DOMICILIU', 'Arest la Domiciliu'
+        CONTROL_JUDICIAR = 'CONTROL_JUDICIAR', 'Control Judiciar'
+        CONTROL_JUDICIAR_CAUTIUNE = 'CONTROL_JUDICIAR_CAUTIUNE', 'Control Judiciar pe Cauțiune'
+
+    dosar = models.ForeignKey(Dosar, on_delete=models.CASCADE, related_name='masuri_preventive')
+    parte = models.ForeignKey(ParteImplicata, on_delete=models.CASCADE, related_name='masuri_preventive')
+    
+    tip_masura = models.CharField(max_length=50, choices=TipMasura.choices)
+    durata_zile = models.PositiveIntegerField(help_text="Numărul de zile (ex: 30)")
+    data_inceput = models.DateField()
+    data_sfarsit = models.DateField()
+
+    def __str__(self):
+        return f"{self.get_tip_masura_display()} - {self.parte.nume_complet}"
+    
+    # ADĂUGĂM ASTA:
+    @property
+    def zile_ramase(self):
+        if self.data_sfarsit:
+            return (self.data_sfarsit - date.today()).days
+        return 0
