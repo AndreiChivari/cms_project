@@ -42,6 +42,16 @@
         <span class="label">Stadiu Cercetări:</span>
         <span class="value">{{ dosar.get_stadiu_display }}</span>
     </div>
+    {% if dosar.tip_solutie %}
+    <div class="row">
+        <span class="label">Soluție/Propunere:</span>
+        <span class="value">{{ dosar.get_tip_solutie_display }}</span>
+    </div>
+    <div class="row">
+        <span class="label">Data Soluției:</span>
+        <span class="value">{{ dosar.data_solutiei|date:"d M Y" }}</span>
+    </div>
+    {% endif %}
     <div class="row">
         <span class="label">Ofițer de Caz:</span>
         <span class="value">{{ dosar.ofiter_caz.get_full_name|default:dosar.ofiter_caz.username|default:"-" }}</span>

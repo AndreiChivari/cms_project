@@ -8,6 +8,47 @@
     <span class="text-muted">Astăzi este {% now "d F Y" %}</span>
 </div>
 
+{% if alerte_masuri %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm border-danger">
+            <div class="card-header bg-danger text-white fw-bold d-flex justify-content-between align-items-center">
+                <span>⚠️ ALERTE MĂSURI PREVENTIVE (Următoarele 10 zile)</span>
+                <span class="badge bg-white text-danger rounded-pill">{{ alerte_masuri|length }} urgențe</span>
+            </div>
+            <ul class="list-group list-group-flush">
+                {% for alerta in alerte_masuri %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center" style="background-color: {% if alerta.zile_ramase <= 3 %}#fff5f5{% else %}#fffdf5{% endif %};">
+                        <div>
+                            <span class="fs-5 fw-bold">{{ alerta.parte.nume_complet }}</span>
+                            <span class="badge bg-dark ms-2">{{ alerta.get_tip_masura_display }}</span>
+                            <br>
+                            <small class="text-muted">
+                                Dosar: <a href="{% url 'cases:detalii_dosar' alerta.dosar.pk %}" class="fw-bold text-decoration-none">{{ alerta.dosar.numar_unic }}</a> | 
+                                Echipa: {{ alerta.dosar.ofiter_caz.last_name|default:"-" }} (P) / {{ alerta.dosar.procuror_caz.last_name|default:"-" }} (Pr)
+                            </small>
+                        </div>
+                        <div class="text-end">
+                            <div class="mb-1">Expiră la: <strong>{{ alerta.data_sfarsit|date:"d.m.Y" }}</strong></div>
+                            
+                            {% if alerta.zile_ramase < 0 %}
+                                <span class="badge bg-dark fs-6">Expirată de {{ alerta.zile_ramase|stringformat:"d"|slice:"1:" }} zile!</span>
+                            {% elif alerta.zile_ramase == 0 %}
+                                <span class="badge bg-danger fs-6 blink-bg">EXPIRĂ ASTĂZI!</span>
+                            {% elif alerta.zile_ramase <= 3 %}
+                                <span class="badge bg-danger fs-6">Expiră în {{ alerta.zile_ramase }} zile</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark fs-6">Expiră în {{ alerta.zile_ramase }} zile</span>
+                            {% endif %}
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <div class="row mb-5">
     <div class="col-md-3">
         <div class="card bg-primary text-white shadow-sm h-100">
@@ -64,7 +105,16 @@
                         <td><strong><a href="{% url 'cases:detalii_dosar' dosar.pk %}" class="text-decoration-none">{{ dosar.numar_unic }}</a></strong></td>
                         <td>{{ dosar.data_inregistrarii|date:"d.m.Y" }}</td>
                         <td class="text-truncate" style="max-width: 250px;">{{ dosar.infractiune_cercetata }}</td>
-                        <td><span class="badge bg-secondary">{{ dosar.get_stadiu_display }}</span></td>
+                        <td>
+                            <span class="badge bg-secondary">{{ dosar.get_stadiu_display }}</span>
+                            {% if dosar.tip_solutie %}
+                                <br>
+                                <small class="text-success fw-bold">
+                                    ↪ {{ dosar.get_tip_solutie_display }} ({{ dosar.data_solutiei|date:"d.m.Y" }})
+                                </small>
+                            {% endif %}
+                        
+                        </td>
                     </tr>
                 {% empty %}
                     <tr>

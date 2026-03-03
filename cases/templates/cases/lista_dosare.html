@@ -68,6 +68,12 @@
                         <td>{{ dosar.infractiune_cercetata }}</td>
                         <td>
                             <span class="badge bg-secondary">{{ dosar.get_stadiu_display }}</span>
+                            {% if dosar.tip_solutie %}
+                                <br>
+                                <small class="text-success fw-bold">
+                                    ↪ {{ dosar.get_tip_solutie_display }} ({{ dosar.data_solutiei|date:"d.m.Y" }})
+                                </small>
+                            {% endif %}
                         </td>
                         {% if dosar.procuror_caz %}
                             <td>{{ dosar.procuror_caz.get_full_name|default:dosar.procuror_caz.username|default:"Nedesemnat" }}</td>
