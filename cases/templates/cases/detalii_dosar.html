@@ -3,96 +3,98 @@
 {% block title %}Dosar {{ dosar.numar_unic }}{% endblock %}
 
 {% block content %}
-<a href="{% url 'cases:lista_dosare' %}" class="btn btn-outline-secondary btn-sm mb-3">← Înapoi la listă</a>
-
-<div class="card shadow-sm mb-4 border-primary">
-    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-        <h4 class="mb-0">Dosar Penal nr. {{ dosar.numar_unic }}</h4>
-        <div>
-            <span class="badge bg-light text-dark me-2">{{ dosar.get_stadiu_display }}</span>
-            
-            <a href="{% url 'cases:generare_pdf_dosar' dosar.pk %}" class="btn btn-sm btn-danger fw-bold me-2">
-                📄 Export PDF
-            </a>
-
-            {% if poate_edita %}
-                <a href="{% url 'cases:editare_dosar' dosar.pk %}" class="btn btn-sm btn-warning fw-bold">✎ Editează</a>
-            {% endif %}
-        </div>
+<div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+    <div>
+        <a href="{% url 'cases:lista_dosare' %}" class="text-decoration-none text-muted mb-2 d-inline-block">
+            &larr; Înapoi la listă
+        </a>
+        <h2 class="mb-0">Dosar Penal nr. {{ dosar.numar_unic }}</h2>
+        <span class="badge bg-secondary mt-2 fs-6">{{ dosar.get_stadiu_display }}</span>
     </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'cases:generare_pdf_dosar' dosar.pk %}" class="btn btn-outline-danger shadow-sm">
+            📄 Export PDF
+        </a>
+        {% if poate_edita %}
+            <a href="{% url 'cases:editare_dosar' dosar.pk %}" class="btn btn-primary shadow-sm">
+                ✎ Editează Dosar
+            </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
     <div class="card-body">
-        
         <div class="row mb-4">
-            <div class="col-md-4">
-                <p class="mb-1 text-muted">Data Înregistrării</p>
-                <h5>{{ dosar.data_inregistrarii|date:"d M Y" }}</h5>
+            <div class="col-md-3">
+                <p class="mb-1 text-muted small text-uppercase fw-bold">Data Înregistrării</p>
+                <h5 class="mb-0">{{ dosar.data_inregistrarii|date:"d M Y" }}</h5>
             </div>
             <div class="col-md-3">
-                <p class="mb-1 text-muted">Ofițer de Caz</p>
-                <strong>
+                <p class="mb-1 text-muted small text-uppercase fw-bold">Ofițer de Caz</p>
+                <h6 class="mb-0">
                     {% if dosar.ofiter_caz %}
                         {{ dosar.ofiter_caz.get_full_name|default:dosar.ofiter_caz.username }}
                     {% else %}
-                        -
+                        <span class="text-muted">-</span>
                     {% endif %}
-                </strong>
+                </h6>
             </div>
             <div class="col-md-3">
-                <p class="mb-1 text-muted">Procuror</p>
-                <strong>
+                <p class="mb-1 text-muted small text-uppercase fw-bold">Procuror</p>
+                <h6 class="mb-0">
                     {% if dosar.procuror_caz %}
                         {{ dosar.procuror_caz.get_full_name|default:dosar.procuror_caz.username }}
                     {% else %}
-                        -
+                        <span class="text-muted">-</span>
                     {% endif %}
-                </strong>
+                </h6>
             </div>
-            <div class="col-md-2">
-                <p class="mb-1 text-muted">Grefier</p>
-                <strong>
+            <div class="col-md-3">
+                <p class="mb-1 text-muted small text-uppercase fw-bold">Grefier</p>
+                <h6 class="mb-0">
                     {% if dosar.grefier_caz %}
                         {{ dosar.grefier_caz.get_full_name|default:dosar.grefier_caz.username }}
                     {% else %}
-                        -
+                        <span class="text-muted">-</span>
                     {% endif %}
-                </strong>
+                </h6>
             </div>
         </div>
 
         {% if dosar.tip_solutie %}
-        <div class="row mb-4 p-3 rounded" style="background-color: #f8fff9; border-left: 4px solid #198754;">
-            <div class="col-md-6">
-                <p class="mb-1 text-muted">Soluție / Propunere Dispusă</p>
-                <span class="badge bg-success fs-6">{{ dosar.get_tip_solutie_display }}</span>
+        <div class="alert alert-success d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <p class="mb-0 text-success small text-uppercase fw-bold">Soluție / Propunere Dispusă</p>
+                <h5 class="mb-0 mt-1">{{ dosar.get_tip_solutie_display }}</h5>
             </div>
-            <div class="col-md-6">
-                <p class="mb-1 text-muted">Data Soluționării</p>
-                <h5 class="text-success mb-0">{{ dosar.data_solutiei|date:"d M Y" }}</h5>
+            <div class="text-end">
+                <p class="mb-0 text-success small text-uppercase fw-bold">Data Soluționării</p>
+                <h5 class="mb-0 mt-1">{{ dosar.data_solutiei|date:"d M Y" }}</h5>
             </div>
         </div>
         {% endif %}
 
         <div class="row">
             <div class="col-12">
-                <p class="mb-1 text-muted">Stare de Fapt / Rezumat</p>
-                <div class="p-3 bg-light border rounded">{{ dosar.infractiune_cercetata }}</div>
+                <p class="mb-2 text-muted small text-uppercase fw-bold">Stare de Fapt / Rezumat</p>
+                <div class="p-3 bg-light border rounded text-dark" style="white-space: pre-wrap;">{{ dosar.infractiune_cercetata }}</div>
             </div>
         </div>
-
     </div>
 </div>
 
-<div class="card shadow-sm mb-4 border-0">
-    <div class="card-header bg-white d-flex justify-content-between align-items-center">
-        <h5 class="mb-0 text-danger">⚖️ Încadrări Juridice Cercetate</h5>
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center py-3">
+        <h5 class="mb-0 text-dark">⚖️ Încadrări Juridice Cercetate</h5>
         {% if poate_edita %}
-        <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#adaugaInfractiuneModal">
+        <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#adaugaInfractiuneModal">
             + Adaugă Încadrare
         </button>
         {% endif %}
     </div>
-    <div class="card-body p-0">
-        <table class="table table-hover mb-0">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
             <thead class="table-light">
                 <tr>
                     <th>Încadrare Juridică</th>
@@ -109,7 +111,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="3" class="text-center py-3 text-muted">Nu a fost adăugată nicio încadrare juridică specifică.</td>
+                    <td colspan="3" class="text-center py-4 text-muted">Nu a fost adăugată nicio încadrare juridică specifică.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -117,17 +119,17 @@
     </div>
 </div>
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h4 class="text-secondary mb-0">Părți Implicate în Cauză</h4>
-    {% if poate_edita %}
-        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#adaugaParteModal">
-            + Adaugă Persoană
-        </button>
-    {% endif %}
-</div>
-<div class="card shadow-sm">
-    <div class="card-body p-0">
-        <table class="table table-bordered mb-0">
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center py-3">
+        <h5 class="mb-0 text-dark">👥 Părți Implicate în Cauză</h5>
+        {% if poate_edita %}
+            <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#adaugaParteModal">
+                + Adaugă Persoană
+            </button>
+        {% endif %}
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
             <thead class="table-light">
                 <tr>
                     <th>Nume Complet</th>
@@ -135,27 +137,29 @@
                     <th>CNP</th>
                     <th>Mențiuni</th>
                     {% if poate_edita %}
-                    <th class="text-center">Acțiuni</th> </tr>
+                    <th class="text-end pe-4">Acțiuni</th>
                     {% endif %}
                 </tr>
             </thead>
             <tbody>
                 {% for parte in dosar.parti_implicate.all %}
                     <tr>
-                        <td class="align-middle"><strong>{{ parte.nume_complet }}</strong></td>
-                        <td class="align-middle"><span class="badge border border-dark text-dark">{{ parte.get_calitate_procesuala_display }}</span></td>
-                        <td class="align-middle">{{ parte.cnp|default:"-" }}</td>
-                        <td class="text-muted align-middle">{{ parte.mentiuni|default:"-" }}</td>
+                        <td><strong>{{ parte.nume_complet }}</strong></td>
+                        <td><span class="badge bg-secondary">{{ parte.get_calitate_procesuala_display }}</span></td>
+                        <td>{{ parte.cnp|default:"-" }}</td>
+                        <td class="text-muted">{{ parte.mentiuni|default:"-" }}</td>
                         {% if poate_edita %}
-                        <td class="align-middle text-center">
-                            <a href="{% url 'cases:editare_parte' parte.pk %}" class="btn btn-sm btn-outline-primary">✎</a>
-                            <a href="{% url 'cases:stergere_parte' parte.pk %}" class="btn btn-sm btn-outline-danger">✖</a>
+                        <td class="text-end pe-3">
+                            <div class="btn-group">
+                                <a href="{% url 'cases:editare_parte' parte.pk %}" class="btn btn-sm btn-light border text-primary" title="Editează">✎</a>
+                                <a href="{% url 'cases:stergere_parte' parte.pk %}" class="btn btn-sm btn-light border text-danger" title="Șterge">✖</a>
+                            </div>
                         </td>
                         {% endif %}
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="4" class="text-center py-3">Nicio persoană înregistrată în acest dosar.</td>
+                        <td colspan="5" class="text-center py-4 text-muted">Nicio persoană înregistrată în acest dosar.</td>
                     </tr>
                 {% endfor %}
             </tbody>
@@ -163,17 +167,17 @@
     </div>
 </div>
 
-<div class="card shadow-sm mb-4 border-0">
-    <div class="card-header bg-white d-flex justify-content-between align-items-center">
-        <h5 class="mb-0 text-warning">⏳ Măsuri Preventive</h5>
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center py-3">
+        <h5 class="mb-0 text-dark">⏳ Măsuri Preventive</h5>
         {% if poate_edita %}
-        <button type="button" class="btn btn-warning btn-sm fw-bold" data-bs-toggle="modal" data-bs-target="#adaugaMasuraModal">
+        <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#adaugaMasuraModal">
             + Adaugă Măsură
         </button>
         {% endif %}
     </div>
-    <div class="card-body p-0">
-        <table class="table table-hover mb-0">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
             <thead class="table-light">
                 <tr>
                     <th>Inculpat</th>
@@ -181,7 +185,7 @@
                     <th>Durata (Zile)</th>
                     <th>Perioada</th>
                     {% if poate_edita %}
-                    <th class="text-center">Acțiuni</th>
+                    <th class="text-end pe-4">Acțiuni</th>
                     {% endif %}
                 </tr>
             </thead>
@@ -191,16 +195,16 @@
                     <td><strong>{{ masura.parte.nume_complet }}</strong></td>
                     <td><span class="badge bg-danger">{{ masura.get_tip_masura_display }}</span></td>
                     <td>{{ masura.durata_zile }} zile</td>
-                    <td>{{ masura.data_inceput|date:"d.m.Y" }} - <strong>{{ masura.data_sfarsit|date:"d.m.Y" }}</strong></td>
+                    <td>{{ masura.data_inceput|date:"d.m.Y" }} &rarr; <strong>{{ masura.data_sfarsit|date:"d.m.Y" }}</strong></td>
                     {% if poate_edita %}
-                    <td class="text-center">
-                        <a href="{% url 'cases:stergere_masura' masura.pk %}" class="btn btn-sm btn-outline-danger" title="Șterge">✖</a>
+                    <td class="text-end pe-3">
+                        <a href="{% url 'cases:stergere_masura' masura.pk %}" class="btn btn-sm btn-light border text-danger" title="Șterge">✖</a>
                     </td>
                     {% endif %}
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="4" class="text-center py-3 text-muted">Nu există măsuri preventive dispuse în această cauză.</td>
+                    <td colspan="5" class="text-center py-4 text-muted">Nu există măsuri preventive dispuse în această cauză.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -208,89 +212,85 @@
     </div>
 </div>
 
-<div class="d-flex justify-content-between align-items-center mb-3 mt-5">
-    <h4 class="text-secondary mb-0">Acte de Urmărire Penală</h4>
-    {% if poate_edita %}
-        <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#adaugaDocumentModal">
-            + Adaugă Document
-        </button>
-    {% endif %}
-</div>
 <div class="card shadow-sm mb-5">
-    <div class="card-body p-0">
-        <table class="table table-hover table-bordered mb-0">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center py-3">
+        <h5 class="mb-0 text-dark">📁 Acte de Urmărire Penală</h5>
+        {% if poate_edita %}
+            <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#adaugaDocumentModal">
+                + Adaugă Document
+            </button>
+        {% endif %}
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
             <thead class="table-light">
                 <tr>
                     <th>Tip Act</th>
                     <th>Titlu Document</th>
                     <th>Data Încărcării</th>
                     <th>Autor (Anchetator)</th>
-                    <th>Acțiune</th>
+                    <th class="text-end pe-4">Acțiune</th>
                 </tr>
             </thead>
             <tbody>
                 {% for act in dosar.documente.all %}
                     <tr>
-                        <td class="align-middle">
-                            <span class="badge bg-info text-dark">{{ act.get_tip_display }}</span>
-                        </td>
-                        <td class="align-middle"><strong>{{ act.titlu }}</strong></td>
-                        <td class="align-middle">{{ act.data_incarcarii|date:"d M Y, H:i" }}</td>
-                        <td class="align-middle">{{ act.autor.get_full_name|default:"Sistem" }}</td>
-                        <td class="align-middle text-center">
-                            <div class="btn-group" role="group">
+                        <td><span class="badge bg-info text-dark">{{ act.get_tip_display }}</span></td>
+                        <td><strong>{{ act.titlu }}</strong></td>
+                        <td>{{ act.data_incarcarii|date:"d M Y, H:i" }}</td>
+                        <td>{{ act.autor.get_full_name|default:"Sistem" }}</td>
+                        <td class="text-end pe-3">
+                            <div class="btn-group">
                                 {% if act.fisier %}
-                                    <a href="{{ act.fisier.url }}" target="_blank" class="btn btn-sm btn-outline-primary" title="Vizualizare">📄</a>
+                                    <a href="{{ act.fisier.url }}" target="_blank" class="btn btn-sm btn-light border text-dark" title="Vizualizare">📄</a>
                                 {% endif %}
-                                
                                 {% if poate_edita %}
-                                <a href="{% url 'cases:editare_document' act.pk %}" class="btn btn-sm btn-outline-success" title="Editare">✎</a>
-                                
-                                <a href="{% url 'cases:stergere_document' act.pk %}" class="btn btn-sm btn-outline-danger" title="Ștergere">✖</a>
+                                <a href="{% url 'cases:editare_document' act.pk %}" class="btn btn-sm btn-light border text-success" title="Editare">✎</a>
+                                <a href="{% url 'cases:stergere_document' act.pk %}" class="btn btn-sm btn-light border text-danger" title="Ștergere">✖</a>
                                 {% endif %}
                             </div>
                         </td>
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="5" class="text-center py-4 text-muted">
-                            Niciun document atașat acestui dosar.
-                        </td>
+                        <td colspan="5" class="text-center py-4 text-muted">Niciun document atașat acestui dosar.</td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
+
 <div class="modal fade" id="adaugaDocumentModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header bg-success text-white">
+            <div class="modal-header bg-light border-bottom">
                 <h5 class="modal-title" id="modalLabel">Încarcă un act nou</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form method="POST" enctype="multipart/form-data">
                 <div class="modal-body">
-                    {% csrf_token %} <div class="mb-3">
-                        <label class="form-label fw-bold">Titlu document</label>
+                    {% csrf_token %} 
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-uppercase">Titlu document</label>
                         {{ form_document.titlu }}
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Tip act</label>
+                        <label class="form-label fw-bold small text-uppercase">Tip act</label>
                         {{ form_document.tip }}
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Alege fișierul (PDF, Word, etc.)</label>
+                        <label class="form-label fw-bold small text-uppercase">Alege fișierul (PDF, Word, etc.)</label>
                         {{ form_document.fisier }}
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Descriere scurtă (Opțional)</label>
+                        <label class="form-label fw-bold small text-uppercase">Descriere scurtă (Opțional)</label>
                         {{ form_document.descriere_scurta }}
                     </div>
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer bg-light border-top">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anulează</button>
-                    <button type="submit" name="btn_salveaza_document" class="btn btn-success">Salvează Documentul</button>
+                    <button type="submit" name="btn_salveaza_document" class="btn btn-primary">Salvează Documentul</button>
                 </div>
             </form>
         </div>
@@ -300,33 +300,33 @@
 <div class="modal fade" id="adaugaParteModal" tabindex="-1" aria-labelledby="parteModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
+            <div class="modal-header bg-light border-bottom">
                 <h5 class="modal-title" id="parteModalLabel">Adaugă Parte Implicată</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form method="POST">
                 <div class="modal-body">
                     {% csrf_token %}
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Nume Complet</label>
+                        <label class="form-label fw-bold small text-uppercase">Nume Complet</label>
                         {{ form_parte.nume_complet }}
                     </div>
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">Calitate Procesuală</label>
+                            <label class="form-label fw-bold small text-uppercase">Calitate Procesuală</label>
                             {{ form_parte.calitate_procesuala }}
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">CNP</label>
+                            <label class="form-label fw-bold small text-uppercase">CNP</label>
                             {{ form_parte.cnp }}
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Mențiuni</label>
+                        <label class="form-label fw-bold small text-uppercase">Mențiuni</label>
                         {{ form_parte.mentiuni }}
                     </div>
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer bg-light border-top">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anulează</button>
                     <button type="submit" name="btn_salveaza_parte" class="btn btn-primary">Salvează Persoana</button>
                 </div>
@@ -340,27 +340,27 @@
         <div class="modal-content">
             <form method="POST" action="{% url 'cases:detalii_dosar' dosar.pk %}">
                 {% csrf_token %}
-                <div class="modal-header bg-danger text-white">
+                <div class="modal-header bg-light border-bottom">
                     <h5 class="modal-title" id="adaugaInfractiuneLabel">Adaugă Încadrare Juridică</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">Încadrare Juridică (ex: Furt calificat)</label>
+                        <label class="form-label fw-bold small text-uppercase">Încadrare Juridică (ex: Furt calificat)</label>
                         {{ form_infractiune.incadrare_juridica }}
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Articol Penal (ex: art. 228-229 C.pen.)</label>
+                        <label class="form-label fw-bold small text-uppercase">Articol Penal (ex: art. 228-229 C.pen.)</label>
                         {{ form_infractiune.articol_penal }}
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Data Presupusei Fapte</label>
+                        <label class="form-label fw-bold small text-uppercase">Data Presupusei Fapte</label>
                         {{ form_infractiune.data_comiterii }}
                     </div>
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer bg-light border-top">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anulează</button>
-                    <button type="submit" name="btn_salveaza_infractiune" class="btn btn-danger">Salvează Încadrarea</button>
+                    <button type="submit" name="btn_salveaza_infractiune" class="btn btn-primary">Salvează Încadrarea</button>
                 </div>
             </form>
         </div>
@@ -372,37 +372,37 @@
         <div class="modal-content">
             <form method="POST" action="{% url 'cases:detalii_dosar' dosar.pk %}">
                 {% csrf_token %}
-                <div class="modal-header bg-warning text-dark">
+                <div class="modal-header bg-light border-bottom">
                     <h5 class="modal-title fw-bold" id="adaugaMasuraLabel">Adaugă Măsură Preventivă</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">Persoana Vizată (Inculpat)</label>
+                        <label class="form-label fw-bold small text-uppercase">Persoana Vizată (Inculpat)</label>
                         {{ form_masura.parte }}
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Tipul Măsurii</label>
+                        <label class="form-label fw-bold small text-uppercase">Tipul Măsurii</label>
                         {{ form_masura.tip_masura }}
                     </div>
                     <div class="row">
                         <div class="col-md-4 mb-3">
-                            <label class="form-label">Durata (Zile)</label>
+                            <label class="form-label fw-bold small text-uppercase">Durata (Zile)</label>
                             {{ form_masura.durata_zile }}
                         </div>
                         <div class="col-md-4 mb-3">
-                            <label class="form-label">Data Început</label>
+                            <label class="form-label fw-bold small text-uppercase">Data Început</label>
                             {{ form_masura.data_inceput }}
                         </div>
                         <div class="col-md-4 mb-3">
-                            <label class="form-label">Data Sfârșit</label>
+                            <label class="form-label fw-bold small text-uppercase">Data Sfârșit</label>
                             {{ form_masura.data_sfarsit }}
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer bg-light border-top">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anulează</button>
-                    <button type="submit" name="btn_salveaza_masura" class="btn btn-warning fw-bold">Salvează Măsura</button>
+                    <button type="submit" name="btn_salveaza_masura" class="btn btn-primary">Salvează Măsura</button>
                 </div>
             </form>
         </div>
