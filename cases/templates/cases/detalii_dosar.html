@@ -261,36 +261,40 @@
     </div>
 </div>
 
-<div class="modal fade" id="adaugaDocumentModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-light border-bottom">
-                <h5 class="modal-title" id="modalLabel">Încarcă un act nou</h5>
+<div class="modal fade" id="adaugaDocumentModal" tabindex="-1" aria-labelledby="documentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-bottom-0 px-4 pt-4 pb-0">
+                <h5 class="modal-title text-primary fw-bold" id="documentModalLabel">
+                    <span class="fs-4 me-2">📁</span> Încarcă un act nou
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form method="POST" enctype="multipart/form-data">
-                <div class="modal-body">
+                <div class="modal-body px-4 py-4">
                     {% csrf_token %} 
-                    <div class="mb-3">
-                        <label class="form-label fw-bold small text-uppercase">Titlu document</label>
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-uppercase text-muted mb-1">Titlu document</label>
                         {{ form_document.titlu }}
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold small text-uppercase">Tip act</label>
-                        {{ form_document.tip }}
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-uppercase text-muted mb-1">Tip act</label>
+                            {{ form_document.tip }}
+                        </div>
+                        <div class="col-md-6 mt-3 mt-md-0">
+                            <label class="form-label fw-bold small text-uppercase text-muted mb-1">Alege fișierul</label>
+                            {{ form_document.fisier }}
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold small text-uppercase">Alege fișierul (PDF, Word, etc.)</label>
-                        {{ form_document.fisier }}
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold small text-uppercase">Descriere scurtă (Opțional)</label>
+                    <div class="mb-2">
+                        <label class="form-label fw-bold small text-uppercase text-muted mb-1">Descriere scurtă (Opțional)</label>
                         {{ form_document.descriere_scurta }}
                     </div>
                 </div>
-                <div class="modal-footer bg-light border-top">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anulează</button>
-                    <button type="submit" name="btn_salveaza_document" class="btn btn-primary">Salvează Documentul</button>
+                <div class="modal-footer border-top-0 px-4 pb-4 pt-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Anulează</button>
+                    <button type="submit" name="btn_salveaza_document" class="btn btn-primary px-4 shadow-sm">Salvează Documentul</button>
                 </div>
             </form>
         </div>
@@ -298,111 +302,123 @@
 </div>
 
 <div class="modal fade" id="adaugaParteModal" tabindex="-1" aria-labelledby="parteModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-light border-bottom">
-                <h5 class="modal-title" id="parteModalLabel">Adaugă Parte Implicată</h5>
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-bottom-0 px-4 pt-4 pb-0">
+                <h5 class="modal-title text-primary fw-bold" id="parteModalLabel">
+                    <span class="fs-4 me-2">👥</span> Adaugă Parte Implicată
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form method="POST">
-                <div class="modal-body">
+                <div class="modal-body px-4 py-4">
                     {% csrf_token %}
-                    <div class="mb-3">
-                        <label class="form-label fw-bold small text-uppercase">Nume Complet</label>
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-uppercase text-muted mb-1">Nume Complet</label>
                         {{ form_parte.nume_complet }}
                     </div>
-                    <div class="row mb-3">
+                    <div class="row mb-4">
                         <div class="col-md-6">
-                            <label class="form-label fw-bold small text-uppercase">Calitate Procesuală</label>
+                            <label class="form-label fw-bold small text-uppercase text-muted mb-1">Calitate Procesuală</label>
                             {{ form_parte.calitate_procesuala }}
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold small text-uppercase">CNP</label>
+                        <div class="col-md-6 mt-3 mt-md-0">
+                            <label class="form-label fw-bold small text-uppercase text-muted mb-1">CNP</label>
                             {{ form_parte.cnp }}
                         </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold small text-uppercase">Mențiuni</label>
+                    <div class="mb-2">
+                        <label class="form-label fw-bold small text-uppercase text-muted mb-1">Mențiuni / Detalii suplimentare</label>
                         {{ form_parte.mentiuni }}
                     </div>
                 </div>
-                <div class="modal-footer bg-light border-top">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anulează</button>
-                    <button type="submit" name="btn_salveaza_parte" class="btn btn-primary">Salvează Persoana</button>
+                <div class="modal-footer border-top-0 px-4 pb-4 pt-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Anulează</button>
+                    <button type="submit" name="btn_salveaza_parte" class="btn btn-primary px-4 shadow-sm">Salvează Persoana</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="adaugaInfractiuneModal" tabindex="-1" aria-labelledby="adaugaInfractiuneLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
+<div class="modal fade" id="adaugaInfractiuneModal" tabindex="-1" aria-labelledby="infractiuneModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg">
             <form method="POST" action="{% url 'cases:detalii_dosar' dosar.pk %}">
                 {% csrf_token %}
-                <div class="modal-header bg-light border-bottom">
-                    <h5 class="modal-title" id="adaugaInfractiuneLabel">Adaugă Încadrare Juridică</h5>
+                <div class="modal-header border-bottom-0 px-4 pt-4 pb-0">
+                    <h5 class="modal-title text-danger fw-bold" id="infractiuneModalLabel">
+                        <span class="fs-4 me-2">⚖️</span> Adaugă Încadrare
+                    </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold small text-uppercase">Încadrare Juridică (ex: Furt calificat)</label>
+                <div class="modal-body px-4 py-4">
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-uppercase text-muted mb-1">Încadrare Juridică</label>
                         {{ form_infractiune.incadrare_juridica }}
+                        <div class="form-text mt-1">Ex: Furt calificat, Înșelăciune etc.</div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold small text-uppercase">Articol Penal (ex: art. 228-229 C.pen.)</label>
-                        {{ form_infractiune.articol_penal }}
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold small text-uppercase">Data Presupusei Fapte</label>
-                        {{ form_infractiune.data_comiterii }}
+                    <div class="row mb-2">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-uppercase text-muted mb-1">Articol Penal</label>
+                            {{ form_infractiune.articol_penal }}
+                            <div class="form-text mt-1">Ex: art. 228-229 C.pen.</div>
+                        </div>
+                        <div class="col-md-6 mt-3 mt-md-0">
+                            <label class="form-label fw-bold small text-uppercase text-muted mb-1">Data Presupusei Fapte</label>
+                            {{ form_infractiune.data_comiterii }}
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer bg-light border-top">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anulează</button>
-                    <button type="submit" name="btn_salveaza_infractiune" class="btn btn-primary">Salvează Încadrarea</button>
+                <div class="modal-footer border-top-0 px-4 pb-4 pt-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Anulează</button>
+                    <button type="submit" name="btn_salveaza_infractiune" class="btn btn-danger px-4 shadow-sm">Salvează Încadrarea</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="adaugaMasuraModal" tabindex="-1" aria-labelledby="adaugaMasuraLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
+<div class="modal fade" id="adaugaMasuraModal" tabindex="-1" aria-labelledby="masuraModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg">
             <form method="POST" action="{% url 'cases:detalii_dosar' dosar.pk %}">
                 {% csrf_token %}
-                <div class="modal-header bg-light border-bottom">
-                    <h5 class="modal-title fw-bold" id="adaugaMasuraLabel">Adaugă Măsură Preventivă</h5>
+                <div class="modal-header border-bottom-0 px-4 pt-4 pb-0">
+                    <h5 class="modal-title text-warning fw-bold" id="masuraModalLabel">
+                        <span class="fs-4 me-2">⏳</span> Adaugă Măsură Preventivă
+                    </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold small text-uppercase">Persoana Vizată (Inculpat)</label>
+                <div class="modal-body px-4 py-4">
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-uppercase text-muted mb-1">Persoana Vizată (Inculpat)</label>
                         {{ form_masura.parte }}
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold small text-uppercase">Tipul Măsurii</label>
-                        {{ form_masura.tip_masura }}
-                    </div>
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label fw-bold small text-uppercase">Durata (Zile)</label>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-uppercase text-muted mb-1">Tipul Măsurii</label>
+                            {{ form_masura.tip_masura }}
+                        </div>
+                        <div class="col-md-6 mt-3 mt-md-0">
+                            <label class="form-label fw-bold small text-uppercase text-muted mb-1">Durata (Zile)</label>
                             {{ form_masura.durata_zile }}
                         </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label fw-bold small text-uppercase">Data Început</label>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-uppercase text-muted mb-1">Data Început</label>
                             {{ form_masura.data_inceput }}
                         </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label fw-bold small text-uppercase">Data Sfârșit</label>
+                        <div class="col-md-6 mt-3 mt-md-0">
+                            <label class="form-label fw-bold small text-uppercase text-muted mb-1">Data Sfârșit</label>
                             {{ form_masura.data_sfarsit }}
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer bg-light border-top">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anulează</button>
-                    <button type="submit" name="btn_salveaza_masura" class="btn btn-primary">Salvează Măsura</button>
+                <div class="modal-footer border-top-0 px-4 pb-4 pt-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Anulează</button>
+                    <button type="submit" name="btn_salveaza_masura" class="btn btn-warning px-4 shadow-sm fw-bold">Salvează Măsura</button>
                 </div>
             </form>
         </div>

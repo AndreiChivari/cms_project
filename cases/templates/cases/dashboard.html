@@ -3,129 +3,141 @@
 {% block title %}Panou de Control{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4 mt-3">
-    <h2 class="text-secondary">Bun venit, {{ user.get_full_name|default:user.username }}!</h2>
-    <span class="text-muted">Astăzi este {% now "d F Y" %}</span>
+<div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+    <div>
+        <h2 class="mb-1 text-dark">Bun venit, {{ user.get_full_name|default:user.username }}! 👋</h2>
+        <p class="text-muted mb-0">Iată un rezumat al activității de astăzi, {% now "d F Y" %}</p>
+    </div>
+    <div>
+        <a href="{% url 'cases:lista_dosare' %}" class="btn btn-primary shadow-sm">
+            Căutare Dosare
+        </a>
+    </div>
 </div>
 
 {% if alerte_masuri %}
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card shadow-sm border-danger">
-            <div class="card-header bg-danger text-white fw-bold d-flex justify-content-between align-items-center">
-                <span>⚠️ ALERTE MĂSURI PREVENTIVE (Următoarele 10 zile)</span>
-                <span class="badge bg-white text-danger rounded-pill">{{ alerte_masuri|length }} urgențe</span>
-            </div>
-            <ul class="list-group list-group-flush">
-                {% for alerta in alerte_masuri %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center" style="background-color: {% if alerta.zile_ramase <= 3 %}#fff5f5{% else %}#fffdf5{% endif %};">
-                        <div>
-                            <span class="fs-5 fw-bold">{{ alerta.parte.nume_complet }}</span>
-                            <span class="badge bg-dark ms-2">{{ alerta.get_tip_masura_display }}</span>
-                            <br>
-                            <small class="text-muted">
-                                Dosar: <a href="{% url 'cases:detalii_dosar' alerta.dosar.pk %}" class="fw-bold text-decoration-none">{{ alerta.dosar.numar_unic }}</a> | 
-                                Echipa: {{ alerta.dosar.ofiter_caz.last_name|default:"-" }} (P) / {{ alerta.dosar.procuror_caz.last_name|default:"-" }} (Pr)
-                            </small>
-                        </div>
-                        <div class="text-end">
-                            <div class="mb-1">Expiră la: <strong>{{ alerta.data_sfarsit|date:"d.m.Y" }}</strong></div>
-                            
-                            {% if alerta.zile_ramase < 0 %}
-                                <span class="badge bg-dark fs-6">Expirată de {{ alerta.zile_ramase|stringformat:"d"|slice:"1:" }} zile!</span>
-                            {% elif alerta.zile_ramase == 0 %}
-                                <span class="badge bg-danger fs-6 blink-bg">EXPIRĂ ASTĂZI!</span>
-                            {% elif alerta.zile_ramase <= 3 %}
-                                <span class="badge bg-danger fs-6">Expiră în {{ alerta.zile_ramase }} zile</span>
-                            {% else %}
-                                <span class="badge bg-warning text-dark fs-6">Expiră în {{ alerta.zile_ramase }} zile</span>
-                            {% endif %}
-                        </div>
-                    </li>
-                {% endfor %}
-            </ul>
-        </div>
+<div class="card border-danger shadow-sm mb-4">
+    <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center py-3">
+        <h6 class="mb-0 fw-bold"><span class="fs-5 me-2">⚠️</span> ALERTE MĂSURI PREVENTIVE (Următoarele 10 zile)</h6>
+        <span class="badge bg-white text-danger rounded-pill px-3">{{ alerte_masuri|length }} urgențe</span>
     </div>
+    <ul class="list-group list-group-flush">
+        {% for alerta in alerte_masuri %}
+            <li class="list-group-item d-flex justify-content-between align-items-center py-3" style="background-color: {% if alerta.zile_ramase <= 3 %}#fff5f5{% else %}#fffdf5{% endif %}; border-left: 4px solid {% if alerta.zile_ramase <= 3 %}#dc3545{% else %}#ffc107{% endif %};">
+                <div>
+                    <div class="d-flex align-items-center mb-1">
+                        <span class="fs-5 fw-bold text-dark me-2">{{ alerta.parte.nume_complet }}</span>
+                        <span class="badge border border-dark text-dark">{{ alerta.get_tip_masura_display }}</span>
+                    </div>
+                    <small class="text-muted">
+                        Dosar: <a href="{% url 'cases:detalii_dosar' alerta.dosar.pk %}" class="fw-bold text-decoration-none text-primary">{{ alerta.dosar.numar_unic }}</a> &bull; 
+                        Ofițer: {{ alerta.dosar.ofiter_caz.last_name|default:"-" }} &bull; Procuror: {{ alerta.dosar.procuror_caz.last_name|default:"-" }}
+                    </small>
+                </div>
+                <div class="text-end">
+                    <div class="mb-1 text-muted small text-uppercase fw-bold">Expiră la: <span class="text-dark">{{ alerta.data_sfarsit|date:"d.m.Y" }}</span></div>
+                    
+                    {% if alerta.zile_ramase < 0 %}
+                        <span class="badge bg-dark fs-6 px-3">Expirată de {{ alerta.zile_ramase|stringformat:"d"|slice:"1:" }} zile!</span>
+                    {% elif alerta.zile_ramase == 0 %}
+                        <span class="badge bg-danger fs-6 px-3 blink-bg">EXPIRĂ ASTĂZI!</span>
+                    {% elif alerta.zile_ramase <= 3 %}
+                        <span class="badge bg-danger fs-6 px-3">Expiră în {{ alerta.zile_ramase }} zile</span>
+                    {% else %}
+                        <span class="badge bg-warning text-dark fs-6 px-3">Expiră în {{ alerta.zile_ramase }} zile</span>
+                    {% endif %}
+                </div>
+            </li>
+        {% endfor %}
+    </ul>
 </div>
 {% endif %}
 
-<div class="row mb-5">
+<div class="row g-3 mb-5">
     <div class="col-md-3">
-        <div class="card bg-primary text-white shadow-sm h-100">
+        <div class="card border-0 shadow-sm border-start border-primary border-4 h-100">
             <div class="card-body">
-                <h6 class="card-title text-uppercase text-white-50 fw-bold">Dosarele Mele</h6>
-                <h2 class="display-5 fw-bold mb-0">{{ dosare_mele }}</h2>
+                <p class="text-muted small text-uppercase fw-bold mb-1">Dosarele Mele</p>
+                <h2 class="display-6 fw-bold text-dark mb-0">{{ dosare_mele }}</h2>
             </div>
         </div>
     </div>
     
     <div class="col-md-3">
-        <div class="card bg-dark text-white shadow-sm h-100">
+        <div class="card border-0 shadow-sm border-start border-dark border-4 h-100">
             <div class="card-body">
-                <h6 class="card-title text-uppercase text-white-50 fw-bold">Total Sistem</h6>
-                <h2 class="display-5 fw-bold mb-0">{{ total_dosare }}</h2>
+                <p class="text-muted small text-uppercase fw-bold mb-1">Total Sistem</p>
+                <h2 class="display-6 fw-bold text-dark mb-0">{{ total_dosare }}</h2>
             </div>
         </div>
     </div>
 
     <div class="col-md-3">
-        <div class="card bg-warning text-dark shadow-sm h-100">
+        <div class="card border-0 shadow-sm border-start border-warning border-4 h-100">
             <div class="card-body">
-                <h6 class="card-title text-uppercase text-dark-50 fw-bold">În Lucru</h6>
-                <h2 class="display-5 fw-bold mb-0">{{ dosare_in_lucru }}</h2>
+                <p class="text-muted small text-uppercase fw-bold mb-1">În Lucru</p>
+                <h2 class="display-6 fw-bold text-dark mb-0">{{ dosare_in_lucru }}</h2>
             </div>
         </div>
     </div>
 
     <div class="col-md-3">
-        <div class="card bg-success text-white shadow-sm h-100">
+        <div class="card border-0 shadow-sm border-start border-success border-4 h-100">
             <div class="card-body">
-                <h6 class="card-title text-uppercase text-white-50 fw-bold">În Judecată</h6>
-                <h2 class="display-5 fw-bold mb-0">{{ dosare_judecata }}</h2>
+                <p class="text-muted small text-uppercase fw-bold mb-1">În Judecată</p>
+                <h2 class="display-6 fw-bold text-dark mb-0">{{ dosare_judecata }}</h2>
             </div>
         </div>
     </div>
 </div>
 
-<h4 class="text-secondary mb-3">Ultimele dosare repartizate dvs.</h4>
-<div class="card shadow-sm border-0">
-    <div class="card-body p-0">
-        <table class="table table-hover mb-0">
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="text-dark mb-0">Ultimele dosare repartizate dvs.</h5>
+</div>
+<div class="card shadow-sm border-0 mb-4">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
             <thead class="table-light">
                 <tr>
-                    <th>Număr Dosar</th>
-                    <th>Data Înregistrării</th>
-                    <th>Infracțiune</th>
-                    <th>Stadiu</th>
+                    <th class="py-3 px-4">Număr Dosar</th>
+                    <th class="py-3">Data Înregistrării</th>
+                    <th class="py-3">Infracțiune Cercetată</th>
+                    <th class="py-3">Stadiu / Soluție</th>
                 </tr>
             </thead>
             <tbody>
                 {% for dosar in dosarele_mele_lista %}
                     <tr>
-                        <td><strong><a href="{% url 'cases:detalii_dosar' dosar.pk %}" class="text-decoration-none">{{ dosar.numar_unic }}</a></strong></td>
-                        <td>{{ dosar.data_inregistrarii|date:"d.m.Y" }}</td>
-                        <td class="text-truncate" style="max-width: 250px;">{{ dosar.infractiune_cercetata }}</td>
+                        <td class="px-4"><strong><a href="{% url 'cases:detalii_dosar' dosar.pk %}" class="text-decoration-none text-primary">{{ dosar.numar_unic }}</a></strong></td>
+                        <td>{{ dosar.data_inregistrarii|date:"d M Y" }}</td>
                         <td>
-                            <span class="badge bg-secondary">{{ dosar.get_stadiu_display }}</span>
+                            <div class="text-truncate text-muted" style="max-width: 280px;" title="{{ dosar.infractiune_cercetata }}">
+                                {{ dosar.infractiune_cercetata|default:"-" }}
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary mb-1">{{ dosar.get_stadiu_display }}</span>
                             {% if dosar.tip_solutie %}
-                                <br>
-                                <small class="text-success fw-bold">
-                                    ↪ {{ dosar.get_tip_solutie_display }} ({{ dosar.data_solutiei|date:"d.m.Y" }})
-                                </small>
+                                <div class="small text-success fw-bold">
+                                    <span class="me-1">↳</span>{{ dosar.get_tip_solutie_display }} ({{ dosar.data_solutiei|date:"d.m.Y" }})
+                                </div>
                             {% endif %}
-                        
                         </td>
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="4" class="text-center py-4 text-muted">Nu aveți niciun dosar repartizat în acest moment.</td>
+                        <td colspan="4" class="text-center py-4 text-muted">
+                            Nu aveți niciun dosar repartizat în acest moment.
+                        </td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-    <div class="card-footer bg-white text-center">
-        <a href="{% url 'cases:lista_dosare' %}" class="btn btn-sm btn-outline-primary">Vezi toate dosarele</a>
+    <div class="card-footer bg-light text-center border-top-0 py-3">
+        <a href="{% url 'cases:lista_dosare' %}" class="text-decoration-none text-primary fw-bold">
+            Vezi toate dosarele sistemului &rarr;
+        </a>
     </div>
 </div>
 {% endblock %}

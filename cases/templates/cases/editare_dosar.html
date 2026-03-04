@@ -3,58 +3,77 @@
 {% block title %}Editare Dosar {{ dosar.numar_unic }}{% endblock %}
 
 {% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+    <div>
+        <a href="{% url 'cases:detalii_dosar' dosar.pk %}" class="text-decoration-none text-muted mb-2 d-inline-block">
+            &larr; Înapoi la dosar
+        </a>
+        <h2 class="mb-0">Editare Dosar nr. {{ dosar.numar_unic }}</h2>
+    </div>
+</div>
+
 <div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card shadow-sm mt-4">
-            <div class="card-header bg-warning text-dark">
-                <h4 class="mb-0">✎ Editare Dosar nr. {{ dosar.numar_unic }}</h4>
-            </div>
-            <div class="card-body">
+    <div class="col-lg-10">
+        <div class="card shadow-sm border-0 mb-5">
+            <div class="card-body p-4">
                 <form method="POST">
                     {% csrf_token %}
                     
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Număr Unic (Nu poate fi modificat)</label>
-                        {{ form.numar_unic }}
-                    </div>
-                    
+                    <h5 class="text-primary mb-3">Detalii Generale</h5>
                     <div class="row mb-3">
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold">Stadiu Cercetări</label>
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <label class="form-label small text-uppercase fw-bold text-muted">Număr Unic (Inalterabil)</label>
+                            {{ form.numar_unic }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-uppercase fw-bold text-muted">Stadiu Cercetări</label>
                             {{ form.stadiu }}
                         </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Tip Soluție / Propunere</label>
-                                {{ form.tip_solutie }}
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Data Soluției</label>
-                                {{ form.data_solutiei }}
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold">Ofițer de Caz</label>
+                    </div>
+
+                    <hr class="text-muted my-4 opacity-25">
+
+                    <h5 class="text-primary mb-3">Personal Desemnat</h5>
+                    <div class="row mb-3">
+                        <div class="col-md-4 mb-3 mb-md-0">
+                            <label class="form-label small text-uppercase fw-bold text-muted">Ofițer de Caz</label>
                             {{ form.ofiter_caz }}
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold">Procuror</label>
+                        <div class="col-md-4 mb-3 mb-md-0">
+                            <label class="form-label small text-uppercase fw-bold text-muted">Procuror</label>
                             {{ form.procuror_caz }}
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold">Grefier</label>
+                        <div class="col-md-4">
+                            <label class="form-label small text-uppercase fw-bold text-muted">Grefier</label>
                             {{ form.grefier_caz }}
                         </div>
                     </div>
 
-                    <div class="mb-4">
-                        <label class="form-label fw-bold">Infracțiune Cercetată</label>
-                        {{ form.infractiune_cercetata }}
+                    <hr class="text-muted my-4 opacity-25">
+
+                    <h5 class="text-success mb-3">Soluționare (Dacă este cazul)</h5>
+                    <div class="row mb-3 p-3 bg-light rounded border">
+                        <div class="col-md-8 mb-3 mb-md-0">
+                            <label class="form-label small text-uppercase fw-bold text-muted">Tip Soluție / Propunere</label>
+                            {{ form.tip_solutie }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small text-uppercase fw-bold text-muted">Data Soluției</label>
+                            {{ form.data_solutiei }}
+                        </div>
                     </div>
 
-                    <div class="d-flex justify-content-between">
-                        <a href="{% url 'cases:detalii_dosar' dosar.pk %}" class="btn btn-outline-secondary">Anulează</a>
-                        <button type="submit" class="btn btn-warning fw-bold">Salvează Modificările</button>
+                    <hr class="text-muted my-4 opacity-25">
+
+                    <div class="mb-4">
+                        <label class="form-label small text-uppercase fw-bold text-muted">Stare de fapt / Infracțiune Cercetată</label>
+                        {{ form.infractiune_cercetata }}
+                        <div class="form-text">Actualizați rezumatul stării de fapt dacă au apărut elemente noi în cercetare.</div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-5 pt-3 border-top">
+                        <a href="{% url 'cases:detalii_dosar' dosar.pk %}" class="btn btn-light border shadow-sm">Anulează</a>
+                        <button type="submit" class="btn btn-primary shadow-sm px-4">Salvează Modificările</button>
                     </div>
                 </form>
             </div>
