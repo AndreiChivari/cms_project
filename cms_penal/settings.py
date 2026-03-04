@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'accounts',
     'cases',
     'documents',
+    'simple_history', # <--- ADĂUGAT PENTRU AUDIT
 ]
 
 MIDDLEWARE = [
@@ -51,6 +52,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'simple_history.middleware.HistoryRequestMiddleware', # <--- ADĂUGAT PENTRU AUDIT (prinde utilizatorul automat)
 ]
 
 ROOT_URLCONF = 'cms_penal.urls'

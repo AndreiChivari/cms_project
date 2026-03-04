@@ -35,4 +35,8 @@ urlpatterns = [
     # Rute noi pentru stergerea si modificarea masurilor
     path('masura/<int:pk>/sterge/', views.stergere_masura, name='stergere_masura'),
     path('masura/<int:pk>/editeaza/', views.editare_masura, name='editare_masura'),
+
+    # Rute pentru actiunile Infracțiunii
+    path('infractiune/<int:pk>/editeaza/', views.editare_infractiune, name='editare_infractiune'),
+    path('infractiune/<int:pk>/sterge/', views.stergere_infractiune, name='stergere_infractiune'),
 ]

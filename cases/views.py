@@ -1,7 +1,7 @@
 import os
 from django.conf import settings
 from django.shortcuts import render, get_object_or_404, redirect
-from .models import Dosar, ParteImplicata, Infractiune, MasuraPreventiva
+from .models import Dosar, ParteImplicata, Infractiune, MasuraPreventiva, IstoricDesemnare
 from documents.forms import DocumentForm # Importăm formularul nou creat
 from .forms import DosarForm, ParteImplicataForm, CreareDosarForm, InfractiuneForm, MasuraPreventivaForm
 from documents.models import ActUrmarire
@@ -73,8 +73,17 @@ def adaugare_dosar(request):
     if request.method == 'POST':
         form = CreareDosarForm(request.POST)
         if form.is_valid():
-            dosar_nou = form.save()
-            return redirect('cases:detalii_dosar', pk=dosar_nou.pk)
+            dosar = form.save()
+
+            # LOGICA NOUĂ: Creăm istoricul inițial
+        if dosar.ofiter_caz:
+            IstoricDesemnare.objects.create(dosar=dosar, utilizator=dosar.ofiter_caz, rol='Ofițer', data_desemnare=dosar.data_inregistrarii)
+        if dosar.procuror_caz:
+            IstoricDesemnare.objects.create(dosar=dosar, utilizator=dosar.procuror_caz, rol='Procuror', data_desemnare=dosar.data_inregistrarii)
+        if dosar.grefier_caz:
+            IstoricDesemnare.objects.create(dosar=dosar, utilizator=dosar.grefier_caz, rol='Grefier', data_desemnare=dosar.data_inregistrarii)
+
+            return redirect('cases:detalii_dosar', pk=dosar.pk)
     else:
         form = CreareDosarForm()
         
@@ -194,6 +203,11 @@ def editare_dosar(request, pk):
     # Găsim dosarul pe care vrem să-l edităm
     dosar = get_object_or_404(Dosar, pk=pk)
 
+    # 1. Memorăm echipa VECHE înainte să fie modificată
+    vechi_ofiter = dosar.ofiter_caz
+    vechi_procuror = dosar.procuror_caz
+    vechi_grefier = dosar.grefier_caz
+
     # SECURITATE:
     if not dosar.are_drepturi_editare(request.user):
         raise PermissionDenied("Nu ai permisiunea de a edita acest dosar.")
@@ -203,7 +217,31 @@ def editare_dosar(request, pk):
         # instance=dosar îi spune lui Django: "Nu crea un dosar nou, ci actualizează-l pe acesta!"
         form = DosarForm(request.POST, instance=dosar)
         if form.is_valid():
-            form.save()
+            # Preluăm data din noul câmp. Dacă grefierul a uitat să o pună, punem automat data de azi.
+            data_schimbare = form.cleaned_data.get('data_schimbare_echipa') or date.today()
+            
+            nou_dosar = form.save() # Salvăm dosarul cu noua echipă
+
+            # 2. Funcție internă care face schimbul curat pentru fiecare rol
+            def actualizeaza_istoric(rol_nume, vechi_user, nou_user):
+                if vechi_user != nou_user:
+                    # Dacă exista cineva înainte, îi "închidem" mandatul activ
+                    if vechi_user:
+                        IstoricDesemnare.objects.filter(
+                            dosar=nou_dosar, utilizator=vechi_user, rol=rol_nume, data_finalizare__isnull=True
+                        ).update(data_finalizare=data_schimbare)
+                    
+                    # Creăm mandatul nou pentru noul venit
+                    if nou_user:
+                        IstoricDesemnare.objects.create(
+                            dosar=nou_dosar, utilizator=nou_user, rol=rol_nume, data_desemnare=data_schimbare
+                        )
+
+            # 3. Executăm verificarea pentru toți 3:
+            actualizeaza_istoric('Ofițer', vechi_ofiter, nou_dosar.ofiter_caz)
+            actualizeaza_istoric('Procuror', vechi_procuror, nou_dosar.procuror_caz)
+            actualizeaza_istoric('Grefier', vechi_grefier, nou_dosar.grefier_caz)
+            
             # După salvare, trimitem utilizatorul înapoi pe pagina de detalii a dosarului
             return redirect('cases:detalii_dosar', pk=dosar.pk)
     else:
@@ -369,3 +407,43 @@ def editare_masura(request, pk):
         'dosar': masura.dosar
     }
     return render(request, 'cases/editare_masura.html', context)
+
+@login_required
+def editare_infractiune(request, pk):
+    infractiune = get_object_or_404(Infractiune, pk=pk)
+    
+    if not infractiune.dosar.are_drepturi_editare(request.user) and not request.user.is_superuser:
+        raise PermissionDenied("Nu ai permisiunea de a edita date din acest dosar.")
+        
+    if request.method == 'POST':
+        form = InfractiuneForm(request.POST, instance=infractiune)
+        if form.is_valid():
+            form.save()
+            return redirect('cases:detalii_dosar', pk=infractiune.dosar.pk)
+    else:
+        form = InfractiuneForm(instance=infractiune)
+        
+    context = {
+        'form': form,
+        'infractiune': infractiune,
+        'dosar': infractiune.dosar
+    }
+    return render(request, 'cases/editare_infractiune.html', context)
+
+@login_required
+def stergere_infractiune(request, pk):
+    infractiune = get_object_or_404(Infractiune, pk=pk)
+    dosar_id = infractiune.dosar.pk
+    
+    if not infractiune.dosar.are_drepturi_editare(request.user) and not request.user.is_superuser:
+        raise PermissionDenied("Nu ai permisiunea de a șterge date din acest dosar.")
+        
+    if request.method == 'POST':
+        infractiune.delete()
+        return redirect('cases:detalii_dosar', pk=dosar_id)
+        
+    context = {
+        'infractiune': infractiune,
+        'dosar': infractiune.dosar
+    }
+    return render(request, 'cases/stergere_infractiune.html', context)

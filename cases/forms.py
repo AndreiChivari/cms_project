@@ -1,7 +1,18 @@
 from django import forms
 from .models import Dosar, ParteImplicata, Infractiune, MasuraPreventiva
+from django.contrib.auth import get_user_model # <--- Importăm modelul de Utilizator
+
+User = get_user_model() # Preluăm modelul de utilizator pentru a face filtrarile
 
 class DosarForm(forms.ModelForm):
+    # Câmp "virtual" - nu se salvează direct în tabelul Dosar, ci îl folosim noi pentru Istoric!
+    data_schimbare_echipa = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        label="Data preluării noului mandat",
+        help_text="Completează doar dacă modifici Ofițerul, Procurorul sau Grefierul de caz."
+    )
+    
     class Meta:
         model = Dosar
         fields = ['numar_unic', 'infractiune_cercetata', 'stadiu', 'tip_solutie', 'data_solutiei', 'ofiter_caz', 'procuror_caz', 'grefier_caz']
@@ -13,19 +24,33 @@ class DosarForm(forms.ModelForm):
             'infractiune_cercetata': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
             'ofiter_caz': forms.Select(attrs={'class': 'form-select'}),
             'procuror_caz': forms.Select(attrs={'class': 'form-select'}),
-            'grefier_caz': forms.Select(attrs={'class': 'form-select'}), # <--- Adăugat widget
+            'grefier_caz': forms.Select(attrs={'class': 'form-select'}),
         }
 
     def __init__(self, *args, **kwargs):
         super(DosarForm, self).__init__(*args, **kwargs)
-        # O altă metodă de securitate în Django: 
-        # Ne asigurăm că valoarea disabled este setată și la nivel de validare Python, nu doar în HTML
+        # Ne asigurăm că valoarea disabled este setată și la nivel de validare Python
         self.fields['numar_unic'].disabled = True
+
+        # ==========================================
+        # LOGICA NOUĂ: Filtrarea dropdown-urilor
+        # ==========================================
+        # ATENȚIE: Înlocuiește 'rol' cu numele real al coloanei din modelul tău de utilizatori
+        # și 'OFITER', 'PROCUROR', 'GREFIER' cu valorile exacte pe care le-ai definit tu.
+        
+        if 'ofiter_caz' in self.fields:
+            self.fields['ofiter_caz'].queryset = User.objects.filter(rol='POLITIST')
+            
+        if 'procuror_caz' in self.fields:
+            self.fields['procuror_caz'].queryset = User.objects.filter(rol='PROCUROR')
+            
+        if 'grefier_caz' in self.fields:
+            self.fields['grefier_caz'].queryset = User.objects.filter(rol='GREFIER')
 
 class CreareDosarForm(forms.ModelForm):
     class Meta:
         model = Dosar
-        fields = ['numar_unic', 'infractiune_cercetata', 'stadiu', 'tip_solutie', 'data_solutiei']
+        fields = ['numar_unic', 'infractiune_cercetata', 'stadiu', 'tip_solutie', 'data_solutiei', 'ofiter_caz', 'procuror_caz', 'grefier_caz']
         widgets = {
             'numar_unic': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 123/P/2026'}),
             'stadiu': forms.Select(attrs={'class': 'form-select'}),
@@ -35,6 +60,23 @@ class CreareDosarForm(forms.ModelForm):
             'procuror_caz': forms.Select(attrs={'class': 'form-select'}),
             'grefier_caz': forms.Select(attrs={'class': 'form-select'}),
         }
+
+    # ==========================================
+    # LOGICA NOUĂ: Filtrarea dropdown-urilor
+    # ==========================================
+    # ATENȚIE: Înlocuiește 'rol' cu numele real al coloanei din modelul tău de utilizatori
+    # și 'OFITER', 'PROCUROR', 'GREFIER' cu valorile exacte pe care le-ai definit tu.
+    
+    def __init__(self, *args, **kwargs):
+        super(CreareDosarForm, self).__init__(*args, **kwargs)
+        if 'ofiter_caz' in self.fields:
+            self.fields['ofiter_caz'].queryset = User.objects.filter(rol='POLITIST')
+            
+        if 'procuror_caz' in self.fields:
+            self.fields['procuror_caz'].queryset = User.objects.filter(rol='PROCUROR')
+            
+        if 'grefier_caz' in self.fields:
+            self.fields['grefier_caz'].queryset = User.objects.filter(rol='GREFIER')
 
 class ParteImplicataForm(forms.ModelForm):
     class Meta:
@@ -52,7 +94,7 @@ class ParteImplicataForm(forms.ModelForm):
 class InfractiuneForm(forms.ModelForm):
     class Meta:
         model = Infractiune
-        fields = ['incadrare_juridica', 'articol_penal', 'data_comiterii']
+        fields = ['act_normativ', 'articol', 'incadrare_juridica', 'data_comiterii']
         widgets = {
             'data_comiterii': forms.DateInput(attrs={'type': 'date'}),
         }

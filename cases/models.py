@@ -1,3 +1,4 @@
+from simple_history.models import HistoricalRecords
 from django.db import models
 from django.conf import settings # Folosim asta pentru a importa modelul de User corect
 from datetime import date # Folosim pentru calculul alertelor
@@ -98,6 +99,8 @@ class Dosar(models.Model):
 
     def __str__(self):
         return f"Dosar nr. {self.numar_unic}"
+    
+    history = HistoricalRecords(verbose_name="Istoric Dosar") # <--- PĂSTREAZĂ ISTORICUL DOSARULUI
 
 
 class ParteImplicata(models.Model):
@@ -123,15 +126,44 @@ class ParteImplicata(models.Model):
     def __str__(self):
         return f"{self.nume_complet} ({self.get_calitate_procesuala_display()}) - {self.dosar.numar_unic}"
     
+    history = HistoricalRecords() # <--- PĂSTREAZĂ ISTORICUL PĂRȚILOR
+    
 class Infractiune(models.Model):
+    # Standardizăm actele normative frecvente din România
+    class ActNormativ(models.TextChoices):
+        CP = 'CP', 'Codul Penal'
+        CPP = 'CPP', 'Codul de Procedură Penală'
+        OUG195 = 'OUG195_2002', 'Codul Rutier (OUG 195/2002)'
+        L143 = 'L143_2000', 'Trafic de droguri (Legea 143/2000)'
+        L241 = 'L241_2005', 'Evaziune fiscală (Legea 241/2005)'
+        L50 = 'L50_1991', 'Disciplina în construcții (Legea 50/1991)'
+        ALTUL = 'ALTUL', 'Alt Act Normativ'
+
     dosar = models.ForeignKey(Dosar, on_delete=models.CASCADE, related_name='infractiuni')
-    incadrare_juridica = models.CharField(max_length=255, help_text="Ex: Furt calificat")
-    articol_penal = models.CharField(max_length=100, help_text="Ex: art. 228-229 C.pen.")
+    
+    # Doar Actul Normativ este obligatoriu
+    act_normativ = models.CharField(max_length=50, choices=ActNormativ.choices, default=ActNormativ.CP)
+    
+    # Restul sunt opționale (blank=True, null=True)
+    articol = models.CharField(max_length=50, blank=True, null=True, help_text="Ex: 228 alin. 1")
+    incadrare_juridica = models.CharField(max_length=255, blank=True, null=True, help_text="Ex: Furt calificat")
     data_comiterii = models.DateField(null=True, blank=True, help_text="Data presupusei fapte")
 
+    history = HistoricalRecords(verbose_name="Istoric Infracțiune")
+
+    class Meta:
+        verbose_name = "Infracțiune"
+        verbose_name_plural = "Infracțiuni"
+
     def __str__(self):
-        return f"{self.incadrare_juridica} ({self.articol_penal})"
-    
+        # Construim o afișare frumoasă în funcție de ce date avem completate
+        text = self.get_act_normativ_display()
+        if self.articol:
+            text = f"art. {self.articol} {text}"
+        if self.incadrare_juridica:
+            text = f"{self.incadrare_juridica} ({text})"
+        return text
+
 class MasuraPreventiva(models.Model):
     class TipMasura(models.TextChoices):
         RETINERE = 'RETINERE', 'Reținere (24h)'
@@ -148,6 +180,10 @@ class MasuraPreventiva(models.Model):
     data_inceput = models.DateField()
     data_sfarsit = models.DateField()
 
+    class Meta:
+        verbose_name = "Măsură Preventivă"
+        verbose_name_plural = "Măsuri Preventive"
+
     def __str__(self):
         return f"{self.get_tip_masura_display()} - {self.parte.nume_complet}"
     
@@ -157,3 +193,27 @@ class MasuraPreventiva(models.Model):
         if self.data_sfarsit:
             return (self.data_sfarsit - date.today()).days
         return 0
+    
+    history = HistoricalRecords(verbose_name="Istoric Măsură Preventivă") # <--- PĂSTREAZĂ ISTORICUL MĂSURILOR
+
+
+class IstoricDesemnare(models.Model):
+    dosar = models.ForeignKey(Dosar, on_delete=models.CASCADE, related_name='istoric_desemnari')
+    
+    # Folosim get_user_model() dacă l-ai importat deja sus, sau direct referința către User
+    utilizator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    
+    # Păstrăm funcția clară: Polițist, Procuror, Grefier
+    rol = models.CharField(max_length=50) 
+    
+    data_desemnare = models.DateField(help_text="Data de la care a preluat dosarul")
+    data_finalizare = models.DateField(null=True, blank=True, help_text="Data la care a predat dosarul")
+
+    class Meta:
+        verbose_name = "Istoric Desemnare"
+        verbose_name_plural = "Istoric Desemnări"
+        # Secretul: am adăugat '-id' ca a doua regulă de sortare
+        ordering = ['-data_desemnare', '-id']
+
+    def __str__(self):
+        return f"{self.rol} - {self.utilizator} ({self.data_desemnare} -> {self.data_finalizare or 'Prezent'})"

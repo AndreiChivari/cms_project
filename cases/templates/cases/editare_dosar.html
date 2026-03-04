@@ -49,6 +49,16 @@
                         </div>
                     </div>
 
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small text-uppercase fw-bold text-muted">{{ form.data_schimbare_echipa.label }}</label>
+                            {{ form.data_schimbare_echipa }}
+                            {% if form.data_schimbare_echipa.help_text %}
+                                <div class="form-text text-danger small fw-bold">{{ form.data_schimbare_echipa.help_text }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
                     <hr class="text-muted my-4 opacity-25">
 
                     <h5 class="text-success mb-3">Soluționare (Dacă este cazul)</h5>

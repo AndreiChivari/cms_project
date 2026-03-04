@@ -84,6 +84,80 @@
     </div>
 </div>
 
+<div class="card shadow-sm mb-4 border-secondary">
+    <div class="card-header bg-secondary text-white py-2">
+        <h6 class="mb-0 fw-bold">👥 Lanț de Custodie (Istoric)</h6>
+    </div>
+    <div class="card-body p-2 bg-light">
+        <div class="row g-2">
+            
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-header bg-white py-1 text-center fw-bold text-muted" style="font-size: 0.85rem;">👮 Ofițer de Caz</div>
+                    <div class="card-body p-2" style="max-height: 150px; overflow-y: auto;">
+                        {% for istoric in dosar.istoric_desemnari.all %}
+                            {% if istoric.rol == 'Ofițer' %}
+                                <div class="d-flex justify-content-between align-items-center mb-1 pb-1 {% if not forloop.last %}border-bottom{% endif %}" style="font-size: 0.8rem;">
+                                    <div class="{% if not istoric.data_finalizare %}text-success fw-bold{% else %}text-secondary{% endif %} text-truncate" style="max-width: 60%;">
+                                        {% if not istoric.data_finalizare %}🟢{% else %}⚪{% endif %}
+                                        {{ istoric.utilizator.get_full_name|default:istoric.utilizator.username }}
+                                    </div>
+                                    <div class="text-end text-muted" style="font-size: 0.75rem;">
+                                        {{ istoric.data_desemnare|date:"d.m.y" }} - {% if istoric.data_finalizare %}{{ istoric.data_finalizare|date:"d.m.y" }}{% else %}<span class="text-success fw-bold">Prezent</span>{% endif %}
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-header bg-white py-1 text-center fw-bold text-muted" style="font-size: 0.85rem;">⚖️ Procuror</div>
+                    <div class="card-body p-2" style="max-height: 150px; overflow-y: auto;">
+                        {% for istoric in dosar.istoric_desemnari.all %}
+                            {% if istoric.rol == 'Procuror' %}
+                                <div class="d-flex justify-content-between align-items-center mb-1 pb-1 {% if not forloop.last %}border-bottom{% endif %}" style="font-size: 0.8rem;">
+                                    <div class="{% if not istoric.data_finalizare %}text-success fw-bold{% else %}text-secondary{% endif %} text-truncate" style="max-width: 60%;">
+                                        {% if not istoric.data_finalizare %}🟢{% else %}⚪{% endif %}
+                                        {{ istoric.utilizator.get_full_name|default:istoric.utilizator.username }}
+                                    </div>
+                                    <div class="text-end text-muted" style="font-size: 0.75rem;">
+                                        {{ istoric.data_desemnare|date:"d.m.y" }} - {% if istoric.data_finalizare %}{{ istoric.data_finalizare|date:"d.m.y" }}{% else %}<span class="text-success fw-bold">Prezent</span>{% endif %}
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-header bg-white py-1 text-center fw-bold text-muted" style="font-size: 0.85rem;">📝 Grefier</div>
+                    <div class="card-body p-2" style="max-height: 150px; overflow-y: auto;">
+                        {% for istoric in dosar.istoric_desemnari.all %}
+                            {% if istoric.rol == 'Grefier' %}
+                                <div class="d-flex justify-content-between align-items-center mb-1 pb-1 {% if not forloop.last %}border-bottom{% endif %}" style="font-size: 0.8rem;">
+                                    <div class="{% if not istoric.data_finalizare %}text-success fw-bold{% else %}text-secondary{% endif %} text-truncate" style="max-width: 60%;">
+                                        {% if not istoric.data_finalizare %}🟢{% else %}⚪{% endif %}
+                                        {{ istoric.utilizator.get_full_name|default:istoric.utilizator.username }}
+                                    </div>
+                                    <div class="text-end text-muted" style="font-size: 0.75rem;">
+                                        {{ istoric.data_desemnare|date:"d.m.y" }} - {% if istoric.data_finalizare %}{{ istoric.data_finalizare|date:"d.m.y" }}{% else %}<span class="text-success fw-bold">Prezent</span>{% endif %}
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
 <div class="card shadow-sm mb-4">
     <div class="card-header bg-light d-flex justify-content-between align-items-center py-3">
         <h5 class="mb-0 text-dark">⚖️ Încadrări Juridice Cercetate</h5>
@@ -94,24 +168,36 @@
         {% endif %}
     </div>
     <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
+        <table class="table table-hover mb-0">
             <thead class="table-light">
                 <tr>
+                    <th>Act Normativ</th>
+                    <th>Articol</th>
                     <th>Încadrare Juridică</th>
-                    <th>Articol Penal</th>
                     <th>Data Faptei</th>
+                    {% if poate_edita %}
+                    <th class="text-center">Acțiuni</th>
+                    {% endif %}
                 </tr>
             </thead>
             <tbody>
                 {% for infractiune in dosar.infractiuni.all %}
                 <tr>
-                    <td><strong>{{ infractiune.incadrare_juridica }}</strong></td>
-                    <td>{{ infractiune.articol_penal }}</td>
+                    <td><span class="badge bg-secondary">{{ infractiune.get_act_normativ_display }}</span></td>
+                    <td><strong>{{ infractiune.articol|default:"-" }}</strong></td>
+                    <td>{{ infractiune.incadrare_juridica|default:"În curs de stabilire" }}</td>
                     <td>{{ infractiune.data_comiterii|date:"d M Y"|default:"Necunoscută" }}</td>
+                    
+                    {% if poate_edita %}
+                    <td class="text-center">
+                        <a href="{% url 'cases:editare_infractiune' infractiune.pk %}" class="btn btn-sm btn-outline-warning fw-bold me-1" title="Editează">✎</a>
+                        <a href="{% url 'cases:stergere_infractiune' infractiune.pk %}" class="btn btn-sm btn-outline-danger fw-bold" title="Șterge">✖</a>
+                    </td>
+                    {% endif %}
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="3" class="text-center py-4 text-muted">Nu a fost adăugată nicio încadrare juridică specifică.</td>
+                    <td colspan="5" class="text-center py-3 text-muted">Nu a fost adăugată nicio încadrare juridică specifică.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -353,22 +439,24 @@
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body px-4 py-4">
-                    <div class="mb-4">
-                        <label class="form-label fw-bold small text-uppercase text-muted mb-1">Încadrare Juridică</label>
-                        {{ form_infractiune.incadrare_juridica }}
-                        <div class="form-text mt-1">Ex: Furt calificat, Înșelăciune etc.</div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Act Normativ (Obligatoriu)</label>
+                        {{ form_infractiune.act_normativ }}
                     </div>
-                    <div class="row mb-2">
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold small text-uppercase text-muted mb-1">Articol Penal</label>
-                            {{ form_infractiune.articol_penal }}
-                            <div class="form-text mt-1">Ex: art. 228-229 C.pen.</div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Articol Penal</label>
+                            {{ form_infractiune.articol }}
                         </div>
-                        <div class="col-md-6 mt-3 mt-md-0">
-                            <label class="form-label fw-bold small text-uppercase text-muted mb-1">Data Presupusei Fapte</label>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Data Presupusei Fapte</label>
                             {{ form_infractiune.data_comiterii }}
                         </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Încadrare Juridică (Denumire infracțiune)</label>
+                        {{ form_infractiune.incadrare_juridica }}
                     </div>
                 </div>
                 <div class="modal-footer border-top-0 px-4 pb-4 pt-0">
