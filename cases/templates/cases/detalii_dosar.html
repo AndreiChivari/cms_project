@@ -198,6 +198,7 @@
                     <td>{{ masura.data_inceput|date:"d.m.Y" }} &rarr; <strong>{{ masura.data_sfarsit|date:"d.m.Y" }}</strong></td>
                     {% if poate_edita %}
                     <td class="text-end pe-3">
+                        <a href="{% url 'cases:editare_masura' masura.pk %}" class="btn btn-sm btn-light border text-primary" title="Editează">✎</a>
                         <a href="{% url 'cases:stergere_masura' masura.pk %}" class="btn btn-sm btn-light border text-danger" title="Șterge">✖</a>
                     </td>
                     {% endif %}

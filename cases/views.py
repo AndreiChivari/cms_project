@@ -224,7 +224,7 @@ def editare_parte(request, pk):
     dosar_id = parte.dosar.pk 
 
     # SECURITATE:
-    if not parte.are_drepturi_editare(request.user):
+    if not parte.dosar.are_drepturi_editare(request.user) and not request.user.is_superuser:
         raise PermissionDenied("Nu ai permisiunea de a edita acest dosar.")
     
     if request.method == 'POST':
@@ -245,7 +245,8 @@ def stergere_parte(request, pk):
     dosar_id = parte.dosar.pk
     
     # SECURITATE:
-    if not parte.are_drepturi_editare(request.user):
+    # Corectură: Verificăm drepturile pe dosar
+    if not parte.dosar.are_drepturi_editare(request.user) and not request.user.is_superuser:
         raise PermissionDenied("Nu ai permisiunea de a edita acest dosar.")
 
     # Pentru ștergere, este o bună practică să cerem confirmare printr-un formular POST
@@ -343,3 +344,28 @@ def stergere_masura(request, pk):
         'dosar': masura.dosar
     }
     return render(request, 'cases/stergere_masura.html', context)
+
+@login_required
+def editare_masura(request, pk):
+    masura = get_object_or_404(MasuraPreventiva, pk=pk)
+    
+    # Securitate: Verificăm drepturile dosarului părinte
+    if not masura.dosar.are_drepturi_editare(request.user) and not request.user.is_superuser:
+        raise PermissionDenied("Nu ai permisiunea de a edita date din acest dosar.")
+        
+    if request.method == 'POST':
+        # Trimitem și `dosar_id` pentru ca formularul să știe să filtreze lista de persoane
+        form = MasuraPreventivaForm(request.POST, instance=masura, dosar_id=masura.dosar.pk)
+        if form.is_valid():
+            form.save()
+            return redirect('cases:detalii_dosar', pk=masura.dosar.pk)
+    else:
+        # Pre-completăm formularul cu datele existente
+        form = MasuraPreventivaForm(instance=masura, dosar_id=masura.dosar.pk)
+        
+    context = {
+        'form': form,
+        'masura': masura,
+        'dosar': masura.dosar
+    }
+    return render(request, 'cases/editare_masura.html', context)

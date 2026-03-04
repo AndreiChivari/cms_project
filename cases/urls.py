@@ -32,6 +32,7 @@ urlpatterns = [
     path('document/<int:pk>/editeaza/', views.editare_document, name='editare_document'),
     path('document/<int:pk>/sterge/', views.stergere_document, name='stergere_document'),
 
-    # Ruta pentru stergerea masurilor
+    # Rute noi pentru stergerea si modificarea masurilor
     path('masura/<int:pk>/sterge/', views.stergere_masura, name='stergere_masura'),
+    path('masura/<int:pk>/editeaza/', views.editare_masura, name='editare_masura'),
 ]
