@@ -26,6 +26,13 @@
                         {{ form_stadiu.data_incepere }}
                     </div>
                     
+                    <div class="form-check mb-3 mt-2 p-2 bg-light border rounded">
+                        {{ form_stadiu.notifica_echipa }}
+                        <label class="form-check-label text-primary fw-bold" for="{{ form_stadiu.notifica_echipa.id_for_label }}">
+                            {{ form_stadiu.notifica_echipa.label }}
+                        </label>
+                    </div>
+
                     <div class="d-flex justify-content-between align-items-center mt-3">
                         <div>
                             <button type="submit" name="salveaza_stadiu" class="btn btn-primary fw-bold">Salvează Stadiu</button>
@@ -83,6 +90,13 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    <div class="form-check mb-3 mt-3 p-2 bg-light border rounded">
+                        {{ form_solutie.notifica_echipa }}
+                        <label class="form-check-label text-success fw-bold" for="{{ form_solutie.notifica_echipa.id_for_label }}">
+                            {{ form_solutie.notifica_echipa.label }}
+                        </label>
                     </div>
 
                     <div class="d-flex justify-content-between align-items-center border-top pt-3 mt-2">

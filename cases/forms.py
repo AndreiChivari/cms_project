@@ -114,6 +114,13 @@ class MasuraPreventivaForm(forms.ModelForm):
             self.fields['parte'].queryset = ParteImplicata.objects.filter(dosar_id=dosar_id)
 
 class StadiuCercetareForm(forms.ModelForm):
+    # Câmp virtual pentru notificări
+    notifica_echipa = forms.BooleanField(
+        required=False, 
+        label="🔔 Notifică echipa de caz despre această modificare",
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
+
     class Meta:
         model = StadiuCercetare
         fields = ['tip_stadiu', 'data_incepere']
@@ -123,6 +130,13 @@ class StadiuCercetareForm(forms.ModelForm):
         }
 
 class SolutieDosarForm(forms.ModelForm):
+    # Câmp virtual pentru notificări
+    notifica_echipa = forms.BooleanField(
+        required=False, 
+        label="🔔 Notifică echipa de caz despre această modificare",
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
+    
     class Meta:
         model = SolutieDosar
         fields = ['stabilita_de', 'tip_solutie', 'data_solutiei', 'este_finala']

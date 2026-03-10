@@ -287,3 +287,24 @@ class SolutieDosar(models.Model):
 
     def __str__(self):
         return f"{self.get_tip_solutie_display()} - {self.get_stabilita_de_display()}"
+
+class Notificare(models.Model):
+    # Legăm notificarea de utilizatorul care trebuie să o primească
+    utilizator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notificari')
+
+    # Conținutul notificării
+    mesaj = models.CharField(max_length=255)
+    link = models.CharField(max_length=255, help_text="URL-ul către dosarul vizat")
+
+    # Starea notificării
+    citita = models.BooleanField(default=False)
+    data_crearii = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-data_crearii'] # Cele mai noi apar primele
+        verbose_name = "Notificare"
+        verbose_name_plural = "Notificări"
+
+    def __str__(self):
+        stare = "Citită" if self.citita else "NOUĂ"
+        return f"[{stare}] {self.utilizator} - {self.mesaj}"

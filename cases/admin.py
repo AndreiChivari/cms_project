@@ -1,6 +1,6 @@
 from django.contrib import admin
 from simple_history.admin import SimpleHistoryAdmin
-from .models import Dosar, ParteImplicata, Infractiune, MasuraPreventiva
+from .models import Dosar, ParteImplicata, Infractiune, MasuraPreventiva, IstoricDesemnare, StadiuCercetare, SolutieDosar, Notificare
 
 class ParteImplicataInline(admin.TabularInline):
     """
@@ -70,3 +70,9 @@ class JurnalMasuraAdmin(JurnalGlobalAdmin):
 admin.site.register(Dosar.history.model, JurnalDosarAdmin)
 admin.site.register(ParteImplicata.history.model, JurnalParteAdmin)
 admin.site.register(MasuraPreventiva.history.model, JurnalMasuraAdmin)
+
+@admin.register(Notificare)
+class NotificareAdmin(admin.ModelAdmin):
+    list_display = ('utilizator', 'mesaj', 'citita', 'data_crearii')
+    list_filter = ('citita', 'data_crearii')
+    search_fields = ('utilizator__username', 'mesaj', 'utilizator__first_name', 'utilizator__last_name')

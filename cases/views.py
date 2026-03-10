@@ -1,7 +1,7 @@
 import os
 from django.conf import settings
 from django.shortcuts import render, get_object_or_404, redirect
-from .models import Dosar, ParteImplicata, Infractiune, MasuraPreventiva, IstoricDesemnare, StadiuCercetare, SolutieDosar
+from .models import Dosar, ParteImplicata, Infractiune, MasuraPreventiva, IstoricDesemnare, StadiuCercetare, SolutieDosar, Notificare
 from documents.forms import DocumentForm # Importăm formularul nou creat
 from .forms import DosarForm, ParteImplicataForm, CreareDosarForm, InfractiuneForm, MasuraPreventivaForm, StadiuCercetareForm, SolutieDosarForm
 from documents.models import ActUrmarire
@@ -13,6 +13,8 @@ from .utils import render_to_pdf
 from django.http import HttpResponse # Adaugă și asta dacă nu există
 from django.conf import settings # <--- Adaugă și asta sus la importuri
 from datetime import date, timedelta # folosim pentru calculul alertelor
+from django.urls import reverse # folosim pentru a genera link-urile automate către dosare
+from django.http import JsonResponse # folosim JavaScript (AJAX) pentru a sterge notificarile fara a da click pe ele si a nu reîncărca pagina
 
 
 @login_required
@@ -83,13 +85,26 @@ def adaugare_dosar(request):
         if form.is_valid():
             dosar = form.save()
 
-            # LOGICA NOUĂ: Creăm istoricul inițial
-        if dosar.ofiter_caz:
-            IstoricDesemnare.objects.create(dosar=dosar, utilizator=dosar.ofiter_caz, rol='Ofițer', data_desemnare=dosar.data_inregistrarii)
-        if dosar.procuror_caz:
-            IstoricDesemnare.objects.create(dosar=dosar, utilizator=dosar.procuror_caz, rol='Procuror', data_desemnare=dosar.data_inregistrarii)
-        if dosar.grefier_caz:
-            IstoricDesemnare.objects.create(dosar=dosar, utilizator=dosar.grefier_caz, rol='Grefier', data_desemnare=dosar.data_inregistrarii)
+            # LOGICA: Creăm istoricul inițial
+            if dosar.ofiter_caz:
+                IstoricDesemnare.objects.create(dosar=dosar, utilizator=dosar.ofiter_caz, rol='Ofițer', data_desemnare=dosar.data_inregistrarii)
+            if dosar.procuror_caz:
+                IstoricDesemnare.objects.create(dosar=dosar, utilizator=dosar.procuror_caz, rol='Procuror', data_desemnare=dosar.data_inregistrarii)
+            if dosar.grefier_caz:
+                IstoricDesemnare.objects.create(dosar=dosar, utilizator=dosar.grefier_caz, rol='Grefier', data_desemnare=dosar.data_inregistrarii)
+
+            # ==========================================
+            # LOGICA NOUĂ: Notificări la Crearea Dosarului
+            # ==========================================
+            link_dosar = reverse('cases:detalii_dosar', args=[dosar.pk])
+            mesaj_nou = f"Ai fost desemnat pe dosarul nou {dosar.numar_unic}."
+            
+            if dosar.ofiter_caz:
+                Notificare.objects.create(utilizator=dosar.ofiter_caz, mesaj=mesaj_nou, link=link_dosar)
+            if dosar.procuror_caz:
+                Notificare.objects.create(utilizator=dosar.procuror_caz, mesaj=mesaj_nou, link=link_dosar)
+            if dosar.grefier_caz:
+                Notificare.objects.create(utilizator=dosar.grefier_caz, mesaj=mesaj_nou, link=link_dosar)
 
             return redirect('cases:detalii_dosar', pk=dosar.pk)
     else:
@@ -231,9 +246,10 @@ def editare_dosar(request, pk):
             nou_dosar = form.save() # Salvăm dosarul cu noua echipă
 
             # 2. Funcție internă care face schimbul curat pentru fiecare rol
+            # Funcție internă care face schimbul curat pentru fiecare rol
             def actualizeaza_istoric(rol_nume, vechi_user, nou_user):
                 if vechi_user != nou_user:
-                    # Dacă exista cineva înainte, îi "închidem" mandatul activ
+                    # Dacă exista cineva înainte, îi "închidem" mandatul
                     if vechi_user:
                         IstoricDesemnare.objects.filter(
                             dosar=nou_dosar, utilizator=vechi_user, rol=rol_nume, data_finalizare__isnull=True
@@ -243,6 +259,15 @@ def editare_dosar(request, pk):
                     if nou_user:
                         IstoricDesemnare.objects.create(
                             dosar=nou_dosar, utilizator=nou_user, rol=rol_nume, data_desemnare=data_schimbare
+                        )
+                        # ==========================================
+                        # LOGICA NOUĂ: Notificare pt Noul Venit
+                        # ==========================================
+                        link_dosar = reverse('cases:detalii_dosar', args=[nou_dosar.pk])
+                        Notificare.objects.create(
+                            utilizator=nou_user, 
+                            mesaj=f"Ai preluat mandatul de {rol_nume} pe dosarul {nou_dosar.numar_unic}.", 
+                            link=link_dosar
                         )
 
             # 3. Executăm verificarea pentru toți 3:
@@ -468,6 +493,16 @@ def gestionare_stadii(request, pk):
     form_solutie = SolutieDosarForm()
 
     if request.method == 'POST':
+    # Funcție internă ajutătoare pentru a nu repeta codul de trimitere
+        def trimite_notificare_colaborare(mesaj_actiune):
+            link_dosar = reverse('cases:detalii_dosar', args=[dosar.pk])
+            destinatari = [dosar.ofiter_caz, dosar.procuror_caz, dosar.grefier_caz]
+            
+            for destinatar in destinatari:
+                # Trimitem doar dacă postul e ocupat ȘI utilizatorul nu este cel care a făcut modificarea
+                if destinatar and destinatar != request.user:
+                    Notificare.objects.create(utilizator=destinatar, mesaj=mesaj_actiune, link=link_dosar)
+
         # 1. Salvează Stadiu
         if 'salveaza_stadiu' in request.POST:
             stadiu_id = request.POST.get('stadiu_id')
@@ -479,7 +514,13 @@ def gestionare_stadii(request, pk):
                 form_stadiu.instance.dosar = dosar
                 
             if form_stadiu.is_valid():
-                form_stadiu.save()
+                stadiu_salvat = form_stadiu.save()
+                
+                # LOGICĂ NOTIFICARE: Citim checkbox-ul
+                if form_stadiu.cleaned_data.get('notifica_echipa'):
+                    mesaj = f"{request.user.get_full_name() or request.user.username} a adăugat/modificat stadiul ({stadiu_salvat.get_tip_stadiu_display()}) pe dosarul {dosar.numar_unic}."
+                    trimite_notificare_colaborare(mesaj)
+                    
                 return redirect('cases:gestionare_stadii', pk=dosar.pk)
 
         # 2. Salvează Soluție
@@ -496,7 +537,13 @@ def gestionare_stadii(request, pk):
                     form_solutie.instance.stadiu_id = stadiu_parinte_id
                     
             if form_solutie.is_valid():
-                form_solutie.save()
+                sol_salvata = form_solutie.save()
+                
+                # LOGICĂ NOTIFICARE: Citim checkbox-ul
+                if form_solutie.cleaned_data.get('notifica_echipa'):
+                    mesaj = f"{request.user.get_full_name() or request.user.username} a adăugat/modificat o soluție ({sol_salvata.get_tip_solutie_display()}) pe dosarul {dosar.numar_unic}."
+                    trimite_notificare_colaborare(mesaj)
+                    
                 return redirect('cases:gestionare_stadii', pk=dosar.pk)
 
         # 3. Șterge Stadiu
@@ -525,3 +572,22 @@ def gestionare_stadii(request, pk):
         'stadii': stadii
     }
     return render(request, 'cases/gestionare_stadii.html', context)
+
+@login_required
+def citeste_notificare(request, pk):
+    # Găsim notificarea (asigurându-ne că e a utilizatorului curent)
+    notificare = get_object_or_404(Notificare, pk=pk, utilizator=request.user)
+    # O marcăm ca citită
+    notificare.citita = True
+    notificare.save()
+    # Îl redirecționăm către link-ul stocat (ex: /cases/4/)
+    return redirect(notificare.link)
+
+@login_required
+def sterge_notificare_ajax(request, pk):
+    if request.method == 'POST':
+        notificare = get_object_or_404(Notificare, pk=pk, utilizator=request.user)
+        notificare.citita = True
+        notificare.save()
+        return JsonResponse({'status': 'success'})
+    return JsonResponse({'status': 'error'}, status=400)

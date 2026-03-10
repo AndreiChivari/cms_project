@@ -42,4 +42,10 @@ urlpatterns = [
 
     # Ruta pentru gestionarea stadiilor
     path('<int:pk>/stadii/', views.gestionare_stadii, name='gestionare_stadii'),
+
+    # Ruta pentru notificari
+    path('notificare/<int:pk>/', views.citeste_notificare, name='citeste_notificare'),
+
+    # Ruta pentru stergerea notificarilor
+    path('notificare/sterge/<int:pk>/', views.sterge_notificare_ajax, name='sterge_notificare_ajax'),
 ]
