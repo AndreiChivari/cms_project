@@ -5,8 +5,9 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
     <div>
-        <h2 class="mb-1 text-dark">Bun venit, {{ user.get_full_name|default:user.username }}! 👋</h2>
-        <p class="text-muted mb-0">Iată un rezumat al activității de astăzi, {% now "d F Y" %}</p>
+        <!-- <h2 class="mb-1 text-dark">Bun venit, {{ user.get_full_name|default:user.username }}! 👋</h2> -->
+         <h3 class="mb-1 text-dark">Bun venit, {{ user.get_full_name|default:user.username }}!</h3>
+        <p class="text-muted mb-0">Rezumatul activității de astăzi, {% now "d.m.Y" %}</p>
     </div>
     <div>
         <a href="{% url 'cases:lista_dosare' %}" class="btn btn-primary shadow-sm">
@@ -99,9 +100,9 @@
         <table class="table table-hover align-middle mb-0">
             <thead class="table-light">
                 <tr>
-                    <th class="py-3 px-4">Număr Dosar</th>
-                    <th class="py-3">Data Înregistrării</th>
-                    <th class="py-3">Infracțiune Cercetată</th>
+                    <th class="py-3 px-4">Număr dosar</th>
+                    <th class="py-3">Data înregistrării</th>
+                    <th class="py-3">Infracțiune</th>
                     <th class="py-3">Stadiu / Soluție</th>
                 </tr>
             </thead>

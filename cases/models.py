@@ -24,21 +24,21 @@ class Dosar(models.Model):
     data_inregistrarii = models.DateField(auto_now_add=True) # Se completează automat la creare
     infractiune_cercetata = models.TextField(help_text="Descrierea faptei și încadrarea juridică (ex: Furt calificat, art. 229 C.pen)")
     
-    # 3. Actualizăm coloana stadiu
-    stadiu = models.CharField(
-        max_length=20, 
-        choices=Stadiu.choices, 
-        default=Stadiu.POLITIE
-    )
+    # # 3. Actualizăm coloana stadiu
+    # stadiu = models.CharField(
+    #     max_length=20, 
+    #     choices=Stadiu.choices, 
+    #     default=Stadiu.POLITIE
+    # )
     
-    # 4. Adăugăm coloanele noi
-    tip_solutie = models.CharField(
-        max_length=20, 
-        choices=Solutie.choices, 
-        null=True, 
-        blank=True
-    )
-    data_solutiei = models.DateField(null=True, blank=True)
+    # # 4. Adăugăm coloanele noi
+    # tip_solutie = models.CharField(
+    #     max_length=20, 
+    #     choices=Solutie.choices, 
+    #     null=True, 
+    #     blank=True
+    # )
+    # data_solutiei = models.DateField(null=True, blank=True)
 
     # Legătura cu anchetatorii (Chei externe către modelul de Utilizator)
     # Folosim related_name pentru a putea accesa ulterior toate dosarele unui polițist cu: politist.dosare_instrumentate.all()
@@ -102,6 +102,18 @@ class Dosar(models.Model):
     
     history = HistoricalRecords(verbose_name="Istoric Dosar") # <--- PĂSTREAZĂ ISTORICUL DOSARULUI
 
+    @property
+    def stadiu_curent(self):
+        # Returnează ultimul stadiu adăugat (datorită ordering = ['-data_incepere'])
+        return self.stadii_cercetare.first()
+
+    @property
+    def solutie_curenta(self):
+        # Returnează ultima soluție a stadiului curent
+        stadiu = self.stadiu_curent
+        if stadiu:
+            return stadiu.solutii.first()
+        return None
 
 class ParteImplicata(models.Model):
     class Calitate(models.TextChoices):
@@ -217,3 +229,61 @@ class IstoricDesemnare(models.Model):
 
     def __str__(self):
         return f"{self.rol} - {self.utilizator} ({self.data_desemnare} -> {self.data_finalizare or 'Prezent'})"
+
+class StadiuCercetare(models.Model):
+    class TipStadiu(models.TextChoices):
+        EXAMINARE = 'EXAMINARE', 'Examinare sesizare'
+        UP_INCEPUTA = 'UP_INCEPUTA', 'Urmărire penală începută'
+        AP_MASCATA = 'AP_MASCATA', 'Acțiune penală pusă în mișcare'
+
+    dosar = models.ForeignKey(Dosar, on_delete=models.CASCADE, related_name='stadii_cercetare')
+    tip_stadiu = models.CharField(max_length=50, choices=TipStadiu.choices, default=TipStadiu.EXAMINARE)
+    data_incepere = models.DateField(help_text="Data începerii stadiului")
+    
+    history = HistoricalRecords(verbose_name="Istoric Stadiu")
+
+    class Meta:
+        verbose_name = "Stadiu Urmărire"
+        verbose_name_plural = "Stadii Urmărire"
+        ordering = ['-data_incepere'] # Cele mai noi primele
+
+    def __str__(self):
+        return f"{self.get_tip_stadiu_display()} ({self.data_incepere})"
+
+
+class SolutieDosar(models.Model):
+    class Emitent(models.TextChoices):
+        ORGAN_CERCETARE = 'ORGAN', 'Organ de cercetare (Propunere)'
+        PROCUROR = 'PROCUROR', 'Procuror (Dispoziție)'
+
+    class TipSolutie(models.TextChoices):
+        # Trimitere în judecată
+        RECHIZITORIU = 'RECHIZITORIU', 'Rechizitoriu'
+        ACORD = 'ACORD', 'Acord de recunoaștere a vinovăției'
+        # Clasări (Art. 16 CPP)
+        CLASARE_A = 'CLASARE_A', 'Clasare - art. 16 alin. 1 lit. a) fapta nu există'
+        CLASARE_B = 'CLASARE_B', 'Clasare - art. 16 alin. 1 lit. b) fapta nu e prevăzută de lege'
+        CLASARE_C = 'CLASARE_C', 'Clasare - art. 16 alin. 1 lit. c) nu există probe/nu e săvârșită de inculpat'
+        CLASARE_ALTELE = 'CLASARE_ALTELE', 'Clasare - alte temeiuri (lit. d-j)'
+        # Altele
+        RENUNTARE = 'RENUNTARE', 'Renunțare la urmărirea penală'
+        DECLINARE = 'DECLINARE', 'Declinare de competență'
+        TRECERE = 'TRECERE', 'Trecere la alt organ'
+        RESTITUIRE = 'RESTITUIRE', 'Restituire la organul de cercetare'
+        ALTA = 'ALTA', 'Altă soluție'
+
+    stadiu = models.ForeignKey(StadiuCercetare, on_delete=models.CASCADE, related_name='solutii')
+    stabilita_de = models.CharField(max_length=20, choices=Emitent.choices, default=Emitent.ORGAN_CERCETARE)
+    tip_solutie = models.CharField(max_length=50, choices=TipSolutie.choices)
+    data_solutiei = models.DateField()
+    este_finala = models.BooleanField(default=False, help_text="Bifează dacă aceasta este decizia finală a procurorului")
+
+    history = HistoricalRecords(verbose_name="Istoric Soluție")
+
+    class Meta:
+        verbose_name = "Soluție Dosar"
+        verbose_name_plural = "Soluții Dosar"
+        ordering = ['-data_solutiei']
+
+    def __str__(self):
+        return f"{self.get_tip_solutie_display()} - {self.get_stabilita_de_display()}"

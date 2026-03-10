@@ -14,8 +14,9 @@ class ParteImplicataInline(admin.TabularInline):
 # 1. SECRETUL: DosarAdmin moștenește acum din SimpleHistoryAdmin!
 # Astfel păstrezi și design-ul tău, și funcția de audit.
 class DosarAdmin(SimpleHistoryAdmin):
-    list_display = ('numar_unic', 'stadiu', 'ofiter_caz', 'procuror_caz', 'data_inregistrarii')
-    list_filter = ('stadiu', 'data_inregistrarii')
+    # Am șters 'stadiu' din ambele liste de mai jos:
+    list_display = ('numar_unic', 'ofiter_caz', 'procuror_caz', 'data_inregistrarii')
+    list_filter = ('data_inregistrarii',)
     search_fields = ('numar_unic', 'infractiune_cercetata')
     inlines = [ParteImplicataInline]
 

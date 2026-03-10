@@ -1,5 +1,5 @@
 from django import forms
-from .models import Dosar, ParteImplicata, Infractiune, MasuraPreventiva
+from .models import Dosar, ParteImplicata, Infractiune, MasuraPreventiva, StadiuCercetare, SolutieDosar
 from django.contrib.auth import get_user_model # <--- Importăm modelul de Utilizator
 
 User = get_user_model() # Preluăm modelul de utilizator pentru a face filtrarile
@@ -15,12 +15,10 @@ class DosarForm(forms.ModelForm):
     
     class Meta:
         model = Dosar
-        fields = ['numar_unic', 'infractiune_cercetata', 'stadiu', 'tip_solutie', 'data_solutiei', 'ofiter_caz', 'procuror_caz', 'grefier_caz']
+        fields = ['numar_unic', 'infractiune_cercetata', 'ofiter_caz', 'procuror_caz', 'grefier_caz']
         
         widgets = {
-            'data_solutiei': forms.DateInput(attrs={'type': 'date'}),
             'numar_unic': forms.TextInput(attrs={'class': 'form-control', 'readonly': 'readonly'}),
-            'stadiu': forms.Select(attrs={'class': 'form-select'}),
             'infractiune_cercetata': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
             'ofiter_caz': forms.Select(attrs={'class': 'form-select'}),
             'procuror_caz': forms.Select(attrs={'class': 'form-select'}),
@@ -50,12 +48,10 @@ class DosarForm(forms.ModelForm):
 class CreareDosarForm(forms.ModelForm):
     class Meta:
         model = Dosar
-        fields = ['numar_unic', 'infractiune_cercetata', 'stadiu', 'tip_solutie', 'data_solutiei', 'ofiter_caz', 'procuror_caz', 'grefier_caz']
+        fields = ['numar_unic', 'infractiune_cercetata', 'ofiter_caz', 'procuror_caz', 'grefier_caz']
         widgets = {
             'numar_unic': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 123/P/2026'}),
-            'stadiu': forms.Select(attrs={'class': 'form-select'}),
             'infractiune_cercetata': forms.Textarea(attrs={'rows': 3}),
-            'data_solutiei': forms.DateInput(attrs={'type': 'date'}), # Calendar pentru dată
             'ofiter_caz': forms.Select(attrs={'class': 'form-select'}),
             'procuror_caz': forms.Select(attrs={'class': 'form-select'}),
             'grefier_caz': forms.Select(attrs={'class': 'form-select'}),
@@ -116,3 +112,24 @@ class MasuraPreventivaForm(forms.ModelForm):
         # Filtrăm lista de persoane ca să apară doar cele din dosarul curent
         if dosar_id:
             self.fields['parte'].queryset = ParteImplicata.objects.filter(dosar_id=dosar_id)
+
+class StadiuCercetareForm(forms.ModelForm):
+    class Meta:
+        model = StadiuCercetare
+        fields = ['tip_stadiu', 'data_incepere']
+        widgets = {
+            'tip_stadiu': forms.Select(attrs={'class': 'form-select'}),
+            'data_incepere': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
+        }
+
+class SolutieDosarForm(forms.ModelForm):
+    class Meta:
+        model = SolutieDosar
+        fields = ['stabilita_de', 'tip_solutie', 'data_solutiei', 'este_finala']
+        widgets = {
+            # RadioSelect afișează opțiunile ca butoane radio
+            'stabilita_de': forms.RadioSelect(), 
+            'tip_solutie': forms.Select(attrs={'class': 'form-select'}),
+            'data_solutiei': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'este_finala': forms.CheckboxInput(attrs={'class': 'form-check-input'})
+        }

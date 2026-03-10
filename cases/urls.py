@@ -39,4 +39,7 @@ urlpatterns = [
     # Rute pentru actiunile Infracțiunii
     path('infractiune/<int:pk>/editeaza/', views.editare_infractiune, name='editare_infractiune'),
     path('infractiune/<int:pk>/sterge/', views.stergere_infractiune, name='stergere_infractiune'),
+
+    # Ruta pentru gestionarea stadiilor
+    path('<int:pk>/stadii/', views.gestionare_stadii, name='gestionare_stadii'),
 ]

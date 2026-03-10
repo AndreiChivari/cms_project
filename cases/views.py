@@ -1,9 +1,9 @@
 import os
 from django.conf import settings
 from django.shortcuts import render, get_object_or_404, redirect
-from .models import Dosar, ParteImplicata, Infractiune, MasuraPreventiva, IstoricDesemnare
+from .models import Dosar, ParteImplicata, Infractiune, MasuraPreventiva, IstoricDesemnare, StadiuCercetare, SolutieDosar
 from documents.forms import DocumentForm # Importăm formularul nou creat
-from .forms import DosarForm, ParteImplicataForm, CreareDosarForm, InfractiuneForm, MasuraPreventivaForm
+from .forms import DosarForm, ParteImplicataForm, CreareDosarForm, InfractiuneForm, MasuraPreventivaForm, StadiuCercetareForm, SolutieDosarForm
 from documents.models import ActUrmarire
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
@@ -21,25 +21,34 @@ def dashboard(request):
     
     # 1. Statistici Globale (toate dosarele din sistem)
     total_dosare = Dosar.objects.count()
-    dosare_in_lucru = Dosar.objects.filter(Q(stadiu='POLITIE') | Q(stadiu='PROCUROR')).count()
-    dosare_solutionate = Dosar.objects.filter(stadiu='SOLUTIONAT').count()
+    
+    # LOGICA NOUĂ PENTRU STATISTICI
+    # Căutăm dosarele care au măcar o soluție bifată ca "FINALĂ".
+    # Folosim .distinct() pentru că un dosar ar putea avea, teoretic, două soluții finale
+    # (ex: disjungeri) și nu vrem să numărăm dosarul de două ori.
+    dosare_solutionate = Dosar.objects.filter(
+        stadii_cercetare__solutii__este_finala=True
+    ).distinct().count()
+    
+    # Restul dosarelor sunt "în lucru" (fie abia înregistrate, fie cu stadii intermediare)
+    dosare_in_lucru = total_dosare - dosare_solutionate
     
     # 2. Statistici Personale (Dosarele MELE)
     # Folosim Q objects pentru a spune: "Adu-mi dosarele unde sunt Ofițer SAU Procuror SAU Grefier"
     if utilizator.is_superuser or utilizator.rol == 'ADMIN':
-        dosare_mele = total_dosare # Adminul vede tot
-        dosarele_mele_lista = Dosar.objects.all().order_by('-data_inregistrarii')[:5] # Ultimele 5
+        dosare_mele = total_dosare 
+        dosarele_mele_lista = Dosar.objects.all().order_by('-data_inregistrarii')[:5] 
     else:
         # Interogare complexă cu Q
         conditie_mea = Q(ofiter_caz=utilizator) | Q(procuror_caz=utilizator) | Q(grefier_caz=utilizator)
         dosare_mele = Dosar.objects.filter(conditie_mea).count()
         dosarele_mele_lista = Dosar.objects.filter(conditie_mea).order_by('-data_inregistrarii')[:5]
         
-    # === LOGICA NOUĂ PENTRU ALERTE (10 ZILE) ===
+    # === LOGICA PENTRU ALERTE MĂSURI PREVENTIVE ===
+     # Găsim toate măsurile care expiră în max 10 zile, dar nu mai vechi de 5 zile de la expirare
     azi = date.today()
     prag_10_zile = azi + timedelta(days=10)
 
-    # Găsim toate măsurile care expiră în max 10 zile, dar nu mai vechi de 5 zile de la expirare
     alerte_toate = MasuraPreventiva.objects.filter(
         data_sfarsit__lte=prag_10_zile,
         data_sfarsit__gte=azi - timedelta(days=5) 
@@ -56,14 +65,13 @@ def dashboard(request):
         )
     # ============================================
 
-
     context = {
         'total_dosare': total_dosare,
         'dosare_in_lucru': dosare_in_lucru,
-        'dosare_judecata': dosare_solutionate, # Păstrăm numele variabilei pt HTML, dar îi dăm datele noi
+        'dosare_judecata': dosare_solutionate, # Păstrăm numele variabilei pt HTML ca să nu mai modifici acolo
         'dosare_mele': dosare_mele,
         'dosarele_mele_lista': dosarele_mele_lista,
-        'alerte_masuri': alerte_masuri, # <--- Trimitem alertele către HTML
+        'alerte_masuri': alerte_masuri,
     }
     
     return render(request, 'cases/dashboard.html', context)
@@ -447,3 +455,73 @@ def stergere_infractiune(request, pk):
         'dosar': infractiune.dosar
     }
     return render(request, 'cases/stergere_infractiune.html', context)
+
+@login_required
+def gestionare_stadii(request, pk):
+    dosar = get_object_or_404(Dosar, pk=pk)
+    
+    # Securitate
+    if not dosar.are_drepturi_editare(request.user) and not request.user.is_superuser:
+        raise PermissionDenied("Nu ai permisiunea de a edita acest dosar.")
+
+    form_stadiu = StadiuCercetareForm()
+    form_solutie = SolutieDosarForm()
+
+    if request.method == 'POST':
+        # 1. Salvează Stadiu
+        if 'salveaza_stadiu' in request.POST:
+            stadiu_id = request.POST.get('stadiu_id')
+            if stadiu_id:
+                stadiu = get_object_or_404(StadiuCercetare, pk=stadiu_id, dosar=dosar)
+                form_stadiu = StadiuCercetareForm(request.POST, instance=stadiu)
+            else:
+                form_stadiu = StadiuCercetareForm(request.POST)
+                form_stadiu.instance.dosar = dosar
+                
+            if form_stadiu.is_valid():
+                form_stadiu.save()
+                return redirect('cases:gestionare_stadii', pk=dosar.pk)
+
+        # 2. Salvează Soluție
+        elif 'salveaza_solutie' in request.POST:
+            solutie_id = request.POST.get('solutie_id')
+            stadiu_parinte_id = request.POST.get('stadiu_parinte_id')
+            
+            if solutie_id:
+                solutie = get_object_or_404(SolutieDosar, pk=solutie_id)
+                form_solutie = SolutieDosarForm(request.POST, instance=solutie)
+            else:
+                form_solutie = SolutieDosarForm(request.POST)
+                if stadiu_parinte_id:
+                    form_solutie.instance.stadiu_id = stadiu_parinte_id
+                    
+            if form_solutie.is_valid():
+                form_solutie.save()
+                return redirect('cases:gestionare_stadii', pk=dosar.pk)
+
+        # 3. Șterge Stadiu
+        elif 'sterge_stadiu' in request.POST:
+            stadiu_id = request.POST.get('stadiu_id')
+            if stadiu_id:
+                stadiu = get_object_or_404(StadiuCercetare, pk=stadiu_id, dosar=dosar)
+                stadiu.delete()
+                return redirect('cases:gestionare_stadii', pk=dosar.pk)
+                
+        # 4. Șterge Soluție
+        elif 'sterge_solutie' in request.POST:
+            solutie_id = request.POST.get('solutie_id')
+            if solutie_id:
+                solutie = get_object_or_404(SolutieDosar, pk=solutie_id)
+                solutie.delete()
+                return redirect('cases:gestionare_stadii', pk=dosar.pk)
+
+    # Preluăm toate stadiile cu soluțiile lor atașate
+    stadii = dosar.stadii_cercetare.all().prefetch_related('solutii')
+
+    context = {
+        'dosar': dosar,
+        'form_stadiu': form_stadiu,
+        'form_solutie': form_solutie,
+        'stadii': stadii
+    }
+    return render(request, 'cases/gestionare_stadii.html', context)
