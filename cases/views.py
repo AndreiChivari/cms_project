@@ -15,7 +15,9 @@ from django.conf import settings # <--- Adaugă și asta sus la importuri
 from datetime import date, timedelta # folosim pentru calculul alertelor
 from django.urls import reverse # folosim pentru a genera link-urile automate către dosare
 from django.http import JsonResponse # folosim JavaScript (AJAX) pentru a sterge notificarile fara a da click pe ele si a nu reîncărca pagina
+from django.contrib.auth import get_user_model
 
+User = get_user_model()
 
 @login_required
 def dashboard(request):
@@ -591,3 +593,82 @@ def sterge_notificare_ajax(request, pk):
         notificare.save()
         return JsonResponse({'status': 'success'})
     return JsonResponse({'status': 'error'}, status=400)
+
+@login_required
+def generare_rapoarte(request):
+    # Optimizare: aducem și infractiunile pentru a nu bloca baza de date
+    dosare = Dosar.objects.select_related('ofiter_caz', 'procuror_caz', 'grefier_caz').prefetch_related(
+        'stadii_cercetare__solutii',
+        'parti_implicate',
+        'masuri_preventive',
+        'infractiuni' # <--- Adăugat pentru a încărca rapid articolele
+    ).all().distinct()
+    
+    # 1. CAPTURĂM FILTRELE (Criteriile de căutare)
+    data_inreg_start = request.GET.get('data_inreg_start')
+    data_inreg_end = request.GET.get('data_inreg_end')
+    procuror_id = request.GET.get('procuror')
+    ofiter_id = request.GET.get('ofiter')
+    
+    # Filtre noi:
+    act_normativ = request.GET.get('act_normativ')
+    articol = request.GET.get('articol')
+    stadiu = request.GET.get('stadiu')
+    solutie = request.GET.get('solutie')
+    
+    # Aplicăm filtrele
+    if data_inreg_start:
+        dosare = dosare.filter(data_inregistrarii__gte=data_inreg_start)
+    if data_inreg_end:
+        dosare = dosare.filter(data_inregistrarii__lte=data_inreg_end)
+    if procuror_id:
+        dosare = dosare.filter(procuror_caz_id=procuror_id)
+    if ofiter_id:
+        dosare = dosare.filter(ofiter_caz_id=ofiter_id)
+        
+    # Aplicăm filtrele noi navigând prin relații
+    if act_normativ:
+        dosare = dosare.filter(infractiuni__act_normativ=act_normativ)
+    if articol:
+        dosare = dosare.filter(infractiuni__articol__icontains=articol)
+    if stadiu:
+        dosare = dosare.filter(stadii_cercetare__tip_stadiu=stadiu)
+    if solutie:
+        dosare = dosare.filter(stadii_cercetare__solutii__tip_solutie=solutie)
+
+    # 2. CAPTURĂM COLOANELE SELECTATE PENTRU AFIȘARE
+    def is_checked(nume_camp, implicit=False):
+        if not request.GET: 
+            return implicit
+        return request.GET.get(nume_camp) == 'on'
+
+    coloane = {
+        'col_numar': is_checked('col_numar', True),
+        'col_data_inreg': is_checked('col_data_inreg', True),
+        
+        # Am separat cele două concepte aici:
+        'col_situatie_fapt': is_checked('col_situatie_fapt', True), 
+        'col_incadrare': is_checked('col_incadrare', True),
+        
+        'col_ofiter': is_checked('col_ofiter', True),
+        'col_procuror': is_checked('col_procuror', True),
+        'col_stadiu_curent': is_checked('col_stadiu_curent', True),
+        'col_data_stadiu': is_checked('col_data_stadiu', False),
+        'col_solutie_finala': is_checked('col_solutie_finala', False),
+        'col_data_solutie': is_checked('col_data_solutie', False),
+        'col_parti': is_checked('col_parti', False),
+        'col_masuri': is_checked('col_masuri', False),
+    }
+
+    # Extragem opțiunile din modele pentru a popula automat dropdown-urile din HTML
+    context = {
+        'dosare': dosare,
+        'coloane': coloane,
+        'lista_procurori': User.objects.filter(rol='PROCUROR'),
+        'lista_ofiteri': User.objects.filter(rol='POLITIST'),
+        'acte_normative': Infractiune._meta.get_field('act_normativ').choices,
+        'stadii_choices': StadiuCercetare._meta.get_field('tip_stadiu').choices,
+        'solutii_choices': SolutieDosar._meta.get_field('tip_solutie').choices,
+    }
+    
+    return render(request, 'cases/rapoarte.html', context)

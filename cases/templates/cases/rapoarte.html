@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <h2 class="mb-4">📊 Generator Rapoarte Avansate</h2>
+
+    <form method="GET" action="{% url 'cases:rapoarte' %}" class="mb-4">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-primary text-white fw-bold">
+                        🔍 Filtrează Datele (Criterii de căutare)
+                    </div>
+                    <div class="card-body" style="font-size: 0.9rem;">
+                        <div class="row mb-2">
+                            <div class="col-6">
+                                <label class="form-label fw-bold mb-0">Data Înreg. (De la)</label>
+                                <input type="date" name="data_inreg_start" class="form-control form-control-sm" value="{{ request.GET.data_inreg_start }}">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-bold mb-0">Data Înreg. (Până la)</label>
+                                <input type="date" name="data_inreg_end" class="form-control form-control-sm" value="{{ request.GET.data_inreg_end }}">
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-6">
+                                <label class="form-label fw-bold mb-0">Procuror</label>
+                                <select name="procuror" class="form-select form-select-sm">
+                                    <option value="">-- Toți --</option>
+                                    {% for p in lista_procurori %}
+                                    <option value="{{ p.id }}" {% if request.GET.procuror == p.id|stringformat:"s" %}selected{% endif %}>{{ p.get_full_name|default:p.username }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-bold mb-0">Ofițer de Caz</label>
+                                <select name="ofiter" class="form-select form-select-sm">
+                                    <option value="">-- Toți --</option>
+                                    {% for o in lista_ofiteri %}
+                                    <option value="{{ o.id }}" {% if request.GET.ofiter == o.id|stringformat:"s" %}selected{% endif %}>{{ o.get_full_name|default:o.username }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-6">
+                                <label class="form-label fw-bold mb-0">Act Normativ</label>
+                                <select name="act_normativ" class="form-select form-select-sm">
+                                    <option value="">-- Toate --</option>
+                                    {% for cod, nume in acte_normative %}
+                                    <option value="{{ cod }}" {% if request.GET.act_normativ == cod %}selected{% endif %}>{{ nume }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-bold mb-0">Articol (Ex: 228)</label>
+                                <input type="text" name="articol" class="form-control form-control-sm" value="{{ request.GET.articol }}" placeholder="Caută articol...">
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-6">
+                                <label class="form-label fw-bold mb-0">Stadiu Curent</label>
+                                <select name="stadiu" class="form-select form-select-sm">
+                                    <option value="">-- Toate --</option>
+                                    {% for cod, nume in stadii_choices %}
+                                    <option value="{{ cod }}" {% if request.GET.stadiu == cod %}selected{% endif %}>{{ nume }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-bold mb-0">Tip Soluție</label>
+                                <select name="solutie" class="form-select form-select-sm">
+                                    <option value="">-- Toate --</option>
+                                    {% for cod, nume in solutii_choices %}
+                                    <option value="{{ cod }}" {% if request.GET.solutie == cod %}selected{% endif %}>{{ nume }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-success text-white fw-bold">
+                        👁️ Alege Coloanele pentru Tabel / Excel
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <div class="form-check"><input class="form-check-input" type="checkbox" name="col_numar" checked disabled> <label class="form-check-label fw-bold">Număr Unic</label></div>
+                                <input type="hidden" name="col_numar" value="on">
+                                
+                                <div class="form-check"><input class="form-check-input" type="checkbox" name="col_data_inreg" {% if coloane.col_data_inreg %}checked{% endif %}> <label class="form-check-label">Data Înregistrării</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" name="col_situatie_fapt" {% if coloane.col_situatie_fapt %}checked{% endif %}> <label class="form-check-label">Situație de Fapt (Rezumat)</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" name="col_incadrare" {% if coloane.col_incadrare %}checked{% endif %}> <label class="form-check-label">Încadrare Juridică (Art/Lege)</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" name="col_ofiter" {% if coloane.col_ofiter %}checked{% endif %}> <label class="form-check-label">Nume Ofițer</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" name="col_procuror" {% if coloane.col_procuror %}checked{% endif %}> <label class="form-check-label">Nume Procuror</label></div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="form-check"><input class="form-check-input" type="checkbox" name="col_stadiu_curent" {% if coloane.col_stadiu_curent %}checked{% endif %}> <label class="form-check-label">Stadiu Curent</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" name="col_data_stadiu" {% if coloane.col_data_stadiu %}checked{% endif %}> <label class="form-check-label">Data Stadiului</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" name="col_solutie_finala" {% if coloane.col_solutie_finala %}checked{% endif %}> <label class="form-check-label">Soluția Finală</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" name="col_data_solutie" {% if coloane.col_data_solutie %}checked{% endif %}> <label class="form-check-label">Data Soluției</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" name="col_parti" {% if coloane.col_parti %}checked{% endif %}> <label class="form-check-label">Părți în Cauză</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" name="col_masuri" {% if coloane.col_masuri %}checked{% endif %}> <label class="form-check-label">Măsuri Preventive active</label></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer text-end bg-white">
+                        <a href="{% url 'cases:rapoarte' %}" class="btn btn-outline-secondary btn-sm">Reset Filtre</a>
+                        <button type="submit" class="btn btn-primary btn-sm fw-bold">🔄 Aplică și Afișează</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0 align-middle text-sm" style="font-size: 0.9rem;">
+                    <thead class="table-dark">
+                        <tr>
+                            {% if coloane.col_numar %}<th>Număr Unic</th>{% endif %}
+                            {% if coloane.col_data_inreg %}<th>Data Înreg.</th>{% endif %}
+                            {% if coloane.col_situatie_fapt %}<th>Situație Fapt (Rezumat)</th>{% endif %}
+                            {% if coloane.col_incadrare %}<th>Încadrare (Art/Lege)</th>{% endif %}
+                            {% if coloane.col_ofiter %}<th>Ofițer</th>{% endif %}
+                            {% if coloane.col_procuror %}<th>Procuror</th>{% endif %}
+                            {% if coloane.col_stadiu_curent %}<th>Stadiu</th>{% endif %}
+                            {% if coloane.col_data_stadiu %}<th>Data Stadiu</th>{% endif %}
+                            {% if coloane.col_solutie_finala %}<th>Soluție</th>{% endif %}
+                            {% if coloane.col_data_solutie %}<th>Data Soluție</th>{% endif %}
+                            {% if coloane.col_parti %}<th>Părți Implicate</th>{% endif %}
+                            {% if coloane.col_masuri %}<th>Măsuri Preventive</th>{% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for dosar in dosare %}
+                        <tr>
+                            {% if coloane.col_numar %}
+                                <td><a href="{% url 'cases:detalii_dosar' dosar.pk %}" class="fw-bold text-decoration-none">{{ dosar.numar_unic }}</a></td>
+                            {% endif %}
+                            
+                            {% if coloane.col_data_inreg %}<td>{{ dosar.data_inregistrarii|date:"d.m.Y" }}</td>{% endif %}
+                            
+                            {% if coloane.col_situatie_fapt %}
+                                <td><span class="text-truncate d-inline-block" style="max-width: 150px;" title="{{ dosar.infractiune_cercetata }}">{{ dosar.infractiune_cercetata }}</span></td>
+                            {% endif %}
+
+                            {% if coloane.col_incadrare %}
+                                <td>
+                                    {% for infr in dosar.infractiuni.all %}
+                                        <div style="font-size: 0.85rem;" class="badge bg-light text-dark border mb-1">
+                                            art. {{ infr.articol }} - {{ infr.get_act_normativ_display }}
+                                        </div>
+                                    {% empty %}
+                                        <span class="text-muted small">-</span>
+                                    {% endfor %}
+                                </td>
+                            {% endif %}
+                            
+                            {% if coloane.col_ofiter %}<td>{{ dosar.ofiter_caz.get_full_name|default:"-" }}</td>{% endif %}
+                            {% if coloane.col_procuror %}<td>{{ dosar.procuror_caz.get_full_name|default:"-" }}</td>{% endif %}
+                            
+                            {% with stadiu=dosar.stadii_cercetare.first %}
+                                {% if coloane.col_stadiu_curent %}
+                                    <td><span class="badge bg-info text-dark">{{ stadiu.get_tip_stadiu_display|default:"Neînceput" }}</span></td>
+                                {% endif %}
+                                {% if coloane.col_data_stadiu %}
+                                    <td>{{ stadiu.data_incepere|date:"d.m.Y"|default:"-" }}</td>
+                                {% endif %}
+                                
+                                {% with solutie=stadiu.solutii.first %}
+                                    {% if coloane.col_solutie_finala %}
+                                        <td><span class="badge bg-secondary">{{ solutie.get_tip_solutie_display|default:"-" }}</span></td>
+                                    {% endif %}
+                                    {% if coloane.col_data_solutie %}
+                                        <td>{{ solutie.data_solutiei|date:"d.m.Y"|default:"-" }}</td>
+                                    {% endif %}
+                                {% endwith %}
+                            {% endwith %}
+
+                            {% if coloane.col_parti %}
+                                <td>
+                                    {% for parte in dosar.parti_implicate.all %}
+                                        <div style="font-size: 0.8rem;">• {{ parte.nume_complet }} ({{ parte.get_calitate_procesuala_display }})</div>
+                                    {% empty %}
+                                        <span class="text-muted">-</span>
+                                    {% endfor %}
+                                </td>
+                            {% endif %}
+
+                            {% if coloane.col_masuri %}
+                                <td>
+                                    {% for masura in dosar.masuri_preventive.all %}
+                                        <div style="font-size: 0.8rem; color: #dc3545;">⚠ {{ masura.get_tip_masura_display }} (exp. {{ masura.data_sfarsit|date:"d.m.Y" }})</div>
+                                    {% empty %}
+                                        <span class="text-muted">-</span>
+                                    {% endfor %}
+                                </td>
+                            {% endif %}
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="12" class="text-center py-4 text-muted fs-5">Nu s-au găsit dosare pentru filtrele selectate.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer bg-light text-muted small">
+                Total rezultate: <strong>{{ dosare.count }}</strong> dosare.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

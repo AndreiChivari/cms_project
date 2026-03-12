@@ -48,4 +48,7 @@ urlpatterns = [
 
     # Ruta pentru stergerea notificarilor
     path('notificare/sterge/<int:pk>/', views.sterge_notificare_ajax, name='sterge_notificare_ajax'),
+
+    # Ruta pentru rapoarte
+    path('rapoarte/', views.generare_rapoarte, name='rapoarte'),
 ]
