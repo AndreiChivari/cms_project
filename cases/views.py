@@ -12,10 +12,13 @@ from django.core.paginator import Paginator
 from .utils import render_to_pdf
 from django.http import HttpResponse # Adaugă și asta dacă nu există
 from django.conf import settings # <--- Adaugă și asta sus la importuri
-from datetime import date, timedelta # folosim pentru calculul alertelor
+from datetime import datetime, date, timedelta # folosim pentru calculul alertelor
 from django.urls import reverse # folosim pentru a genera link-urile automate către dosare
 from django.http import JsonResponse # folosim JavaScript (AJAX) pentru a sterge notificarile fara a da click pe ele si a nu reîncărca pagina
 from django.contrib.auth import get_user_model
+import io
+import openpyxl
+from openpyxl.styles import Font, Alignment
 
 User = get_user_model()
 
@@ -659,6 +662,106 @@ def generare_rapoarte(request):
         'col_parti': is_checked('col_parti', False),
         'col_masuri': is_checked('col_masuri', False),
     }
+
+    # ==========================================
+    # LOGICA DE EXPORT EXCEL NATIV (.XLSX)
+    # ==========================================
+    if 'export_excel' in request.GET:
+        # 1. Creăm un fișier Excel în memorie
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Raport Dosare"
+        
+        def curata_text(text):
+            if not text: return "-"
+            return str(text).replace('\n', ' ').replace('\r', ' ').strip()
+        
+        # 2. Generăm și scriem Capul de Tabel (Headers)
+        headers = []
+        if coloane['col_numar']: headers.append("Numar Unic")
+        if coloane['col_data_inreg']: headers.append("Data Inreg.")
+        if coloane['col_situatie_fapt']: headers.append("Situatie Fapt")
+        if coloane['col_incadrare']: headers.append("Incadrare Juridica")
+        if coloane['col_ofiter']: headers.append("Ofiter de Caz")
+        if coloane['col_procuror']: headers.append("Procuror de Caz")
+        if coloane['col_stadiu_curent']: headers.append("Stadiu Curent")
+        if coloane['col_data_stadiu']: headers.append("Data Stadiu")
+        if coloane['col_solutie_finala']: headers.append("Solutie Finala")
+        if coloane['col_data_solutie']: headers.append("Data Solutie")
+        if coloane['col_parti']: headers.append("Parti Implicate")
+        if coloane['col_masuri']: headers.append("Masuri Preventive")
+        
+        ws.append(headers)
+        
+        # Stilizăm capul de tabel (bold și centrat)
+        for cell in ws[1]:
+            cell.font = Font(bold=True, color="FFFFFF")
+            cell.alignment = Alignment(horizontal="center", vertical="center")
+            cell.fill = openpyxl.styles.PatternFill(start_color="4F81BD", end_color="4F81BD", fill_type="solid")
+            
+        # 3. Scriem datele (Rândurile)
+        for dosar in dosare:
+            row = []
+            stadiu = dosar.stadii_cercetare.first()
+            solutie = stadiu.solutii.first() if stadiu else None
+            
+            if coloane['col_numar']: 
+                row.append(curata_text(dosar.numar_unic))
+            if coloane['col_data_inreg']: 
+                row.append(dosar.data_inregistrarii.strftime("%d.%m.%Y") if dosar.data_inregistrarii else "-")
+            if coloane['col_situatie_fapt']: 
+                row.append(curata_text(dosar.infractiune_cercetata))
+            if coloane['col_incadrare']: 
+                incadrari = " | ".join([f"art. {i.articol} - {i.get_act_normativ_display()}" for i in dosar.infractiuni.all()])
+                row.append(curata_text(incadrari))
+            if coloane['col_ofiter']: 
+                row.append(curata_text(dosar.ofiter_caz.get_full_name() if dosar.ofiter_caz else "-"))
+            if coloane['col_procuror']: 
+                row.append(curata_text(dosar.procuror_caz.get_full_name() if dosar.procuror_caz else "-"))
+            if coloane['col_stadiu_curent']: 
+                row.append(curata_text(stadiu.get_tip_stadiu_display() if stadiu else "Neinceput"))
+            if coloane['col_data_stadiu']: 
+                row.append(stadiu.data_incepere.strftime("%d.%m.%Y") if stadiu and stadiu.data_incepere else "-")
+            if coloane['col_solutie_finala']: 
+                row.append(curata_text(solutie.get_tip_solutie_display() if solutie else "-"))
+            if coloane['col_data_solutie']: 
+                row.append(solutie.data_solutiei.strftime("%d.%m.%Y") if solutie and solutie.data_solutiei else "-")
+            if coloane['col_parti']: 
+                parti = " | ".join([f"{p.nume_complet} ({p.get_calitate_procesuala_display()})" for p in dosar.parti_implicate.all()])
+                row.append(curata_text(parti))
+            if coloane['col_masuri']: 
+                masuri = " | ".join([f"{m.get_tip_masura_display()} (exp. {m.data_sfarsit.strftime('%d.%m.%Y')})" for m in dosar.masuri_preventive.all() if m.data_sfarsit])
+                row.append(curata_text(masuri))
+                
+            ws.append(row)
+            
+        # 4. Ajustăm lățimea coloanelor automat pentru a arăta bine
+        for col in ws.columns:
+            max_length = 0
+            column_letter = col[0].column_letter
+            for cell in col:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 60) # Limităm lățimea maximă la 60
+            ws.column_dimensions[column_letter].width = adjusted_width
+
+        # 5. Salvăm în memoria serverului
+        virtual_workbook = io.BytesIO()
+        wb.save(virtual_workbook)
+        virtual_workbook.seek(0)
+        
+        # 6. Trimitem fișierul către browser cu formatul corect de .xlsx
+        response = HttpResponse(
+            virtual_workbook, 
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename="Raport_Dosare_{datetime.now().strftime("%Y-%m-%d")}.xlsx"'
+        
+        return response
+    # ==========================================
 
     # Extragem opțiunile din modele pentru a popula automat dropdown-urile din HTML
     context = {
