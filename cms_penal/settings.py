@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'cases',
     'documents',
     'simple_history', # <--- ADĂUGAT PENTRU AUDIT
+    'sass_processor', # leaga codul sass in Django
 ]
 
 MIDDLEWARE = [
@@ -124,10 +125,26 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+# Aici se vor aduna fișierele pentru producție (LXC) când vei rula "collectstatic"
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
 # Django va căuta fișiere (fonturi, imagini) în acest folder
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
+
+# --- SETĂRI NOI PENTRU SASS ---
+
+# Îi spunem lui Django ce "căutători" (finders) să folosească pentru a găsi fișierele.
+# Am adăugat CssFinder la final pentru ca Django să știe să proceseze SCSS-ul.
+STATICFILES_FINDERS = [
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+    'sass_processor.finders.CssFinder',
+]
+
+# Locul unde django-sass-processor va salva fișierele .css după ce le compilează "din mers"
+SASS_PROCESSOR_ROOT = BASE_DIR / 'static'
 
 # Specificăm modelul de utilizator personalizat
 AUTH_USER_MODEL = 'accounts.CustomUser'

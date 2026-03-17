@@ -1,0 +1,125 @@
+// 1. Definim culorile personalizate PENTRU O APLICATIE JURIDICA
+// Suprascriem variabilele default inainte de a importa Bootstrap
+
+$primary: #1a365d;    // Un albastru marin (Navy Blue) sobru si profesional
+$secondary: #4a5568;  // Un gri inchis pentru elemente secundare
+$success: #2f855a;    // Un verde mai temperat pentru actiuni reusite
+$danger: #c53030;     // Un rosu mai putin strident pentru stergerea dosarelor/erori
+$body-bg: #f7fafc;    // Un fundal foarte usor gri-albastrui, mai relaxant pentru ochi
+$border-radius: 0.2rem; // Colturi putin mai ascutite pentru un aspect mai serios
+
+// 2. Importam toata libraria Bootstrap (va prelua culorile tale de mai sus)
+@import "bootstrap/bootstrap";
+
+// 3. Aici poti adauga reguli CSS personalizate pe viitor
+// de exemplu, pentru a face tabelul cu dosare sa arate fix cum vrei
+.tabel-dosare th {
+    font-weight: 600;
+    letter-spacing: 0.05em;
+}
+
+
+// ADĂUGĂRI PENTRU VARIANTA INSTITUȚIONALĂ A NAVBAR-ULUI
+
+// Clase utilitare pentru tranzitii fine
+.transition-base {
+    transition: all 0.2s ease-in-out;
+}
+
+.hover-opacity-100:hover {
+    opacity: 1 !important;
+}
+
+.hover-bg-light:hover {
+    background-color: #f8f9fa !important;
+}
+
+.last-child-no-border:last-child {
+    border-bottom: none !important;
+}
+
+
+// ==========================================
+// FIX PENTRU FORMULARELE DJANGO
+// Se aplică în modale ȘI în wrapper-ul general de pagină
+// ==========================================
+
+.modal-body, .django-form-wrapper {
+    
+    // Django as_p pune fiecare câmp într-un <p>. Îi dăm spațiere corectă.
+    p {
+        margin-bottom: 1.25rem;
+    }
+
+    // Forțăm toate inputurile, dropdown-urile și zonele de text să arate impecabil
+    input:not([type="checkbox"]):not([type="radio"]), 
+    select, 
+    textarea {
+        display: block !important;
+        width: 100% !important; 
+        padding: 0.5rem 0.75rem; // Padding o idee mai generos
+        font-size: 0.95rem;      // Font lizibil
+        font-family: inherit;
+        color: #212529;
+        background-color: #fff;
+        border: 1px solid #ced4da;
+        border-radius: 0.375rem;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+
+        &:focus {
+            border-color: $primary;
+            outline: 0;
+            box-shadow: 0 0 0 0.25rem rgba($primary, 0.25);
+        }
+    }
+
+    // Formatăm etichetele (labels) ca să arate profesional și tehnic
+    label {
+        display: block;
+        width: 100%;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #6c757d; // text-muted
+        margin-bottom: 0.4rem;
+    }
+    
+    // Stil special pentru help_text-ul din Django (dacă există)
+    .helptext {
+        display: block;
+        font-size: 0.75rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+
+    // Stilizarea erorilor de validare generate de Django
+    ul.errorlist {
+        list-style-type: none; // Scoatem punctele (bullets) de la listă
+        padding: 0.75rem 1rem; // Adăugăm spațiu interior
+        margin-top: 0;
+        margin-bottom: 0.5rem;
+        background-color: #f8d7da; // Un roșu foarte deschis (specific alertelor Bootstrap)
+        border: 1px solid #f5c2c7; // O bordură fină roșiatică
+        border-radius: 0.375rem;   // Colțuri rotunjite
+        color: #842029;            // Text roșu închis pentru contrast bun
+        font-size: 0.85rem;
+        font-weight: 600;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+
+        li {
+            margin-bottom: 0.25rem;
+
+            &:last-child {
+                margin-bottom: 0;
+            }
+
+            // Adăugăm automat un icon de avertizare în fața textului de eroare
+            &::before {
+                content: "⚠️ ";
+                margin-right: 6px;
+                font-size: 0.9rem;
+            }
+        }
+    }
+}

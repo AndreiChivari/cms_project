@@ -1,31 +1,43 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container-fluid mt-4">
-    <h2 class="mb-4 text-center">📊 Generator rapoarte avansate</h2>
+<div class="container-fluid mt-4 mb-5">
+    
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 pb-3 border-bottom border-secondary border-opacity-25">
+        <div>
+            <h3 class="mb-1 fw-bold text-dark d-flex align-items-center gap-2">
+                <span class="text-primary">📊</span> Generator rapoarte avansate
+            </h3>
+            <p class="text-muted mb-0" style="font-size: 0.95rem;">
+                Filtrează, afișează și exportă datele complexe în format tabelar sau Excel.
+            </p>
+        </div>
+    </div>
 
     <form method="GET" action="{% url 'cases:rapoarte' %}" class="mb-4">
-        <div class="row">
+        <div class="row g-4">
             <div class="col-md-6">
-                <div class="card shadow-sm h-100">
-                    <div class="card-header bg-primary text-white fw-bold">
-                        🔍 Filtrează datele (Criterii de căutare)
+                <div class="card border-0 border-top border-primary border-3 shadow-sm h-100 rounded-3">
+                    <div class="card-header bg-white py-3 border-bottom border-secondary border-opacity-10">
+                        <h6 class="mb-0 fw-bold text-dark" style="font-size: 1rem;">
+                            <span class="fs-6 me-2">🔍</span> Filtrează datele (Criterii de căutare)
+                        </h6>
                     </div>
                     <div class="card-body" style="font-size: 0.9rem;">
-                        <div class="row mb-2">
+                        <div class="row mb-3">
                             <div class="col-6">
-                                <label class="form-label fw-bold mb-0">Data înreg. (de la)</label>
-                                <input type="date" name="data_inreg_start" class="form-control form-control-sm" value="{{ request.GET.data_inreg_start }}">
+                                <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">Data înreg. (de la)</label>
+                                <input type="date" name="data_inreg_start" class="form-control form-control-sm border-secondary border-opacity-25" value="{{ request.GET.data_inreg_start }}">
                             </div>
                             <div class="col-6">
-                                <label class="form-label fw-bold mb-0">Data înreg. (până la)</label>
-                                <input type="date" name="data_inreg_end" class="form-control form-control-sm" value="{{ request.GET.data_inreg_end }}">
+                                <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">Data înreg. (până la)</label>
+                                <input type="date" name="data_inreg_end" class="form-control form-control-sm border-secondary border-opacity-25" value="{{ request.GET.data_inreg_end }}">
                             </div>
                         </div>
-                        <div class="row mb-2">
+                        <div class="row mb-3">
                             <div class="col-6">
-                                <label class="form-label fw-bold mb-0">Procuror</label>
-                                <select name="procuror" class="form-select form-select-sm">
+                                <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">Procuror</label>
+                                <select name="procuror" class="form-select form-select-sm border-secondary border-opacity-25">
                                     <option value="">-- Toți --</option>
                                     {% for p in lista_procurori %}
                                     <option value="{{ p.id }}" {% if request.GET.procuror == p.id|stringformat:"s" %}selected{% endif %}>{{ p.get_full_name|default:p.username }}</option>
@@ -33,8 +45,8 @@
                                 </select>
                             </div>
                             <div class="col-6">
-                                <label class="form-label fw-bold mb-0">Ofițer de Caz</label>
-                                <select name="ofiter" class="form-select form-select-sm">
+                                <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">Ofițer de Caz</label>
+                                <select name="ofiter" class="form-select form-select-sm border-secondary border-opacity-25">
                                     <option value="">-- Toți --</option>
                                     {% for o in lista_ofiteri %}
                                     <option value="{{ o.id }}" {% if request.GET.ofiter == o.id|stringformat:"s" %}selected{% endif %}>{{ o.get_full_name|default:o.username }}</option>
@@ -42,10 +54,10 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="row mb-2">
+                        <div class="row mb-3">
                             <div class="col-6">
-                                <label class="form-label fw-bold mb-0">Act normativ</label>
-                                <select name="act_normativ" class="form-select form-select-sm">
+                                <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">Act normativ</label>
+                                <select name="act_normativ" class="form-select form-select-sm border-secondary border-opacity-25">
                                     <option value="">-- Toate --</option>
                                     {% for cod, nume in acte_normative %}
                                     <option value="{{ cod }}" {% if request.GET.act_normativ == cod %}selected{% endif %}>{{ nume }}</option>
@@ -53,14 +65,14 @@
                                 </select>
                             </div>
                             <div class="col-6">
-                                <label class="form-label fw-bold mb-0">Articol (Ex: 228)</label>
-                                <input type="text" name="articol" class="form-control form-control-sm" value="{{ request.GET.articol }}" placeholder="Caută articol...">
+                                <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">Articol (Ex: 228)</label>
+                                <input type="text" name="articol" class="form-control form-control-sm border-secondary border-opacity-25" value="{{ request.GET.articol }}" placeholder="Caută articol...">
                             </div>
                         </div>
                         <div class="row mb-2">
                             <div class="col-6">
-                                <label class="form-label fw-bold mb-0">Stadiu curent</label>
-                                <select name="stadiu" class="form-select form-select-sm">
+                                <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">Stadiu curent</label>
+                                <select name="stadiu" class="form-select form-select-sm border-secondary border-opacity-25">
                                     <option value="">-- Toate --</option>
                                     {% for cod, nume in stadii_choices %}
                                     <option value="{{ cod }}" {% if request.GET.stadiu == cod %}selected{% endif %}>{{ nume }}</option>
@@ -68,8 +80,8 @@
                                 </select>
                             </div>
                             <div class="col-6">
-                                <label class="form-label fw-bold mb-0">Tip Soluție</label>
-                                <select name="solutie" class="form-select form-select-sm">
+                                <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">Tip Soluție</label>
+                                <select name="solutie" class="form-select form-select-sm border-secondary border-opacity-25">
                                     <option value="">-- Toate --</option>
                                     {% for cod, nume in solutii_choices %}
                                     <option value="{{ cod }}" {% if request.GET.solutie == cod %}selected{% endif %}>{{ nume }}</option>
@@ -82,37 +94,41 @@
             </div>
 
             <div class="col-md-6">
-                <div class="card shadow-sm h-100">
-                    <div class="card-header bg-primary text-white fw-bold">
-                        👁️ Alege coloanele pentru tabel / Excel
+                <div class="card border-0 border-top border-success border-3 shadow-sm h-100 rounded-3 d-flex flex-column">
+                    <div class="card-header bg-white py-3 border-bottom border-secondary border-opacity-10">
+                        <h6 class="mb-0 fw-bold text-dark" style="font-size: 1rem;">
+                            <span class="fs-6 me-2">👁️</span> Alege coloanele pentru tabel / Excel
+                        </h6>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body flex-grow-1" style="font-size: 0.9rem;">
                         <div class="row">
                             <div class="col-sm-6">
-                                <div class="form-check"><input class="form-check-input" type="checkbox" name="col_numar" checked disabled> <label class="form-check-label fw-bold">Număr unic</label></div>
+                                <div class="form-check mb-2"><input class="form-check-input" type="checkbox" name="col_numar" checked disabled> <label class="form-check-label fw-bold text-dark">Număr unic</label></div>
                                 <input type="hidden" name="col_numar" value="on">
                                 
-                                <div class="form-check"><input class="form-check-input" type="checkbox" name="col_data_inreg" {% if coloane.col_data_inreg %}checked{% endif %}> <label class="form-check-label">Data înregistrării</label></div>
-                                <div class="form-check"><input class="form-check-input" type="checkbox" name="col_situatie_fapt" {% if coloane.col_situatie_fapt %}checked{% endif %}> <label class="form-check-label">Situație de fapt (rezumat)</label></div>
-                                <div class="form-check"><input class="form-check-input" type="checkbox" name="col_incadrare" {% if coloane.col_incadrare %}checked{% endif %}> <label class="form-check-label">Încadrare juridică (art/lege)</label></div>
-                                <div class="form-check"><input class="form-check-input" type="checkbox" name="col_ofiter" {% if coloane.col_ofiter %}checked{% endif %}> <label class="form-check-label">Nume poliţist</label></div>
-                                <div class="form-check"><input class="form-check-input" type="checkbox" name="col_procuror" {% if coloane.col_procuror %}checked{% endif %}> <label class="form-check-label">Nume procuror</label></div>
+                                <div class="form-check mb-2"><input class="form-check-input border-secondary border-opacity-50" type="checkbox" name="col_data_inreg" {% if coloane.col_data_inreg %}checked{% endif %}> <label class="form-check-label text-dark">Data înregistrării</label></div>
+                                <div class="form-check mb-2"><input class="form-check-input border-secondary border-opacity-50" type="checkbox" name="col_situatie_fapt" {% if coloane.col_situatie_fapt %}checked{% endif %}> <label class="form-check-label text-dark">Situație de fapt (rezumat)</label></div>
+                                <div class="form-check mb-2"><input class="form-check-input border-secondary border-opacity-50" type="checkbox" name="col_incadrare" {% if coloane.col_incadrare %}checked{% endif %}> <label class="form-check-label text-dark">Încadrare juridică (art/lege)</label></div>
+                                <div class="form-check mb-2"><input class="form-check-input border-secondary border-opacity-50" type="checkbox" name="col_ofiter" {% if coloane.col_ofiter %}checked{% endif %}> <label class="form-check-label text-dark">Nume poliţist</label></div>
+                                <div class="form-check mb-2"><input class="form-check-input border-secondary border-opacity-50" type="checkbox" name="col_procuror" {% if coloane.col_procuror %}checked{% endif %}> <label class="form-check-label text-dark">Nume procuror</label></div>
                             </div>
                             <div class="col-sm-6">
-                                <div class="form-check"><input class="form-check-input" type="checkbox" name="col_stadiu_curent" {% if coloane.col_stadiu_curent %}checked{% endif %}> <label class="form-check-label">Stadiu curent</label></div>
-                                <div class="form-check"><input class="form-check-input" type="checkbox" name="col_data_stadiu" {% if coloane.col_data_stadiu %}checked{% endif %}> <label class="form-check-label">Data stadiului</label></div>
-                                <div class="form-check"><input class="form-check-input" type="checkbox" name="col_solutie_finala" {% if coloane.col_solutie_finala %}checked{% endif %}> <label class="form-check-label">Soluția finală</label></div>
-                                <div class="form-check"><input class="form-check-input" type="checkbox" name="col_data_solutie" {% if coloane.col_data_solutie %}checked{% endif %}> <label class="form-check-label">Data soluției</label></div>
-                                <div class="form-check"><input class="form-check-input" type="checkbox" name="col_parti" {% if coloane.col_parti %}checked{% endif %}> <label class="form-check-label">Părți în cauză</label></div>
-                                <div class="form-check"><input class="form-check-input" type="checkbox" name="col_masuri" {% if coloane.col_masuri %}checked{% endif %}> <label class="form-check-label">Măsuri preventive active</label></div>
+                                <div class="form-check mb-2"><input class="form-check-input border-secondary border-opacity-50" type="checkbox" name="col_stadiu_curent" {% if coloane.col_stadiu_curent %}checked{% endif %}> <label class="form-check-label text-dark">Stadiu curent</label></div>
+                                <div class="form-check mb-2"><input class="form-check-input border-secondary border-opacity-50" type="checkbox" name="col_data_stadiu" {% if coloane.col_data_stadiu %}checked{% endif %}> <label class="form-check-label text-dark">Data stadiului</label></div>
+                                <div class="form-check mb-2"><input class="form-check-input border-secondary border-opacity-50" type="checkbox" name="col_solutie_finala" {% if coloane.col_solutie_finala %}checked{% endif %}> <label class="form-check-label text-dark">Soluția finală</label></div>
+                                <div class="form-check mb-2"><input class="form-check-input border-secondary border-opacity-50" type="checkbox" name="col_data_solutie" {% if coloane.col_data_solutie %}checked{% endif %}> <label class="form-check-label text-dark">Data soluției</label></div>
+                                <div class="form-check mb-2"><input class="form-check-input border-secondary border-opacity-50" type="checkbox" name="col_parti" {% if coloane.col_parti %}checked{% endif %}> <label class="form-check-label text-dark">Părți în cauză</label></div>
+                                <div class="form-check mb-2"><input class="form-check-input border-secondary border-opacity-50" type="checkbox" name="col_masuri" {% if coloane.col_masuri %}checked{% endif %}> <label class="form-check-label text-dark">Măsuri preventive active</label></div>
                             </div>
                         </div>
                     </div>
-                    <div class="card-footer text-end bg-white">
-                        <a href="{% url 'cases:rapoarte' %}" class="btn btn-outline-secondary btn-sm">Resetează filtrele</a>
-                        <button type="submit" class="btn btn-primary btn-sm fw-bold ms-2">🔄 Aplică și afișează</button>
-                        <button type="submit" name="export_excel" value="true" class="btn btn-success btn-sm fw-bold ms-2">
-                            📥 Descarcă Excel
+                    <div class="card-footer bg-light border-top border-secondary border-opacity-10 d-flex flex-wrap justify-content-end gap-2 py-3 px-4">
+                        <a href="{% url 'cases:rapoarte' %}" class="btn btn-light border border-secondary border-opacity-25 btn-sm fw-medium px-3">Resetează filtrele</a>
+                        <button type="submit" class="btn btn-primary btn-sm fw-medium shadow-sm px-3 d-flex align-items-center gap-1">
+                            <span style="font-size: 1rem; line-height: 1;">🔄</span> Aplică
+                        </button>
+                        <button type="submit" name="export_excel" value="true" class="btn btn-success btn-sm fw-bold shadow-sm px-3 d-flex align-items-center gap-1">
+                            <span style="font-size: 1rem; line-height: 1;">📥</span> Descarcă Excel
                         </button>
                     </div>
                 </div>
@@ -120,43 +136,43 @@
         </div>
     </form>
 
-    <div class="card shadow-sm border-0">
+    <div class="card border-0 border-top border-secondary border-3 shadow-sm rounded-3 overflow-hidden">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover table-striped mb-0 align-middle text-sm" style="font-size: 0.9rem;">
-                    <thead class="table-dark">
+                <table class="table table-hover table-striped mb-0 align-middle" style="font-size: 0.85rem;">
+                    <thead class="align-middle">
                         <tr>
-                            {% if coloane.col_numar %}<th>Număr unic</th>{% endif %}
-                            {% if coloane.col_data_inreg %}<th>Data înreg.</th>{% endif %}
-                            {% if coloane.col_situatie_fapt %}<th>Situație de fapt (rezumat)</th>{% endif %}
-                            {% if coloane.col_incadrare %}<th>Încadrare (art/lege)</th>{% endif %}
-                            {% if coloane.col_ofiter %}<th>Poliţist</th>{% endif %}
-                            {% if coloane.col_procuror %}<th>Procuror</th>{% endif %}
-                            {% if coloane.col_stadiu_curent %}<th>Stadiu</th>{% endif %}
-                            {% if coloane.col_data_stadiu %}<th>Data stadiu</th>{% endif %}
-                            {% if coloane.col_solutie_finala %}<th>Soluție</th>{% endif %}
-                            {% if coloane.col_data_solutie %}<th>Data soluție</th>{% endif %}
-                            {% if coloane.col_parti %}<th>Părți în cauză</th>{% endif %}
-                            {% if coloane.col_masuri %}<th>Măsuri preventive</th>{% endif %}
+                            {% if coloane.col_numar %}<th class="py-3 px-3 fw-bold border-0 bg-primary text-white" style="font-size: 0.75rem; text-transform: uppercase;">Număr unic</th>{% endif %}
+                            {% if coloane.col_data_inreg %}<th class="py-3 px-3 fw-bold border-0 bg-primary text-white" style="font-size: 0.75rem; text-transform: uppercase;">Data înreg.</th>{% endif %}
+                            {% if coloane.col_situatie_fapt %}<th class="py-3 px-3 fw-bold border-0 bg-primary text-white" style="font-size: 0.75rem; text-transform: uppercase;">Situație de fapt (rezumat)</th>{% endif %}
+                            {% if coloane.col_incadrare %}<th class="py-3 px-3 fw-bold border-0 bg-primary text-white" style="font-size: 0.75rem; text-transform: uppercase;">Încadrare (art/lege)</th>{% endif %}
+                            {% if coloane.col_ofiter %}<th class="py-3 px-3 fw-bold border-0 bg-primary text-white" style="font-size: 0.75rem; text-transform: uppercase;">Poliţist</th>{% endif %}
+                            {% if coloane.col_procuror %}<th class="py-3 px-3 fw-bold border-0 bg-primary text-white" style="font-size: 0.75rem; text-transform: uppercase;">Procuror</th>{% endif %}
+                            {% if coloane.col_stadiu_curent %}<th class="py-3 px-3 fw-bold border-0 bg-primary text-white" style="font-size: 0.75rem; text-transform: uppercase;">Stadiu</th>{% endif %}
+                            {% if coloane.col_data_stadiu %}<th class="py-3 px-3 fw-bold border-0 bg-primary text-white" style="font-size: 0.75rem; text-transform: uppercase;">Data stadiu</th>{% endif %}
+                            {% if coloane.col_solutie_finala %}<th class="py-3 px-3 fw-bold border-0 bg-primary text-white" style="font-size: 0.75rem; text-transform: uppercase;">Soluție</th>{% endif %}
+                            {% if coloane.col_data_solutie %}<th class="py-3 px-3 fw-bold border-0 bg-primary text-white" style="font-size: 0.75rem; text-transform: uppercase;">Data soluție</th>{% endif %}
+                            {% if coloane.col_parti %}<th class="py-3 px-3 fw-bold border-0 bg-primary text-white" style="font-size: 0.75rem; text-transform: uppercase;">Părți în cauză</th>{% endif %}
+                            {% if coloane.col_masuri %}<th class="py-3 px-3 fw-bold border-0 bg-primary text-white" style="font-size: 0.75rem; text-transform: uppercase;">Măsuri prev.</th>{% endif %}
                         </tr>
                     </thead>
                     <tbody>
                         {% for dosar in dosare %}
                         <tr>
                             {% if coloane.col_numar %}
-                                <td><a href="{% url 'cases:detalii_dosar' dosar.pk %}" class="fw-bold text-decoration-none">{{ dosar.numar_unic }}</a></td>
+                                <td class="px-3 py-2"><a href="{% url 'cases:detalii_dosar' dosar.pk %}" class="fw-bold text-decoration-none text-primary">{{ dosar.numar_unic }}</a></td>
                             {% endif %}
                             
-                            {% if coloane.col_data_inreg %}<td>{{ dosar.data_inregistrarii|date:"d.m.Y" }}</td>{% endif %}
+                            {% if coloane.col_data_inreg %}<td class="px-3 py-2 text-dark">{{ dosar.data_inregistrarii|date:"d.m.Y" }}</td>{% endif %}
                             
                             {% if coloane.col_situatie_fapt %}
-                                <td><span class="text-truncate d-inline-block" style="max-width: 150px;" title="{{ dosar.infractiune_cercetata }}">{{ dosar.infractiune_cercetata }}</span></td>
+                                <td class="px-3 py-2"><span class="text-truncate d-inline-block text-dark" style="max-width: 150px;" title="{{ dosar.infractiune_cercetata }}">{{ dosar.infractiune_cercetata }}</span></td>
                             {% endif %}
 
                             {% if coloane.col_incadrare %}
-                                <td>
+                                <td class="px-3 py-2">
                                     {% for infr in dosar.infractiuni.all %}
-                                        <div style="font-size: 0.85rem;" class="badge bg-light text-dark border mb-1">
+                                        <div class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 mb-1 fw-normal text-wrap text-start">
                                             {% if infr.articol and infr.articol != 'None' %}
                                                 art. {{ infr.articol }} - {{ infr.get_act_normativ_display }}
                                             {% else %}
@@ -169,31 +185,31 @@
                                 </td>
                             {% endif %}
                             
-                            {% if coloane.col_ofiter %}<td>{{ dosar.ofiter_caz.get_full_name|default:"-" }}</td>{% endif %}
-                            {% if coloane.col_procuror %}<td>{{ dosar.procuror_caz.get_full_name|default:"-" }}</td>{% endif %}
+                            {% if coloane.col_ofiter %}<td class="px-3 py-2 text-dark">{{ dosar.ofiter_caz.get_full_name|default:"-" }}</td>{% endif %}
+                            {% if coloane.col_procuror %}<td class="px-3 py-2 text-dark">{{ dosar.procuror_caz.get_full_name|default:"-" }}</td>{% endif %}
                             
                             {% with stadiu=dosar.stadii_cercetare.first %}
                                 {% if coloane.col_stadiu_curent %}
-                                    <td><span class="badge bg-info text-dark">{{ stadiu.get_tip_stadiu_display|default:"Neînceput" }}</span></td>
+                                    <td class="px-3 py-2"><span class="badge bg-secondary text-white fw-medium shadow-sm">{{ stadiu.get_tip_stadiu_display|default:"Neînceput" }}</span></td>
                                 {% endif %}
                                 {% if coloane.col_data_stadiu %}
-                                    <td>{{ stadiu.data_incepere|date:"d.m.Y"|default:"-" }}</td>
+                                    <td class="px-3 py-2 text-muted">{{ stadiu.data_incepere|date:"d.m.Y"|default:"-" }}</td>
                                 {% endif %}
                                 
                                 {% with solutie=stadiu.solutii.first %}
                                     {% if coloane.col_solutie_finala %}
-                                        <td><span class="badge bg-secondary">{{ solutie.get_tip_solutie_display|default:"-" }}</span></td>
+                                        <td class="px-3 py-2"><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">{{ solutie.get_tip_solutie_display|default:"-" }}</span></td>
                                     {% endif %}
                                     {% if coloane.col_data_solutie %}
-                                        <td>{{ solutie.data_solutiei|date:"d.m.Y"|default:"-" }}</td>
+                                        <td class="px-3 py-2 text-muted">{{ solutie.data_solutiei|date:"d.m.Y"|default:"-" }}</td>
                                     {% endif %}
                                 {% endwith %}
                             {% endwith %}
 
                             {% if coloane.col_parti %}
-                                <td>
+                                <td class="px-3 py-2">
                                     {% for parte in dosar.parti_implicate.all %}
-                                        <div style="font-size: 0.8rem;">• {{ parte.nume_complet }} ({{ parte.get_calitate_procesuala_display }})</div>
+                                        <div class="text-dark" style="font-size: 0.8rem;">• {{ parte.nume_complet }} <span class="text-muted">({{ parte.get_calitate_procesuala_display }})</span></div>
                                     {% empty %}
                                         <span class="text-muted">-</span>
                                     {% endfor %}
@@ -201,9 +217,9 @@
                             {% endif %}
 
                             {% if coloane.col_masuri %}
-                                <td>
+                                <td class="px-3 py-2">
                                     {% for masura in dosar.masuri_preventive.all %}
-                                        <div style="font-size: 0.8rem; color: #dc3545;">⚠ {{ masura.get_tip_masura_display }} (exp. {{ masura.data_sfarsit|date:"d.m.Y" }})</div>
+                                        <div style="font-size: 0.8rem;" class="text-danger fw-medium">⚠ {{ masura.get_tip_masura_display }} <span class="text-muted fw-normal">(exp. {{ masura.data_sfarsit|date:"d.m.Y" }})</span></div>
                                     {% empty %}
                                         <span class="text-muted">-</span>
                                     {% endfor %}
@@ -212,15 +228,18 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="12" class="text-center py-4 text-muted fs-5">Nu s-au găsit dosare pentru filtrele selectate.</td>
+                            <td colspan="12" class="text-center py-5 text-muted bg-white">
+                                <div class="fs-1 mb-2 opacity-50">📋</div>
+                                <p class="mb-0 fw-medium">Nu s-au găsit dosare pentru filtrele selectate.</p>
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-            <div class="card-footer bg-light text-muted small">
-                Total rezultate: <strong>{{ dosare.count }}</strong> dosare.
-            </div>
+        </div>
+        <div class="card-footer bg-light border-top border-secondary border-opacity-10 py-2 px-3 text-muted" style="font-size: 0.85rem;">
+            Total rezultate afișate: <strong class="text-dark">{{ dosare.count }}</strong> dosare.
         </div>
     </div>
 </div>

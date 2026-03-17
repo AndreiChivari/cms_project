@@ -1,22 +1,96 @@
 {% extends 'base.html' %}
-{% block title %}Creare Dosar Nou{% endblock %}
+
+{% block title %}Înregistrare Dosar Nou{% endblock %}
+
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card shadow-sm mt-4">
-            <div class="card-header bg-success text-white">
-                <h4 class="mb-0">+ Înregistrare Dosar Nou</h4>
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 pb-3 border-bottom border-secondary border-opacity-25">
+    <div>
+        <a href="{% url 'cases:lista_dosare' %}" class="text-decoration-none text-muted mb-2 d-inline-block transition-base hover-text-primary" style="font-size: 0.9rem;">
+            &larr; Înapoi la listă
+        </a>
+        <h3 class="mb-1 fw-bold text-dark d-flex align-items-center gap-2">
+            Înregistrare dosar nou
+        </h3>
+        <p class="text-muted mb-0" style="font-size: 0.95rem;">
+            Completarea datelor inițiale pentru deschiderea unei noi cauze penale.
+        </p>
+    </div>
+</div>
+
+<div class="row justify-content-center mb-5">
+    <div class="col-xl-9 col-lg-10">
+        <div class="card border-0 border-top border-primary border-3 shadow-sm rounded-3 overflow-hidden mt-2">
+            
+            <div class="card-header bg-white py-3 border-bottom border-secondary border-opacity-10">
+                <h5 class="mb-0 fw-bold text-dark" style="font-size: 1.05rem;">
+                    <span class="fs-5 me-2">📝</span> Formular date inițiale
+                </h5>
             </div>
-            <div class="card-body">
-                <form method="POST">
+            
+            <form method="POST">
+                <div class="card-body p-4 p-md-5">
                     {% csrf_token %}
-                    {{ form.as_p }}
-                    <div class="d-flex justify-content-between mt-4">
-                        <a href="{% url 'cases:lista_dosare' %}" class="btn btn-outline-secondary">Anulează</a>
-                        <button type="submit" class="btn btn-success fw-bold">Înregistrează Dosarul</button>
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger mb-4 shadow-sm border border-danger border-opacity-25 text-danger fw-medium" style="font-size: 0.9rem;">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+
+                    <div class="django-form-wrapper text-dark">
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                {{ form.numar_unic.label_tag }}
+                                {{ form.numar_unic }}
+                                {{ form.numar_unic.errors }}
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                {{ form.data_inregistrarii.label_tag }}
+                                {{ form.data_inregistrarii }}
+                                {{ form.data_inregistrarii.errors }}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12 mb-4">
+                                {{ form.infractiune_cercetata.label_tag }}
+                                {{ form.infractiune_cercetata }}
+                                {{ form.infractiune_cercetata.errors }}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-4 mb-md-0">
+                                {{ form.ofiter_caz.label_tag }}
+                                {{ form.ofiter_caz }}
+                                {{ form.ofiter_caz.errors }}
+                            </div>
+                            <div class="col-md-4 mb-4 mb-md-0">
+                                {{ form.procuror_caz.label_tag }}
+                                {{ form.procuror_caz }}
+                                {{ form.procuror_caz.errors }}
+                            </div>
+                            <div class="col-md-4 mb-4 mb-md-0">
+                                {{ form.grefier_caz.label_tag }}
+                                {{ form.grefier_caz }}
+                                {{ form.grefier_caz.errors }}
+                            </div>
+                        </div>
+
                     </div>
-                </form>
-            </div>
+                </div>
+                
+                <div class="card-footer bg-light border-top border-secondary border-opacity-10 px-4 py-3 d-flex justify-content-between align-items-center">
+                    <a href="{% url 'cases:lista_dosare' %}" class="btn btn-light border border-secondary border-opacity-25 px-4 fw-medium transition-base">
+                        Anulează
+                    </a>
+                    <button type="submit" class="btn btn-primary px-4 shadow-sm fw-medium d-flex align-items-center gap-2 transition-base">
+                        <span>Înregistrează dosarul</span> &rarr;
+                    </button>
+                </div>
+            </form>
+
         </div>
     </div>
 </div>

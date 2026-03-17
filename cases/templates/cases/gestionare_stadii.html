@@ -1,17 +1,19 @@
 {% extends 'base.html' %}
 
-{% block title %}Gestionare Stadii - {{ dosar.numar_unic }}{% endblock %}
+{% block title %}Gestionare stadii - {{ dosar.numar_unic }}{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4 mt-3">
-    <h4>⚙️ Gestionare Stadii și Soluții <span class="text-muted">| Dosar {{ dosar.numar_unic }}</span></h4>
-    <a href="{% url 'cases:detalii_dosar' dosar.pk %}" class="btn btn-outline-secondary">Înapoi la Dosar</a>
+<div class="mb-4 mt-3 pb-2 border-bottom border-secondary border-opacity-25">
+    <a href="{% url 'cases:detalii_dosar' dosar.pk %}" class="text-decoration-none text-muted mb-2 d-inline-block transition-base hover-text-primary" style="font-size: 0.9rem;">
+        &larr; Înapoi la dosar
+    </a>
+    <h4 class="mb-2">⚙️ Gestionare stadii și soluții <span class="text-muted">| Dosar {{ dosar.numar_unic }}</span></h4>
 </div>
 
 <div class="row">
     <div class="col-md-5 mb-4">
         <div class="card shadow-sm border-primary h-100">
-            <div class="card-header bg-primary text-white fw-bold">1. Adaugă / Editează Stadiu</div>
+            <div class="card-header bg-primary text-white fw-bold">1. Adaugă / editează stadiu</div>
             <div class="card-body">
                 <form method="POST">
                     {% if form_stadiu.errors %}
@@ -29,26 +31,28 @@
                     {% csrf_token %}
                     <input type="hidden" name="stadiu_id" id="id_stadiu_hidden">
                     
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Tip Stadiu Urmărire</label>
-                        {{ form_stadiu.tip_stadiu }}
-                    </div>
-                    <div class="mb-4">
-                        <label class="form-label fw-bold">Data Începerii Stadiului</label>
-                        {{ form_stadiu.data_incepere }}
+                    <div class="django-form-wrapper">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Tip stadiu urmărire</label>
+                            {{ form_stadiu.tip_stadiu }}
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Data începerii stadiului</label>
+                            {{ form_stadiu.data_incepere }}
+                        </div>
                     </div>
                     
-                    <div class="form-check mb-3 mt-2 p-2 bg-light border rounded">
-                        {{ form_stadiu.notifica_echipa }}
-                        <label class="form-check-label text-primary fw-bold" for="{{ form_stadiu.notifica_echipa.id_for_label }}">
+                    <div class="d-flex align-items-center gap-2 mb-3 mt-2 p-2 bg-light border border-info rounded" style="width: fit-content;">
+                        <div class="d-flex align-items-center m-0 p-0">{{ form_stadiu.notifica_echipa }}</div>
+                        <label class="form-check-label text-primary fw-bold mb-0" for="{{ form_stadiu.notifica_echipa.id_for_label }}" style="display: inline-block; width: auto; cursor: pointer;">
                             {{ form_stadiu.notifica_echipa.label }}
                         </label>
                     </div>
 
                     <div class="d-flex justify-content-between align-items-center mt-3">
                         <div>
-                            <button type="submit" name="salveaza_stadiu" class="btn btn-primary fw-bold">Salvează Stadiu</button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary ms-1" onclick="resetStadiuForm()">Nou (Curăță)</button>
+                            <button type="submit" name="salveaza_stadiu" class="btn btn-sm btn-primary fw-bold">Salvează stadiu</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary ms-1" onclick="resetStadiuForm()">Nou (curăță)</button>
                         </div>
                         <button type="submit" name="sterge_stadiu" id="btn_sterge_stadiu" class="btn btn-sm btn-outline-danger" style="display: none;" onclick="return confirm('⚠️ Sigur vrei să ștergi acest stadiu? ATENȚIE: Se vor șterge automat și TOATE soluțiile asociate lui!');" formnovalidate>🗑️ Șterge</button>
                     </div>
@@ -59,7 +63,7 @@
 
     <div class="col-md-7 mb-4">
         <div class="card shadow-sm border-success h-100">
-            <div class="card-header bg-success text-white fw-bold">2. Adaugă / Editează Soluție</div>
+            <div class="card-header bg-success text-white fw-bold">2. Adaugă / editează soluție</div>
             <div class="card-body bg-light">
                 <form method="POST">
                     {% if form_solutie.errors %}
@@ -82,51 +86,54 @@
                         ⚠️ Selectează un stadiu din tabelul de mai jos pentru a-i adăuga o soluție.
                     </div>
 
-                    <div class="row">
-                        <div class="col-md-5 mb-3">
-                            <label class="form-label fw-bold">Stabilită de</label>
-                            <div>
-                                {% for radio in form_solutie.stabilita_de %}
-                                    <div class="form-check">
-                                        {{ radio.tag }}
-                                        <label class="form-check-label" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                        <div class="col-md-7">
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Soluție Dispusă / Propusă</label>
-                                {{ form_solutie.tip_solutie }}
-                            </div>
-                            <div class="row">
-                                <div class="col-sm-6 mb-3">
-                                    <label class="form-label fw-bold">Data Soluției</label>
-                                    {{ form_solutie.data_solutiei }}
+                    <div class="django-form-wrapper">
+                        <div class="row">
+                            <div class="col-md-5 mb-3">
+                                <label class="form-label fw-bold">Stabilită de</label>
+                                <div class="bg-white p-2 border rounded d-flex flex-row flex-wrap gap-3">
+                                    {% for radio in form_solutie.stabilita_de %}
+                                        <div class="form-check d-flex align-items-center gap-1 mb-0">
+                                            <div class="d-flex align-items-center m-0 p-0">{{ radio.tag }}</div>
+                                            <label class="form-check-label mb-0" for="{{ radio.id_for_label }}" style="display: inline-block; width: auto; cursor: pointer;">{{ radio.choice_label }}</label>
+                                        </div>
+                                    {% endfor %}
                                 </div>
-                                <div class="col-sm-6 mb-3 d-flex align-items-end pb-2">
-                                    <div class="form-check">
-                                        {{ form_solutie.este_finala }}
-                                        <label class="form-check-label fw-bold text-danger" for="id_este_finala">
-                                            Este Soluție Finală
-                                        </label>
+                            </div>
+                            <div class="col-md-7">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Soluție dispusă / propusă</label>
+                                    {{ form_solutie.tip_solutie }}
+                                </div>
+                                <div class="row">
+                                    <div class="col-sm-6 mb-3">
+                                        <label class="form-label fw-bold">Data soluției</label>
+                                        {{ form_solutie.data_solutiei }}
+                                    </div>
+                                    <div class="col-sm-6 mb-3">
+                                        <label class="form-label fw-bold d-none d-sm-block">&nbsp;</label>
+                                        <div class="d-flex align-items-center gap-2 px-2 bg-danger bg-opacity-10 border border-danger rounded w-100" style="height: 38px;">
+                                            <div class="d-flex align-items-center m-0 p-0">{{ form_solutie.este_finala }}</div>
+                                            <label class="form-check-label fw-bold text-danger mb-0" for="id_este_finala" style="display: inline-block; width: auto; cursor: pointer;">
+                                                Este soluție finală
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="form-check mb-3 mt-3 p-2 bg-light border rounded">
-                        {{ form_solutie.notifica_echipa }}
-                        <label class="form-check-label text-success fw-bold" for="{{ form_solutie.notifica_echipa.id_for_label }}">
+                    <div class="d-flex align-items-center gap-2 mb-3 mt-2 p-2 bg-white border border-success rounded" style="width: fit-content;">
+                        <div class="d-flex align-items-center m-0 p-0">{{ form_solutie.notifica_echipa }}</div>
+                        <label class="form-check-label text-success fw-bold mb-0" for="{{ form_solutie.notifica_echipa.id_for_label }}" style="display: inline-block; width: auto; cursor: pointer;">
                             {{ form_solutie.notifica_echipa.label }}
                         </label>
                     </div>
 
                     <div class="d-flex justify-content-between align-items-center border-top pt-3 mt-2">
                         <div>
-                            <button type="submit" name="salveaza_solutie" class="btn btn-success fw-bold" id="btn_salveaza_solutie" disabled>Salvează Soluția</button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary ms-1" onclick="resetSolutieForm()">Nou (Curăță)</button>
+                            <button type="submit" name="salveaza_solutie" class="btn btn-sm btn-success fw-bold" id="btn_salveaza_solutie" disabled>Salvează soluția</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary ms-1" onclick="resetSolutieForm()">Nou (curăță)</button>
                         </div>
                         <button type="submit" name="sterge_solutie" id="btn_sterge_solutie" class="btn btn-sm btn-outline-danger" style="display: none;" onclick="return confirm('Sigur vrei să ștergi această soluție?');" formnovalidate>🗑️ Șterge</button>
                     </div>
@@ -138,14 +145,14 @@
 
 <div class="card shadow-sm border-secondary">
     <div class="card-header bg-secondary text-white fw-bold">
-        Istoric Detaliat
+        Istoric detaliat
     </div>
     <div class="card-body p-0">
         <table class="table table-hover mb-0">
             <thead class="table-light">
                 <tr>
-                    <th>Data Începere</th>
-                    <th>Stadiu Urmărire Penală</th>
+                    <th>Data începere</th>
+                    <th>Stadiu urmărire penală</th>
                     <th>Soluții</th>
                 </tr>
             </thead>
@@ -155,14 +162,14 @@
                     <td><strong>{{ stadiu.data_incepere|date:"d.m.Y" }}</strong></td>
                     <td class="fw-bold text-primary">{{ stadiu.get_tip_stadiu_display }}</td>
                     <td>
-                        <button class="btn btn-sm btn-outline-primary py-0">✏️ Editează Stadiu / Adaugă Soluție aici</button>
+                        <button class="btn btn-sm btn-outline-primary py-0">✏️ Editează stadiu / adaugă soluție aici</button>
                     </td>
                 </tr>
                 
                 {% for solutie in stadiu.solutii.all %}
                 <tr style="cursor: pointer; background-color: #fcfcfc;" onclick="incarcaSolutie('{{ solutie.pk }}', '{{ stadiu.pk }}', '{{ solutie.stabilita_de }}', '{{ solutie.tip_solutie }}', '{{ solutie.data_solutiei|date:'Y-m-d' }}', '{{ solutie.este_finala }}')">
                     <td></td> 
-                    <td class="text-end text-muted">↳ <em>{{ solutie.get_stabilita_de_display }}</em>:</td>
+                    <td class="text-end text-muted">↳ <em>{{ solutie.get_stabilita_de_display }}</em> a stabilit:</td>
                     <td>
                         <span class="badge {% if solutie.este_finala %}bg-success{% else %}bg-secondary{% endif %}">
                             {{ solutie.get_tip_solutie_display }}
@@ -195,32 +202,27 @@
 
 <script>
     function incarcaStadiu(id, tip, data, nume_stadiu) {
-        // Completeaza formularul de Stadiu
         document.getElementById('id_stadiu_hidden').value = id;
         document.getElementById('id_tip_stadiu').value = tip;
         document.getElementById('id_data_incepere').value = data;
         
-        // Pregateste formularul de Solutie pentru a primi o solutie NOUA pe acest stadiu
         resetSolutieForm(); 
         document.getElementById('id_stadiu_parinte_hidden').value = id;
         
-        // Deblocheaza butonul si pune alerta
         document.getElementById('btn_salveaza_solutie').disabled = false;
         document.getElementById('stadiu_selectat_alerta').className = "alert alert-success py-1 px-2 small mb-3";
         document.getElementById('stadiu_selectat_alerta').innerHTML = "✅ Se adaugă o soluție nouă pe stadiul: <strong>" + nume_stadiu + "</strong>";
         document.getElementById('btn_sterge_stadiu').style.display = 'block';
         
-        window.scrollTo(0, 0); // Urca inapoi la formulare
+        window.scrollTo(0, 0); 
     }
 
     function incarcaSolutie(solutie_id, stadiu_id, stabilita_de, tip_solutie, data, este_finala) {
-        // Completeaza formularul de Solutie
         document.getElementById('id_solutie_hidden').value = solutie_id;
         document.getElementById('id_stadiu_parinte_hidden').value = stadiu_id;
         document.getElementById('id_tip_solutie').value = tip_solutie;
         document.getElementById('id_data_solutiei').value = data;
         
-        // Radio buttons sunt un pic mai tricky in JS
         let radios = document.getElementsByName('stabilita_de');
         for (let i = 0; i < radios.length; i++) {
             if (radios[i].value === stabilita_de) {
@@ -228,7 +230,6 @@
             }
         }
         
-        // Checkbox
         document.getElementById('id_este_finala').checked = (este_finala === 'True');
         
         document.getElementById('btn_salveaza_solutie').disabled = false;
@@ -256,6 +257,10 @@
         for (let i = 0; i < radios.length; i++) { radios[i].checked = false; }
 
         document.getElementById('btn_sterge_solutie').style.display = 'none';
+        
+        document.getElementById('stadiu_selectat_alerta').className = "alert alert-warning py-1 px-2 small mb-3";
+        document.getElementById('stadiu_selectat_alerta').innerHTML = "⚠️ Selectează un stadiu din tabelul de mai jos pentru a-i adăuga o soluție.";
+        document.getElementById('btn_salveaza_solutie').disabled = true;
     }
 </script>
 {% endblock %}
