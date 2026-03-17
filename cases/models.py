@@ -2,6 +2,7 @@ from simple_history.models import HistoricalRecords
 from django.db import models
 from django.conf import settings # Folosim asta pentru a importa modelul de User corect
 from datetime import date # Folosim pentru calculul alertelor
+from django.utils import timezone # Pentru a putea modifica data inregistrarii
 
 class Dosar(models.Model):
 # 1. Rescriem stadiile (doar 3 variante)
@@ -21,8 +22,17 @@ class Dosar(models.Model):
 
     # Datele de identificare ale dosarului
     numar_unic = models.CharField(max_length=50, unique=True, help_text="Ex: 123/P/2026")
-    data_inregistrarii = models.DateField(auto_now_add=True) # Se completează automat la creare
-    infractiune_cercetata = models.TextField(help_text="Descrierea faptei și încadrarea juridică (ex: Furt calificat, art. 229 C.pen)")
+    # 1. Eliminăm auto_now_add=True și îi dăm un default pe care utilizatorul îl poate schimba
+    data_inregistrarii = models.DateField(
+        default=timezone.now, 
+        verbose_name="Data Înregistrării"
+    )
+    infractiune_cercetata = models.TextField(
+        blank=True, 
+        null=True, 
+        verbose_name="Situația de Fapt (Rezumat)",
+        help_text="Descrierea faptei pe scurt (opțional)"
+    )
     
     # # 3. Actualizăm coloana stadiu
     # stadiu = models.CharField(
@@ -104,16 +114,22 @@ class Dosar(models.Model):
 
     @property
     def stadiu_curent(self):
-        # Returnează ultimul stadiu adăugat (datorită ordering = ['-data_incepere'])
-        return self.stadii_cercetare.first()
+        # Ne asigurăm că ia mereu ultimul stadiu adăugat (după dată și id)
+        return self.stadii_cercetare.order_by('-data_incepere', '-id').first()
 
     @property
     def solutie_curenta(self):
-        # Returnează ultima soluție a stadiului curent
         stadiu = self.stadiu_curent
-        if stadiu:
-            return stadiu.solutii.first()
-        return None
+        if not stadiu:
+            return None
+            
+        # 1. Verificăm mai întâi dacă există o soluție FINALĂ pe acest stadiu
+        solutie_finala = stadiu.solutii.filter(este_finala=True).first()
+        if solutie_finala:
+            return solutie_finala
+            
+        # 2. Dacă nu e finalizată, returnăm absolut ultima propunere (soluție) adăugată cronologic
+        return stadiu.solutii.order_by('-data_solutiei', '-id').first()
 
 class ParteImplicata(models.Model):
     class Calitate(models.TextChoices):
@@ -253,8 +269,8 @@ class StadiuCercetare(models.Model):
 
 class SolutieDosar(models.Model):
     class Emitent(models.TextChoices):
-        ORGAN_CERCETARE = 'ORGAN', 'Organ de cercetare (Propunere)'
-        PROCUROR = 'PROCUROR', 'Procuror (Dispoziție)'
+        ORGAN_CERCETARE = 'ORGAN', 'Organ de cercetare'
+        PROCUROR = 'PROCUROR', 'Procuror'
 
     class TipSolutie(models.TextChoices):
         # Trimitere în judecată

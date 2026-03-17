@@ -25,6 +25,27 @@
                         <label class="form-label fw-bold">Fișier (Lasă gol pentru a-l păstra pe cel vechi)</label>
                         {{ form.fisier }}
                     </div>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label for="{{ form.data_documentului.id_for_label }}" class="form-label fw-bold small text-uppercase text-muted mb-1">
+                                {{ form.data_documentului.label }}
+                            </label>
+                            {{ form.data_documentului }}
+                            {% if form.data_documentului.help_text %}
+                                <div class="form-text small text-muted">{{ form.data_documentului.help_text }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="{{ form.data_inregistrarii.id_for_label }}" class="form-label fw-bold small text-uppercase text-muted mb-1">
+                                {{ form.data_inregistrarii.label }}
+                            </label>
+                            {{ form.data_inregistrarii }}
+                            {% if form.data_inregistrarii.help_text %}
+                                <div class="form-text small text-muted">{{ form.data_inregistrarii.help_text }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
                     <div class="mb-4">
                         <label class="form-label fw-bold">Descriere scurtă</label>
                         {{ form.descriere_scurta }}

@@ -19,6 +19,7 @@ from django.contrib.auth import get_user_model
 import io
 import openpyxl
 from openpyxl.styles import Font, Alignment
+from django.contrib import messages
 
 User = get_user_model()
 
@@ -44,12 +45,21 @@ def dashboard(request):
     # Folosim Q objects pentru a spune: "Adu-mi dosarele unde sunt Ofițer SAU Procuror SAU Grefier"
     if utilizator.is_superuser or utilizator.rol == 'ADMIN':
         dosare_mele = total_dosare 
-        dosarele_mele_lista = Dosar.objects.all().order_by('-data_inregistrarii')[:5] 
+        # Am adăugat prefetch_related înainte de all()
+        dosarele_mele_lista = Dosar.objects.prefetch_related(
+            'infractiuni', 
+            'stadii_cercetare__solutii'
+        ).all().order_by('-data_inregistrarii')[:5] 
     else:
         # Interogare complexă cu Q
         conditie_mea = Q(ofiter_caz=utilizator) | Q(procuror_caz=utilizator) | Q(grefier_caz=utilizator)
         dosare_mele = Dosar.objects.filter(conditie_mea).count()
-        dosarele_mele_lista = Dosar.objects.filter(conditie_mea).order_by('-data_inregistrarii')[:5]
+        
+        # Am adăugat prefetch_related înainte de filter()
+        dosarele_mele_lista = Dosar.objects.prefetch_related(
+            'infractiuni', 
+            'stadii_cercetare__solutii'
+        ).filter(conditie_mea).order_by('-data_inregistrarii')[:5]
         
     # === LOGICA PENTRU ALERTE MĂSURI PREVENTIVE ===
      # Găsim toate măsurile care expiră în max 10 zile, dar nu mai vechi de 5 zile de la expirare
@@ -291,6 +301,45 @@ def editare_dosar(request, pk):
         'dosar': dosar
     }
     return render(request, 'cases/editare_dosar.html', context)
+
+# opțiunea unui buton "Șterge" în tabelul unde afișezi istoricul echipei.
+@login_required
+def stergere_istoric_echipa(request, pk):
+    # 1. Preluăm înregistrarea din istoric
+    istoric = get_object_or_404(IstoricDesemnare, pk=pk)
+    
+    # 2. DEFINIM VARIABILA DOSAR (obiectul întreg, nu doar ID-ul)
+    dosar = istoric.dosar
+    
+    # ==========================================
+    # SINCRONIZARE BAZĂ DE DATE
+    # Dacă persoana ștearsă este chiar membrul activ de pe dosar, 
+    # golim câmpul de pe dosar ca să-l putem re-adăuga mai târziu.
+    # ==========================================
+    # ATENȚIE: Verifică dacă rolurile tale se numesc fix așa ('Ofițer', 'Procuror', 'Grefier') în models.py
+    
+    # 3. SINCRONIZARE BAZĂ DE DATE
+    if istoric.rol == 'Ofițer' and dosar.ofiter_caz == istoric.utilizator:
+        dosar.ofiter_caz = None
+        dosar.save(update_fields=['ofiter_caz'])
+        
+    elif istoric.rol == 'Procuror' and dosar.procuror_caz == istoric.utilizator:
+        dosar.procuror_caz = None
+        dosar.save(update_fields=['procuror_caz'])
+        
+    elif istoric.rol == 'Grefier' and dosar.grefier_caz == istoric.utilizator:
+        dosar.grefier_caz = None
+        dosar.save(update_fields=['grefier_caz'])
+
+    # 4. Salvăm ID-ul dosarului separat, pentru că pe rândul următor ștergem istoricul
+    dosar_id = dosar.pk 
+    
+    # 5. Ștergem înregistrarea din istoric
+    istoric.delete()
+    messages.success(request, "Înregistrarea a fost ștearsă din istoric cu succes!")
+    
+    # 6. Ne întoarcem la dosar
+    return redirect('cases:detalii_dosar', pk=dosar_id)
 
 @login_required
 def editare_parte(request, pk):
@@ -678,18 +727,18 @@ def generare_rapoarte(request):
         
         # 2. Generăm și scriem Capul de Tabel (Headers)
         headers = []
-        if coloane['col_numar']: headers.append("Numar Unic")
-        if coloane['col_data_inreg']: headers.append("Data Inreg.")
-        if coloane['col_situatie_fapt']: headers.append("Situatie Fapt")
-        if coloane['col_incadrare']: headers.append("Incadrare Juridica")
-        if coloane['col_ofiter']: headers.append("Ofiter de Caz")
-        if coloane['col_procuror']: headers.append("Procuror de Caz")
-        if coloane['col_stadiu_curent']: headers.append("Stadiu Curent")
-        if coloane['col_data_stadiu']: headers.append("Data Stadiu")
-        if coloane['col_solutie_finala']: headers.append("Solutie Finala")
-        if coloane['col_data_solutie']: headers.append("Data Solutie")
-        if coloane['col_parti']: headers.append("Parti Implicate")
-        if coloane['col_masuri']: headers.append("Masuri Preventive")
+        if coloane['col_numar']: headers.append("Numar unic")
+        if coloane['col_data_inreg']: headers.append("Data înreg.")
+        if coloane['col_situatie_fapt']: headers.append("Situatie fapt")
+        if coloane['col_incadrare']: headers.append("Încadrare juridică")
+        if coloane['col_ofiter']: headers.append("Poliţist")
+        if coloane['col_procuror']: headers.append("Procuror")
+        if coloane['col_stadiu_curent']: headers.append("Stadiu curent")
+        if coloane['col_data_stadiu']: headers.append("Data stadiu")
+        if coloane['col_solutie_finala']: headers.append("Solutie finală")
+        if coloane['col_data_solutie']: headers.append("Data solutie")
+        if coloane['col_parti']: headers.append("Părţi în cauză")
+        if coloane['col_masuri']: headers.append("Măsuri preventive")
         
         ws.append(headers)
         
@@ -702,8 +751,10 @@ def generare_rapoarte(request):
         # 3. Scriem datele (Rândurile)
         for dosar in dosare:
             row = []
-            stadiu = dosar.stadii_cercetare.first()
-            solutie = stadiu.solutii.first() if stadiu else None
+            
+            # 1. Folosim noile proprietăți inteligente pentru a lua mereu STAREA LA ZI
+            stadiu = dosar.stadiu_curent
+            solutie = dosar.solutie_curenta
             
             if coloane['col_numar']: 
                 row.append(curata_text(dosar.numar_unic))
@@ -711,15 +762,25 @@ def generare_rapoarte(request):
                 row.append(dosar.data_inregistrarii.strftime("%d.%m.%Y") if dosar.data_inregistrarii else "-")
             if coloane['col_situatie_fapt']: 
                 row.append(curata_text(dosar.infractiune_cercetata))
+                
             if coloane['col_incadrare']: 
-                incadrari = " | ".join([f"art. {i.articol} - {i.get_act_normativ_display()}" for i in dosar.infractiuni.all()])
+                # 2. Construim lista de încadrări verificând prezența articolului (Fără 'None')
+                lista_incadrari = []
+                for i in dosar.infractiuni.all():
+                    if i.articol and str(i.articol) != 'None':
+                        lista_incadrari.append(f"art. {i.articol} - {i.get_act_normativ_display()}")
+                    else:
+                        lista_incadrari.append(i.get_act_normativ_display())
+                
+                incadrari = " | ".join(lista_incadrari)
                 row.append(curata_text(incadrari))
+                
             if coloane['col_ofiter']: 
                 row.append(curata_text(dosar.ofiter_caz.get_full_name() if dosar.ofiter_caz else "-"))
             if coloane['col_procuror']: 
                 row.append(curata_text(dosar.procuror_caz.get_full_name() if dosar.procuror_caz else "-"))
             if coloane['col_stadiu_curent']: 
-                row.append(curata_text(stadiu.get_tip_stadiu_display() if stadiu else "Neinceput"))
+                row.append(curata_text(stadiu.get_tip_stadiu_display() if stadiu else "Neînceput"))
             if coloane['col_data_stadiu']: 
                 row.append(stadiu.data_incepere.strftime("%d.%m.%Y") if stadiu and stadiu.data_incepere else "-")
             if coloane['col_solutie_finala']: 

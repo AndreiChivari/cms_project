@@ -31,7 +31,7 @@
                 <h5 class="mb-0">{{ dosar.data_inregistrarii|date:"d M Y" }}</h5>
             </div>
             <div class="col-md-3">
-                <p class="mb-1 text-muted small text-uppercase fw-bold">Ofițer de Caz</p>
+                <p class="mb-1 text-muted small text-uppercase fw-bold">Organ de cercetare</p>
                 <h6 class="mb-0">
                     {% if dosar.ofiter_caz %}
                         {{ dosar.ofiter_caz.get_full_name|default:dosar.ofiter_caz.username }}
@@ -62,53 +62,7 @@
             </div>
         </div>
 
-    <div class="card shadow-sm mb-4 border-info">
-        <div class="card-header bg-info text-white fw-bold d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">📊 Istoric stadii urmărire și soluții</h5>
-            {% if poate_edita %}
-                <a href="{% url 'cases:gestionare_stadii' dosar.pk %}" class="btn btn-sm btn-light text-info fw-bold">⚙️ Gestionează</a>
-            {% endif %}
-        </div>
-        <div class="card-body p-0">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Stadiu Urmărire</th>
-                        <th>Data Începerii</th>
-                        <th>Data Soluției</th>
-                        <th>Soluție Dispusă/Propusă</th>
-                        <th>Stabilită de</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% with stadiu=dosar.stadiu_curent %}
-                        {% if stadiu %}
-                            {% with solutie=dosar.solutie_curenta %}
-                            <tr>
-                                <td><span class="badge bg-primary">{{ stadiu.get_tip_stadiu_display }}</span></td>
-                                <td><strong>{{ stadiu.data_incepere|date:"d.m.Y" }}</strong></td>
-                                <td>{{ solutie.data_solutiei|date:"d.m.Y"|default:"-" }}</td>
-                                <td>
-                                    {% if solutie %}
-                                        <span class="fw-bold">{{ solutie.get_tip_solutie_display }}</span>
-                                        {% if solutie.este_finala %}<span class="badge bg-danger ms-1" title="Soluție Finală">FINALĂ</span>{% endif %}
-                                    {% else %}
-                                        <span class="text-muted fst-italic">În lucru...</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ solutie.get_stabilita_de_display|default:"-" }}</td>
-                            </tr>
-                            {% endwith %}
-                        {% else %}
-                            <tr>
-                                <td colspan="5" class="text-center py-3 text-muted">Nu a fost înregistrat încă niciun stadiu procesual.</td>
-                            </tr>
-                        {% endif %}
-                    {% endwith %}
-                </tbody>
-            </table>
-        </div>
-    </div>
+        
 
         <div class="row">
             <div class="col-12">
@@ -116,6 +70,54 @@
                 <div class="p-3 bg-light border rounded text-dark" style="white-space: pre-wrap;">{{ dosar.infractiune_cercetata }}</div>
             </div>
         </div>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4 border-info">
+    <div class="card-header bg-info bg-gradient text-white fw-bold d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">📊 Istoric stadii urmărire și soluții</h5>
+        {% if poate_edita %}
+            <a href="{% url 'cases:gestionare_stadii' dosar.pk %}" class="btn btn-sm btn-light text-info fw-bold">⚙️ Gestionează</a>
+        {% endif %}
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Stadiu Urmărire</th>
+                    <th>Data Începerii</th>
+                    <th>Data Soluției</th>
+                    <th>Soluție Dispusă/Propusă</th>
+                    <th>Stabilită de</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% with stadiu=dosar.stadiu_curent %}
+                    {% if stadiu %}
+                        {% with solutie=dosar.solutie_curenta %}
+                        <tr>
+                            <td><span class="badge bg-primary">{{ stadiu.get_tip_stadiu_display }}</span></td>
+                            <td><strong>{{ stadiu.data_incepere|date:"d.m.Y" }}</strong></td>
+                            <td>{{ solutie.data_solutiei|date:"d.m.Y"|default:"-" }}</td>
+                            <td>
+                                {% if solutie %}
+                                    <span class="fw-bold">{{ solutie.get_tip_solutie_display }}</span>
+                                    {% if solutie.este_finala %}<span class="badge bg-danger ms-1" title="Soluție Finală">FINALĂ</span>{% endif %}
+                                {% else %}
+                                    <span class="text-muted fst-italic">În lucru...</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ solutie.get_stabilita_de_display|default:"-" }}</td>
+                        </tr>
+                        {% endwith %}
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center py-3 text-muted">Nu a fost înregistrat încă niciun stadiu procesual.</td>
+                        </tr>
+                    {% endif %}
+                {% endwith %}
+            </tbody>
+        </table>
     </div>
 </div>
 
@@ -128,7 +130,7 @@
             
             <div class="col-md-4">
                 <div class="card h-100 border-0 shadow-sm">
-                    <div class="card-header bg-white py-1 text-center fw-bold text-muted" style="font-size: 0.85rem;">👮 Ofițer de Caz</div>
+                    <div class="card-header bg-white py-1 text-center fw-bold text-muted" style="font-size: 0.85rem;">👮 Organ de cercetare</div>
                     <div class="card-body p-2" style="max-height: 150px; overflow-y: auto;">
                         {% for istoric in dosar.istoric_desemnari.all %}
                             {% if istoric.rol == 'Ofițer' %}
@@ -140,6 +142,12 @@
                                     <div class="text-end text-muted" style="font-size: 0.75rem;">
                                         {{ istoric.data_desemnare|date:"d.m.y" }} - {% if istoric.data_finalizare %}{{ istoric.data_finalizare|date:"d.m.y" }}{% else %}<span class="text-success fw-bold">Prezent</span>{% endif %}
                                     </div>
+                                    <a href="{% url 'cases:stergere_istoric_echipa' istoric.pk %}" 
+                                           class="btn btn-link text-danger p-0 ms-2 text-decoration-none" 
+                                           onclick="return confirm('Ești sigur că vrei să ștergi acest ofițer din istoricul dosarului?');"
+                                           title="Șterge din istoric">
+                                            ✖
+                                    </a>
                                 </div>
                             {% endif %}
                         {% endfor %}
@@ -161,6 +169,12 @@
                                     <div class="text-end text-muted" style="font-size: 0.75rem;">
                                         {{ istoric.data_desemnare|date:"d.m.y" }} - {% if istoric.data_finalizare %}{{ istoric.data_finalizare|date:"d.m.y" }}{% else %}<span class="text-success fw-bold">Prezent</span>{% endif %}
                                     </div>
+                                    <a href="{% url 'cases:stergere_istoric_echipa' istoric.pk %}" 
+                                        class="btn btn-link text-danger p-0 ms-2 text-decoration-none" 
+                                        onclick="return confirm('Ești sigur că vrei să ștergi acest procuror din istoricul dosarului?');"
+                                        title="Șterge din istoric">
+                                        ✖
+                                    </a>
                                 </div>
                             {% endif %}
                         {% endfor %}
@@ -182,6 +196,12 @@
                                     <div class="text-end text-muted" style="font-size: 0.75rem;">
                                         {{ istoric.data_desemnare|date:"d.m.y" }} - {% if istoric.data_finalizare %}{{ istoric.data_finalizare|date:"d.m.y" }}{% else %}<span class="text-success fw-bold">Prezent</span>{% endif %}
                                     </div>
+                                    <a href="{% url 'cases:stergere_istoric_echipa' istoric.pk %}" 
+                                        class="btn btn-link text-danger p-0 ms-2 text-decoration-none" 
+                                        onclick="return confirm('Ești sigur că vrei să ștergi acest grefier din istoricul dosarului?');"
+                                        title="Șterge din istoric">
+                                        ✖
+                                    </a>
                                 </div>
                             {% endif %}
                         {% endfor %}
@@ -347,9 +367,11 @@
         <table class="table table-hover align-middle mb-0">
             <thead class="table-light">
                 <tr>
-                    <th>Tip Act</th>
-                    <th>Titlu Document</th>
-                    <th>Data Încărcării</th>
+                    <th>Tip act</th>
+                    <th>Titlu document</th>
+                    <th>Data documentului</th>
+                    <th>Data înregistrării</th>
+                    <th>Data încărcării</th>
                     <th>Autor</th>
                     <th class="text-end pe-4">Acțiune</th>
                 </tr>
@@ -359,6 +381,8 @@
                     <tr>
                         <td><span class="badge bg-info text-dark">{{ act.get_tip_display }}</span></td>
                         <td><strong>{{ act.titlu }}</strong></td>
+                        <td>{{ act.data_documentului|date:"d M Y" }}</td>
+                        <td>{{ act.data_inregistrarii|date:"d M Y" }}</td>
                         <td>{{ act.data_incarcarii|date:"d M Y, H:i" }}</td>
                         <td>{{ act.autor.get_full_name|default:"Sistem" }}</td>
                         <td class="text-end pe-3">
@@ -375,7 +399,7 @@
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="5" class="text-center py-4 text-muted">Niciun document atașat acestui dosar.</td>
+                        <td colspan="7" class="text-center py-4 text-muted">Niciun document atașat acestui dosar.</td>
                     </tr>
                 {% endfor %}
             </tbody>
@@ -407,6 +431,27 @@
                         <div class="col-md-6 mt-3 mt-md-0">
                             <label class="form-label fw-bold small text-uppercase text-muted mb-1">Alege fișierul</label>
                             {{ form_document.fisier }}
+                        </div>
+                    </div>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label for="{{ form_document.data_documentului.id_for_label }}" class="form-label fw-bold small text-uppercase text-muted mb-1">
+                                {{ form_document.data_documentului.label }}
+                            </label>
+                            {{ form_document.data_documentului }}
+                            {% if form_document.data_documentului.help_text %}
+                                <div class="form-text small text-muted">{{ form_document.data_documentului.help_text }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="{{ form_document.data_inregistrarii.id_for_label }}" class="form-label fw-bold small text-uppercase text-muted mb-1">
+                                {{ form_document.data_inregistrarii.label }}
+                            </label>
+                            {{ form_document.data_inregistrarii }}
+                            {% if form_document.data_inregistrarii.help_text %}
+                                <div class="form-text small text-muted">{{ form_document.data_inregistrarii.help_text }}</div>
+                            {% endif %}
                         </div>
                     </div>
                     <div class="mb-2">

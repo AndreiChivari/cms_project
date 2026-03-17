@@ -33,6 +33,19 @@
 
                     <hr class="text-muted my-4 opacity-25">
 
+                    {% if form.errors %}
+                        <div class="alert alert-danger shadow-sm border-danger border-start border-4 mb-4">
+                            <h6 class="fw-bold mb-1">🛑 Erori la salvare:</h6>
+                            <ul class="mb-0 small">
+                            {% for field, errors in form.errors.items %}
+                                {% for error in errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+
                     <h5 class="text-primary mb-3">Personal Desemnat</h5>
                     <div class="row mb-3">
                         <div class="col-md-4 mb-3 mb-md-0">

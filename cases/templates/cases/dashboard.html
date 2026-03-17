@@ -102,39 +102,67 @@
                 <tr>
                     <th class="py-3 px-4">Număr dosar</th>
                     <th class="py-3">Data înregistrării</th>
-                    <th class="py-3">Infracțiune</th>
-                    <th class="py-3">Stadiu / Soluție</th>
-                </tr>
+                    <th class="py-3">Încadrare Juridică</th>
+                    <th class="py-3">Soluție</th>
+                    <th class="py-3">Procuror</th> </tr>
             </thead>
             <tbody>
                 {% for dosar in dosarele_mele_lista %}
                     <tr>
                         <td class="px-4"><strong><a href="{% url 'cases:detalii_dosar' dosar.pk %}" class="text-decoration-none text-primary">{{ dosar.numar_unic }}</a></strong></td>
-                        <td>{{ dosar.data_inregistrarii|date:"d M Y" }}</td>
+                        <td>{{ dosar.data_inregistrarii|date:"d.m.Y" }}</td>
+                        
                         <td>
-                            <div class="text-truncate text-muted" style="max-width: 280px;" title="{{ dosar.infractiune_cercetata }}">
-                                {{ dosar.infractiune_cercetata|default:"-" }}
+                            <div class="text-truncate" style="max-width: 280px;">
+                                {% for infr in dosar.infractiuni.all %}
+                                    <div class="badge bg-light text-dark border mb-1 text-wrap text-start">
+                                        {% if infr.articol and infr.articol != 'None' %}
+                                            art. {{ infr.articol }} - {{ infr.get_act_normativ_display }}
+                                        {% else %}
+                                            {{ infr.get_act_normativ_display }}
+                                        {% endif %}
+                                    </div>
+                                {% empty %}
+                                    <span class="text-muted">-</span>
+                                {% endfor %}
                             </div>
                         </td>
+                        
                         <td>
-                            <span class="badge bg-secondary mb-1">{{ dosar.get_stadiu_display }}</span>
-                            {% if dosar.tip_solutie %}
-                                <div class="small text-success fw-bold">
-                                    <span class="me-1">↳</span>{{ dosar.get_tip_solutie_display }} ({{ dosar.data_solutiei|date:"d.m.Y" }})
-                                </div>
+                            {% with solutie=dosar.solutie_curenta %}
+                                {% if solutie %}
+                                    <div>
+                                        <span class="badge {% if solutie.este_finala %}bg-danger{% else %}bg-secondary{% endif %} mb-1">
+                                            {{ solutie.get_tip_solutie_display }}
+                                        </span>
+                                    </div>
+                                    <div class="small text-muted fw-bold">
+                                        <span class="me-1">↳</span>{{ solutie.data_solutiei|date:"d.m.Y" }}
+                                    </div>
+                                {% else %}
+                                    <span class="text-muted fst-italic">În lucru...</span>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+                        
+                        <td>
+                            {% if dosar.procuror_caz %}
+                                <div class="small fw-bold text-dark">{{ dosar.procuror_caz.get_full_name|default:dosar.procuror_caz.username }}</div>
+                            {% else %}
+                                <span class="text-muted">-</span>
                             {% endif %}
                         </td>
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="4" class="text-center py-4 text-muted">
+                        <td colspan="5" class="text-center py-4 text-muted">
                             Nu aveți niciun dosar repartizat în acest moment.
                         </td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
-    </div>
+    </div>                  
     <div class="card-footer bg-light text-center border-top-0 py-3">
         <a href="{% url 'cases:lista_dosare' %}" class="text-decoration-none text-primary fw-bold">
             Vezi toate dosarele sistemului &rarr;

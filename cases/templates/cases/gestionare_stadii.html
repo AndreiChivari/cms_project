@@ -14,6 +14,18 @@
             <div class="card-header bg-primary text-white fw-bold">1. Adaugă / Editează Stadiu</div>
             <div class="card-body">
                 <form method="POST">
+                    {% if form_stadiu.errors %}
+                        <div class="alert alert-danger shadow-sm border-danger border-start border-4">
+                            <h6 class="fw-bold mb-1">🛑 S-au găsit erori de procedură:</h6>
+                            <ul class="mb-0 small">
+                            {% for field, errors in form_stadiu.errors.items %}
+                                {% for error in errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
                     {% csrf_token %}
                     <input type="hidden" name="stadiu_id" id="id_stadiu_hidden">
                     
@@ -50,6 +62,18 @@
             <div class="card-header bg-success text-white fw-bold">2. Adaugă / Editează Soluție</div>
             <div class="card-body bg-light">
                 <form method="POST">
+                    {% if form_solutie.errors %}
+                        <div class="alert alert-danger shadow-sm border-danger border-start border-4">
+                            <h6 class="fw-bold mb-1">🛑 S-au găsit erori de procedură:</h6>
+                            <ul class="mb-0 small">
+                            {% for field, errors in form_solutie.errors.items %}
+                                {% for error in errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
                     {% csrf_token %}
                     <input type="hidden" name="solutie_id" id="id_solutie_hidden">
                     <input type="hidden" name="stadiu_parinte_id" id="id_stadiu_parinte_hidden">
@@ -59,7 +83,7 @@
                     </div>
 
                     <div class="row">
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-5 mb-3">
                             <label class="form-label fw-bold">Stabilită de</label>
                             <div>
                                 {% for radio in form_solutie.stabilita_de %}
@@ -70,7 +94,7 @@
                                 {% endfor %}
                             </div>
                         </div>
-                        <div class="col-md-8">
+                        <div class="col-md-7">
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Soluție Dispusă / Propusă</label>
                                 {{ form_solutie.tip_solutie }}
@@ -137,17 +161,25 @@
                 
                 {% for solutie in stadiu.solutii.all %}
                 <tr style="cursor: pointer; background-color: #fcfcfc;" onclick="incarcaSolutie('{{ solutie.pk }}', '{{ stadiu.pk }}', '{{ solutie.stabilita_de }}', '{{ solutie.tip_solutie }}', '{{ solutie.data_solutiei|date:'Y-m-d' }}', '{{ solutie.este_finala }}')">
-                    <td></td> <td class="text-end text-muted">↳ <em>{{ solutie.get_stabilita_de_display }}</em>:</td>
+                    <td></td> 
+                    <td class="text-end text-muted">↳ <em>{{ solutie.get_stabilita_de_display }}</em>:</td>
                     <td>
-                        <span class="badge bg-success">{{ solutie.get_tip_solutie_display }}</span>
-                        ({{ solutie.data_solutiei|date:"d.m.Y" }})
-                        {% if solutie.este_finala %}<span class="badge bg-danger ms-1">FINALĂ</span>{% endif %}
+                        <span class="badge {% if solutie.este_finala %}bg-success{% else %}bg-secondary{% endif %}">
+                            {{ solutie.get_tip_solutie_display }}
+                        </span>
+                        <strong class="mx-1">{{ solutie.data_solutiei|date:"d.m.Y" }}</strong>
+                        
+                        {% if solutie.este_finala %}
+                            <span class="badge bg-danger ms-2">✔ FINALĂ</span>
+                        {% else %}
+                            <span class="text-muted small ms-2">⏳ Intermediară</span>
+                        {% endif %}
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
                     <td></td>
-                    <td colspan="2" class="text-muted small"><em>Nicio soluție adăugată încă pe acest stadiu.</em></td>
+                    <td colspan="3" class="text-muted small"><em>Nicio soluție propusă încă pe acest stadiu.</em></td>
                 </tr>
                 {% endfor %}
 

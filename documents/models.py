@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from cases.models import Dosar
+from django.utils import timezone # Pentru a putea modifica data inregistrarii
 
 class ActUrmarire(models.Model):
     class TipDocument(models.TextChoices):
@@ -11,8 +12,29 @@ class ActUrmarire(models.Model):
         ALTUL = 'ALTUL', 'Alt tip de act'
 
     # Titlul documentului (ex: Ordonanță de reținere pt 24h)
-    titlu = models.CharField(max_length=255)
-    tip = models.CharField(max_length=20, choices=TipDocument.choices, default=TipDocument.ORDONANTA)
+    titlu = models.CharField(
+        max_length=255, 
+        blank=True, 
+        null=True, 
+        help_text="Lăsați gol dacă titlul coincide cu tipul documentului"
+    )
+
+# ==========================================
+    # CÂMPURI NOI PENTRU DATE COMPLETE
+    # ==========================================
+    data_documentului = models.DateField(
+        default=timezone.now,
+        verbose_name="Data emiterii documentului",
+        help_text="Data scrisă pe actul fizic"
+    )
+    
+    data_inregistrarii = models.DateField(
+        default=timezone.now,
+        verbose_name="Data înregistrării",
+        help_text="Data la care a primit număr de intrare/înregistrare"
+    )
+
+    tip = models.CharField(max_length=50, choices=TipDocument.choices, default=TipDocument.ORDONANTA)
     
     # Legătura cu dosarul penal (un dosar poate avea mai multe acte)
     dosar = models.ForeignKey(Dosar, on_delete=models.CASCADE, related_name='documente')
@@ -33,3 +55,16 @@ class ActUrmarire(models.Model):
 
     def __str__(self):
         return f"{self.get_tip_display()} - {self.titlu} ({self.dosar.numar_unic})"
+
+    def are_drepturi_editare(self, utilizator):
+        # 1. Dacă utilizatorul este cel care a încărcat documentul, are voie
+        if self.autor == utilizator:
+            return True
+            
+        # 2. Dacă utilizatorul face parte din echipa curentă a dosarului, are voie
+        echipa = [self.dosar.ofiter_caz, self.dosar.procuror_caz, self.dosar.grefier_caz]
+        if utilizator in echipa:
+            return True
+            
+        # Altfel, nu are drepturi
+        return False

@@ -26,6 +26,9 @@
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'cases:adaugare_dosar' %}">Adauga Dosar</a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'cases:rapoarte' %}">Rapoarte</a>
+                        </li>
                         {% if user.is_staff %}
                         <li class="nav-item">
                             <a class="nav-link" href="/admin/" target="_blank">Administrare Sistem</a>

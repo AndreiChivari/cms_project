@@ -1,6 +1,7 @@
 from django import forms
 from .models import Dosar, ParteImplicata, Infractiune, MasuraPreventiva, StadiuCercetare, SolutieDosar
 from django.contrib.auth import get_user_model # <--- Importăm modelul de Utilizator
+from django.core.exceptions import ValidationError
 
 User = get_user_model() # Preluăm modelul de utilizator pentru a face filtrarile
 
@@ -45,12 +46,42 @@ class DosarForm(forms.ModelForm):
         if 'grefier_caz' in self.fields:
             self.fields['grefier_caz'].queryset = User.objects.filter(rol='GREFIER')
 
+    def clean(self):
+        cleaned_data = super().clean()
+        data_schimbare = cleaned_data.get('data_schimbare_echipa')
+        
+        # Preluăm data înregistrării (fie din formular, dacă o edităm acum, fie din baza de date)
+        data_inreg = cleaned_data.get('data_inregistrarii') or self.instance.data_inregistrarii
+        
+        # 1. Verificăm dacă s-a modificat MĂCAR UNUL dintre membrii echipei
+        # Am folosit self.changed_data. Aceasta este o funcție genială a lui Django care știe exact ce câmpuri a modificat utilizatorul față de baza de date!
+        echipa_modificata = any(camp in self.changed_data for camp in ['ofiter_caz', 'procuror_caz', 'grefier_caz'])
+        
+        if echipa_modificata:
+            if not data_schimbare:
+                self.add_error('data_schimbare_echipa', "🛑 Este obligatoriu să alegeți data preluării mandatului deoarece ați modificat un membru al echipei!")
+            else:
+                # REGULA 1: Data preluării nu poate fi înaintea dosarului
+                if data_inreg and data_schimbare < data_inreg:
+                    self.add_error('data_schimbare_echipa', f"Data noului mandat ({data_schimbare.strftime('%d.%m.%Y')}) nu poate fi anterioară înregistrării dosarului ({data_inreg.strftime('%d.%m.%Y')}).")
+                
+                # REGULA 2: Data preluării >= Data ultimei modificări din istoric
+                if self.instance.pk:
+                    # ATENȚIE: Ajustează "istoric_desemnari" și "data_inceput" cu numele exacte din modelul tău de Istoric!
+                    ultima_desemnare = self.instance.istoric_desemnari.order_by('-data_desemnare').first() 
+                    
+                    if ultima_desemnare and data_schimbare < ultima_desemnare.data_desemnare:
+                        self.add_error('data_schimbare_echipa', f"Eroare cronologică: Precedenta modificare a echipei s-a făcut pe {ultima_desemnare.data_desemnare.strftime('%d.%m.%Y')}. Data nouă trebuie să fie cel puțin egală cu aceasta.")
+        
+        return cleaned_data
+
 class CreareDosarForm(forms.ModelForm):
     class Meta:
         model = Dosar
-        fields = ['numar_unic', 'infractiune_cercetata', 'ofiter_caz', 'procuror_caz', 'grefier_caz']
+        fields = ['numar_unic', 'data_inregistrarii', 'infractiune_cercetata', 'ofiter_caz', 'procuror_caz', 'grefier_caz']
         widgets = {
             'numar_unic': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 123/P/2026'}),
+            'data_inregistrarii': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'infractiune_cercetata': forms.Textarea(attrs={'rows': 3}),
             'ofiter_caz': forms.Select(attrs={'class': 'form-select'}),
             'procuror_caz': forms.Select(attrs={'class': 'form-select'}),
@@ -73,6 +104,47 @@ class CreareDosarForm(forms.ModelForm):
             
         if 'grefier_caz' in self.fields:
             self.fields['grefier_caz'].queryset = User.objects.filter(rol='GREFIER')
+
+    def clean_numar_unic(self):
+        numar = self.cleaned_data.get('numar_unic')
+
+        if numar:
+            # 1. AUTO-CORECȚIE (Litere mari și fără spații)
+            numar = numar.upper().strip()
+
+            # REGULA 1: Verificăm prezența lui '/P/'
+            if '/P/' not in numar:
+                raise ValidationError("Numărul dosarului trebuie să conțină indicativul standard '/P/'. Ex: 123/P/2026")
+
+            # 2. Tăiem textul în două folosind '/P/' ca punct de ruptură
+            # Ex: '123/P/2026' devine o listă: ['123', '2026']
+            bucati = numar.split('/P/')
+            
+            # Ne asigurăm că există fix două bucăți (să nu fi pus /P/ de două ori din greșeală)
+            if len(bucati) != 2:
+                raise ValidationError("Formatul este incorect. Asigurați-vă că folosiți indicativul '/P/' o singură dată.")
+
+            numar_dosar = bucati[0] # Ce e înainte de /P/ (ex: '123')
+            anul_dosar = bucati[1]  # Ce e după /P/ (ex: '2026')
+
+            # ==========================================
+            # REGULA 2: Partea din față să fie STRICT NUMĂR
+            # ==========================================
+            if not numar_dosar.isdigit():
+                raise ValidationError(f"Numărul dosarului trebuie să conțină doar cifre. Aţi introdus litere/simboluri: '{numar_dosar}'")
+
+            # ==========================================
+            # REGULA 3: Anul să fie STRICT 4 CIFRE
+            # ==========================================
+            if not anul_dosar.isdigit() or len(anul_dosar) != 4:
+                raise ValidationError(f"Anul trebuie să fie format din exact 4 cifre. Aţi introdus: '{anul_dosar}'")
+                
+            # Extra siguranță logică pentru an
+            an_cifre = int(anul_dosar)
+            if an_cifre < 1990 or an_cifre > 2100:
+                raise ValidationError(f"Anul {an_cifre} nu este valid!")
+
+        return numar
 
 class ParteImplicataForm(forms.ModelForm):
     class Meta:
@@ -129,6 +201,57 @@ class StadiuCercetareForm(forms.ModelForm):
             'data_incepere': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
         }
 
+    def clean(self):
+        cleaned_data = super().clean()
+        tip_stadiu = cleaned_data.get('tip_stadiu')
+        data_incepere = cleaned_data.get('data_incepere')
+        
+        # Preluăm dosarul în siguranță
+        try:
+            dosar = self.instance.dosar
+        except:
+            dosar = None
+
+        if not tip_stadiu or not data_incepere or not dosar:
+            return cleaned_data # Dacă lipsesc date, lăsăm validarea standard să preia
+
+        # ==========================================
+        # REGULA 1: Niciun stadiu înaintea înregistrării dosarului
+        # ==========================================
+        if data_incepere < dosar.data_inregistrarii:
+            self.add_error('data_incepere', f"Data stadiului ({data_incepere.strftime('%d.%m.%Y')}) nu poate fi înaintea înregistrării dosarului ({dosar.data_inregistrarii.strftime('%d.%m.%Y')}).")
+
+        # Căutăm ultimul stadiu existent (excluzându-l pe cel curent, dacă suntem la editare)
+        if self.instance.pk:
+            ultimul_stadiu = dosar.stadii_cercetare.exclude(pk=self.instance.pk).order_by('-data_incepere', '-id').first()
+        else:
+            ultimul_stadiu = dosar.stadii_cercetare.order_by('-data_incepere', '-id').first()
+
+        if ultimul_stadiu:
+            # ==========================================
+            # REGULA 2: Cronologia Stadiilor
+            # ==========================================
+            if data_incepere < ultimul_stadiu.data_incepere:
+                self.add_error('data_incepere', f"Data trebuie să fie consecutivă. Ultimul stadiu a fost pe {ultimul_stadiu.data_incepere.strftime('%d.%m.%Y')}.")
+
+            # ==========================================
+            # REGULA 3: Succesiunea Logică
+            # ==========================================
+            # ATENȚIE: Înlocuiește aceste chei cu cele din models.py (clasa TipStadiu)!!
+            ORDINE_STADII = {
+                'EXAMINARE': 1,
+                'UP_INCEPUTA': 2,
+                'AP_MASCATA': 3,
+            }
+            
+            rang_nou = ORDINE_STADII.get(tip_stadiu, 0)
+            rang_vechi = ORDINE_STADII.get(ultimul_stadiu.tip_stadiu, 0)
+
+            if rang_nou > 0 and rang_vechi > 0 and rang_nou < rang_vechi:
+                self.add_error('tip_stadiu', f"Procedural incorect: Nu poți adăuga acest stadiu după '{ultimul_stadiu.get_tip_stadiu_display()}'.")
+
+        return cleaned_data
+
 class SolutieDosarForm(forms.ModelForm):
     # Câmp virtual pentru notificări
     notifica_echipa = forms.BooleanField(
@@ -147,3 +270,43 @@ class SolutieDosarForm(forms.ModelForm):
             'data_solutiei': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'este_finala': forms.CheckboxInput(attrs={'class': 'form-check-input'})
         }
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        data_solutiei = cleaned_data.get('data_solutiei')
+        este_finala = cleaned_data.get('este_finala') # Citim bifa de soluție finală
+        
+        try:
+            stadiu = self.instance.stadiu
+            dosar = stadiu.dosar
+        except:
+            return cleaned_data # Dacă nu avem relațiile încărcate, trecem mai departe
+
+        if not data_solutiei or not stadiu:
+            return cleaned_data
+
+        # ==========================================
+        # REGULA 1: Cronologia Soluției
+        # ==========================================
+        if data_solutiei < stadiu.data_incepere:
+            self.add_error('data_solutiei', f"Data soluției ({data_solutiei.strftime('%d.%m.%Y')}) nu poate fi anterioară începerii stadiului ({stadiu.data_incepere.strftime('%d.%m.%Y')}).")
+
+        if data_solutiei < dosar.data_inregistrarii:
+            self.add_error('data_solutiei', f"Soluția nu poate fi anterioară înregistrării dosarului ({dosar.data_inregistrarii.strftime('%d.%m.%Y')}).")
+
+        # ==========================================
+        # REGULA 2: O singură Soluție Finală pe Dosar
+        # ==========================================
+        if este_finala:
+            # Căutăm dacă mai există VREO soluție finală pe ORICE stadiu al acestui dosar
+            solutii_finale = SolutieDosar.objects.filter(stadiu__dosar=dosar, este_finala=True)
+            
+            # Dacă edităm o soluție deja existentă, o excludem pe ea însăși din căutare
+            if self.instance.pk:
+                solutii_finale = solutii_finale.exclude(pk=self.instance.pk)
+                
+            # Dacă am găsit altă soluție finală, blocăm salvarea!
+            if solutii_finale.exists():
+                self.add_error('este_finala', "🛑 Acest dosar are deja o soluție definitivă înregistrată. Nu pot exista două soluții finale pe același dosar!")
+
+        return cleaned_data
