@@ -1,40 +1,76 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Autentificare Sistem{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center align-items-center" style="min-height: 70vh;">
-    <div class="col-md-4">
-        <div class="card shadow-lg border-0 rounded-lg mt-5">
-            <div class="card-header bg-dark text-white text-center py-4">
-                <h3 class="fw-bold mb-0">⚖️ CMS Penal</h3>
-                <p class="mb-0 small">Autentificare Personal</p>
+<div class="row justify-content-center align-items-center" style="min-height: 80vh;">
+    <div class="col-md-5 col-lg-4">
+        <div class="card shadow border-0 rounded-3 overflow-hidden">
+
+            <!-- HEADER -->
+            <div class="card-header bg-primary text-white py-3">
+                <div class="d-flex align-items-center gap-3">
+
+                    <!-- Logo -->
+                    <img src="{% static 'images/logo.png' %}" 
+                         alt="Logo" 
+                         style="height: 60px;">
+
+                    <!-- Text -->
+                    <div>
+                        <h4 class="fw-bold mb-0" style="line-height: 1.2;">CMS Penal</h4>
+                        <p class="mb-0 small opacity-75">Autentificare personal</p>
+                    </div>
+
+                </div>
             </div>
+
+            <!-- BODY -->
             <div class="card-body p-4">
-                
+
                 {% if form.errors %}
-                    <div class="alert alert-danger small">
-                        Numele de utilizator sau parola sunt incorecte. Vă rugăm să încercați din nou.
+                    <div class="alert alert-danger small d-flex align-items-center gap-2">
+                        <span>⚠️</span>
+                        <span>Credențiale invalide. Încercați din nou.</span>
                     </div>
                 {% endif %}
 
                 <form method="POST" action="{% url 'login' %}">
                     {% csrf_token %}
+
+                    <!-- Username -->
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Nume utilizator (Username)</label>
-                        <input type="text" name="username" class="form-control" autofocus required id="id_username">
+                        <label class="form-label fw-semibold">Nume utilizator</label>
+                        <input type="text" 
+                               name="username" 
+                               class="form-control form-control" 
+                               autofocus required>
                     </div>
+
+                    <!-- Password -->
                     <div class="mb-4">
-                        <label class="form-label fw-bold">Parolă</label>
-                        <input type="password" name="password" class="form-control" required id="id_password">
+                        <label class="form-label fw-semibold">Parolă</label>
+                        <input type="password" 
+                               name="password" 
+                               class="form-control form-control" 
+                               required>
                     </div>
-                    <button class="btn btn-primary w-100 fw-bold py-2" type="submit">Conectare</button>
+
+                    <!-- Button -->
+                    <button class="btn btn-primary w-100 fw-semibold py-2">
+                        Conectare
+                    </button>
                 </form>
-                
             </div>
-            <div class="card-footer text-center py-3 bg-light">
-                <div class="small text-muted">Accesul neautorizat este strict interzis.</div>
+
+            <!-- FOOTER -->
+            <div class="card-footer text-center py-3 bg-light border-0 bg-light">
+                <div class="small text-muted">
+                    Accesul neautorizat este strict interzis.
+                </div>
             </div>
+
         </div>
     </div>
 </div>

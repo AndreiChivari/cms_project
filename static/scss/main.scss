@@ -18,6 +18,23 @@ $border-radius: 0.2rem; // Colturi putin mai ascutite pentru un aspect mai serio
     letter-spacing: 0.05em;
 }
 
+// Fixam inaltimea navbar-ului
+.navbar {
+    height: 64px;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.navbar .container-xl {
+    height: 100%;
+    display: flex;
+    align-items: center;
+}
+
+.navbar-logo {
+    height: 60px;
+    max-height: 100%;
+}
 
 // ADĂUGĂRI PENTRU VARIANTA INSTITUȚIONALĂ A NAVBAR-ULUI
 
