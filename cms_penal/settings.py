@@ -26,7 +26,8 @@ SECRET_KEY = 'django-insecure-4y3+f&u*1@7+#m5-41_eo3xeo^v)k0jqsg&0&i55+f_(3e5dm*
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+# Default este ALLOWED_HOSTS = []. Am adăugat "*" pentru testare pe server
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
