@@ -6,7 +6,7 @@ cffi==2.0.0
 charset-normalizer==3.4.4
 cryptography==46.0.5
 cssselect2==0.9.0
-Django==6.0.2
+Django
 django-simple-history==3.11.0
 freetype-py==2.5.1
 html5lib==1.1
@@ -14,7 +14,7 @@ idna==3.11
 lxml==6.0.2
 oscrypto==1.3.0
 pillow==12.1.1
-pycairo==1.29.0
+pycairo
 pycparser==3.0
 pyHanko==0.33.0
 pyhanko-certvalidator==0.29.1
@@ -38,3 +38,4 @@ openpyxl
 libsass
 django-sass-processor
 gunicorn
+django-compressor
