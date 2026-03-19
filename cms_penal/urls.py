@@ -28,6 +28,7 @@ urlpatterns = [
     path('conturi/', include('django.contrib.auth.urls')),
 ]
 
-# Această condiție adaugă ruta pentru fișiere doar în modul de dezvoltare (DEBUG = True)
+# Această condiție adaugă ruta pentru fișiere doar în modul de dezvoltare (DEBUG = True) / necesar si pentru container LXC
 if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
