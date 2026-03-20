@@ -18,10 +18,22 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings # Adăugat pentru a accesa MEDIA_URL
 from django.conf.urls.static import static # Adăugat pentru a servi fișierele
+from django.views.generic import RedirectView #  pentru redirecționarea de pe /
+from django.contrib.auth import views as auth_views
 
 urlpatterns = [
+    # 1. Rezolvăm eroarea 404: 
+    # Oricine intră pe "adresa goală" (/) este trimis la /cases/dashboard/
+    path('', RedirectView.as_view(url='/cases/dashboard/', permanent=False), name='index'),
+
     path('admin/', admin.site.urls),
     path('cases/', include('cases.urls')),
+
+    # Redirect. Dacă utilizatorul e deja logat, va fi trimis spre dashboard (/cases/dashboard/)
+    path('conturi/login/', auth_views.LoginView.as_view(
+        redirect_authenticated_user=True,
+        next_page='/cases/dashboard/' # Aici îi spunem UNDE să-l trimită
+    ), name='login'),
 
     # RUTA NOUĂ PENTRU AUTENTIFICARE
     # Va adăuga automat rute precum /conturi/login/, /conturi/logout/

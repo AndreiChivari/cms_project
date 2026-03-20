@@ -164,3 +164,6 @@ LOGOUT_REDIRECT_URL = 'login'
 
 # SPUNEM LUI DJANGO UNDE SĂ TRIMITĂ UTILIZATORII NEAUTENTIFICAȚI:
 LOGIN_URL = 'login'
+
+# Închidem sesiunea după ce închidem browserul pentru a nu ne păstra logaţi
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
