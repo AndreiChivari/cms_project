@@ -6,7 +6,7 @@
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 pb-3 border-bottom border-secondary border-opacity-25">
         <div>
             <h3 class="mb-1 fw-bold text-dark d-flex align-items-center gap-2">
-                <span class="text-primary">📊</span> Generator rapoarte avansate
+                <i class="bi-file-earmark-bar-graph text-primary"></i> Generator rapoarte avansate
             </h3>
             <p class="text-muted mb-0" style="font-size: 0.95rem;">
                 Filtrează, afișează și exportă datele complexe în format tabelar sau Excel.
@@ -20,7 +20,7 @@
                 <div class="card border-0 border-top border-primary border-3 shadow-sm h-100 rounded-3">
                     <div class="card-header bg-white py-3 border-bottom border-secondary border-opacity-10">
                         <h6 class="mb-0 fw-bold text-dark" style="font-size: 1rem;">
-                            <span class="fs-6 me-2">🔍</span> Filtrează datele (Criterii de căutare)
+                            <i class="bi bi-funnel-fill text-primary me-2"></i> Filtrează datele (Criterii de căutare)
                         </h6>
                     </div>
                     <div class="card-body" style="font-size: 0.9rem;">
@@ -97,7 +97,7 @@
                 <div class="card border-0 border-top border-success border-3 shadow-sm h-100 rounded-3 d-flex flex-column">
                     <div class="card-header bg-white py-3 border-bottom border-secondary border-opacity-10">
                         <h6 class="mb-0 fw-bold text-dark" style="font-size: 1rem;">
-                            <span class="fs-6 me-2">👁️</span> Alege coloanele pentru tabel / Excel
+                            <i class="bi bi-layout-three-columns text-success me-2"></i> Alege coloanele pentru tabel / Excel
                         </h6>
                     </div>
                     <div class="card-body flex-grow-1" style="font-size: 0.9rem;">
@@ -125,10 +125,10 @@
                     <div class="card-footer bg-light border-top border-secondary border-opacity-10 d-flex flex-wrap justify-content-end gap-2 py-3 px-4">
                         <a href="{% url 'cases:rapoarte' %}" class="btn btn-light border border-secondary border-opacity-25 btn-sm fw-medium px-3">Resetează filtrele</a>
                         <button type="submit" class="btn btn-primary btn-sm fw-medium shadow-sm px-3 d-flex align-items-center gap-1">
-                            <span style="font-size: 1rem; line-height: 1;">🔄</span> Aplică
+                            <i class="bi bi-arrow-clockwise me-1"></i> Aplică
                         </button>
                         <button type="submit" name="export_excel" value="true" class="btn btn-success btn-sm fw-bold shadow-sm px-3 d-flex align-items-center gap-1">
-                            <span style="font-size: 1rem; line-height: 1;">📥</span> Descarcă Excel
+                            <i class="bi bi-file-earmark-excel-fill me-1"></i> Descarcă Excel
                         </button>
                     </div>
                 </div>

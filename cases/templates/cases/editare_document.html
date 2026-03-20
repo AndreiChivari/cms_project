@@ -1,62 +1,92 @@
 {% extends 'base.html' %}
 
-{% block title %}Editare Document{% endblock %}
+{% block title %}Editare document{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card shadow-sm mt-4">
-            <div class="card-header bg-success text-white">
-                <h5 class="mb-0">✎ Editare Document: {{ document.titlu }}</h5>
+<div class="row justify-content-center mb-5">
+    <div class="col-md-8 col-lg-7">
+        
+        <div class="d-flex justify-content-between align-items-center mb-3 mt-2">
+            <h4 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                <span class="text-primary">📁</span> Editare document
+            </h4>
+            <a href="{% url 'cases:detalii_dosar' document.dosar.pk %}" class="btn btn-sm btn-outline-secondary fw-medium">
+                &larr; Înapoi la dosar
+            </a>
+        </div>
+
+        <div class="card border-0 border-top border-primary border-3 shadow-sm rounded-3 overflow-hidden">
+            <div class="card-header bg-white py-3 border-bottom border-secondary border-opacity-10">
+                <p class="mb-0 text-muted small fw-medium">Actualizare fișier: <strong class="text-dark">{{ document.titlu }}</strong></p>
             </div>
-            <div class="card-body">
-                <form method="POST" enctype="multipart/form-data">
+            
+            <form method="POST" enctype="multipart/form-data">
+                <div class="card-body p-4">
                     {% csrf_token %}
                     
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Titlu document</label>
-                        {{ form.titlu }}
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Tip act</label>
-                        {{ form.tip }}
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Fișier (Lasă gol pentru a-l păstra pe cel vechi)</label>
-                        {{ form.fisier }}
-                    </div>
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <label for="{{ form.data_documentului.id_for_label }}" class="form-label fw-bold small text-uppercase text-muted mb-1">
-                                {{ form.data_documentului.label }}
-                            </label>
-                            {{ form.data_documentului }}
-                            {% if form.data_documentului.help_text %}
-                                <div class="form-text small text-muted">{{ form.data_documentului.help_text }}</div>
-                            {% endif %}
+                    {% if form.errors %}
+                        <div class="alert alert-danger shadow-sm border-0 border-start border-danger border-4 py-2 px-3 mb-4">
+                            <h6 class="fw-bold mb-1 text-danger" style="font-size: 0.9rem;">🛑 Vă rugăm să corectați erorile:</h6>
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+
+                    <div class="django-form-wrapper">
+                        <div class="mb-4">
+                            <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem;">Titlu document</label>
+                            {{ form.titlu }}
+                            <div class="text-danger small mt-1">{{ form.titlu.errors }}</div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem;">Tip act</label>
+                            {{ form.tip }}
+                            <div class="text-danger small mt-1">{{ form.tip.errors }}</div>
                         </div>
 
-                        <div class="col-md-6">
-                            <label for="{{ form.data_inregistrarii.id_for_label }}" class="form-label fw-bold small text-uppercase text-muted mb-1">
-                                {{ form.data_inregistrarii.label }}
-                            </label>
-                            {{ form.data_inregistrarii }}
-                            {% if form.data_inregistrarii.help_text %}
-                                <div class="form-text small text-muted">{{ form.data_inregistrarii.help_text }}</div>
-                            {% endif %}
+                        <div class="mb-4">
+                            <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem;">Fișier (lasă gol pentru a-l păstra pe cel vechi)</label>
+                            {{ form.fisier }}
+                            <div class="text-danger small mt-1">{{ form.fisier.errors }}</div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3 mb-md-0">
+                                <label for="{{ form.data_documentului.id_for_label }}" class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem;">
+                                    Data documentului
+                                </label>
+                                {{ form.data_documentului }}
+                                {% if form.data_documentului.help_text %}
+                                    <div class="text-muted small mt-1">{{ form.data_documentului.help_text }}</div>
+                                {% endif %}
+                                <div class="text-danger small mt-1">{{ form.data_documentului.errors }}</div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="{{ form.data_inregistrarii.id_for_label }}" class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem;">
+                                    Data înregistrării
+                                </label>
+                                {{ form.data_inregistrarii }}
+                                {% if form.data_inregistrarii.help_text %}
+                                    <div class="text-muted small mt-1">{{ form.data_inregistrarii.help_text }}</div>
+                                {% endif %}
+                                <div class="text-danger small mt-1">{{ form.data_inregistrarii.errors }}</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem;">Descriere scurtă</label>
+                            {{ form.descriere_scurta }}
+                            <div class="text-danger small mt-1">{{ form.descriere_scurta.errors }}</div>
                         </div>
                     </div>
-                    <div class="mb-4">
-                        <label class="form-label fw-bold">Descriere scurtă</label>
-                        {{ form.descriere_scurta }}
-                    </div>
+                </div>
 
-                    <div class="d-flex justify-content-between">
-                        <a href="{% url 'cases:detalii_dosar' document.dosar.pk %}" class="btn btn-outline-secondary">Anulează</a>
-                        <button type="submit" class="btn btn-success fw-bold">Salvează Modificările</button>
-                    </div>
-                </form>
-            </div>
+                <div class="card-footer bg-light border-top border-secondary border-opacity-10 px-4 py-3 d-flex justify-content-end gap-2">
+                    <a href="{% url 'cases:detalii_dosar' document.dosar.pk %}" class="btn btn-light border border-secondary border-opacity-25 px-4 fw-medium transition-base">Anulează</a>
+                    <button type="submit" class="btn btn-primary fw-medium px-4 shadow-sm transition-base">Salvează modificările</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

@@ -6,7 +6,7 @@
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 pb-3 border-bottom border-secondary border-opacity-25">
     <div>
         <h3 class="mb-1 fw-bold text-dark d-flex align-items-center gap-2">
-            <span class="text-primary">📂</span> Registrul Dosarelor Penale
+            <i class="bi bi-folder2-open text-primary me-2"></i> Registrul Dosarelor Penale
         </h3>
         <p class="text-muted mb-0" style="font-size: 0.95rem;">
             Evidența centralizată a tuturor cauzelor înregistrate în sistem.
@@ -14,7 +14,7 @@
     </div>
     <div class="mt-3 mt-md-0">
         <a href="{% url 'cases:adaugare_dosar' %}" class="btn btn-sm btn-primary shadow-sm px-3 fw-medium d-flex align-items-center gap-2">
-            <span class="fs-6">➕</span> Dosar Nou
+            <i class="bi bi-folder-plus me-1"></i> Dosar Nou
         </a>
     </div>
 </div>
@@ -25,7 +25,9 @@
             <div class="row g-2 align-items-center">
                 <div class="col-md-9 col-lg-10">
                     <div class="input-group">
-                        <span class="input-group-text bg-light border-end-0 text-muted">🔍</span>
+                        <span class="input-group-text bg-light border-end-0 text-muted">
+                            <i class="bi bi-search"></i>
+                        </span>
                         <input type="text" name="q" class="form-control border-start-0 ps-0" 
                                placeholder="Căutare după număr dosar (ex: 123/P) sau infracțiune (ex: Furt)..." 
                                value="{{ query_text }}">

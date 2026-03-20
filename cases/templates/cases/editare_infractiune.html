@@ -1,47 +1,71 @@
 {% extends 'base.html' %}
 
-{% block title %}Editare Încadrare Juridică{% endblock %}
+{% block title %}Editare încadrare juridică{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center mt-5">
-    <div class="col-md-8">
-        <div class="card shadow-sm border-warning">
-            <div class="card-header bg-warning text-dark fw-bold">
-                <h5 class="mb-0">✎ Editare Încadrare Juridică - Dosar {{ dosar.numar_unic }}</h5>
+<div class="row justify-content-center mb-5">
+    <div class="col-md-8 col-lg-7">
+        
+        <div class="d-flex justify-content-between align-items-center mb-3 mt-2">
+            <h4 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                <span class="text-primary">⚖️</span> Editare încadrare juridică
+            </h4>
+            <a href="{% url 'cases:detalii_dosar' dosar.pk %}" class="btn btn-sm btn-outline-secondary fw-medium">
+                &larr; Înapoi la dosar
+            </a>
+        </div>
+
+        <div class="card border-0 border-top border-primary border-3 shadow-sm rounded-3 overflow-hidden">
+            <div class="card-header bg-white py-3 border-bottom border-secondary border-opacity-10">
+                <p class="mb-0 text-muted small fw-medium">Modificare date pentru dosarul nr. <strong class="text-dark">{{ dosar.numar_unic }}</strong></p>
             </div>
-            <div class="card-body">
-                <form method="POST">
+            
+            <form method="POST">
+                <div class="card-body p-4">
                     {% csrf_token %}
                     
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Act Normativ (Obligatoriu)</label>
-                        {{ form.act_normativ }}
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Articol Penal</label>
-                            {{ form.articol }}
-                            <div class="form-text">Ex: 228 alin. 1</div>
+                    {% if form.errors %}
+                        <div class="alert alert-danger shadow-sm border-0 border-start border-danger border-4 py-2 px-3 mb-4">
+                            <h6 class="fw-bold mb-1 text-danger" style="font-size: 0.9rem;">🛑 Vă rugăm să corectați erorile:</h6>
+                            {{ form.non_field_errors }}
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Data Presupusei Fapte</label>
-                            {{ form.data_comiterii }}
+                    {% endif %}
+
+                    <div class="django-form-wrapper">
+                        <div class="mb-4">
+                            <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem;">Act normativ (obligatoriu)</label>
+                            {{ form.act_normativ }}
+                            <div class="text-danger small mt-1">{{ form.act_normativ.errors }}</div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3 mb-md-0">
+                                <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem;">Articol penal</label>
+                                {{ form.articol }}
+                                <div class="text-muted small mt-1">Ex: 228 alin. 1</div>
+                                <div class="text-danger small mt-1">{{ form.articol.errors }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem;">Data presupusei fapte</label>
+                                {{ form.data_comiterii }}
+                                <div class="text-danger small mt-1">{{ form.data_comiterii.errors }}</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem;">Încadrare juridică (denumire infracțiune)</label>
+                            {{ form.incadrare_juridica }}
+                            <div class="text-muted small mt-1">Ex: Furt calificat</div>
+                            <div class="text-danger small mt-1">{{ form.incadrare_juridica.errors }}</div>
                         </div>
                     </div>
+                </div>
 
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Încadrare Juridică (Denumire infracțiune)</label>
-                        {{ form.incadrare_juridica }}
-                        <div class="form-text">Ex: Furt calificat</div>
-                    </div>
-
-                    <div class="d-flex justify-content-end mt-4 border-top pt-3">
-                        <a href="{% url 'cases:detalii_dosar' dosar.pk %}" class="btn btn-secondary me-2">Anulează</a>
-                        <button type="submit" class="btn btn-warning fw-bold">Salvează Modificările</button>
-                    </div>
-                </form>
-            </div>
+                <div class="card-footer bg-light border-top border-secondary border-opacity-10 px-4 py-3 d-flex justify-content-end gap-2">
+                    <a href="{% url 'cases:detalii_dosar' dosar.pk %}" class="btn btn-light border border-secondary border-opacity-25 px-4 fw-medium transition-base">Anulează</a>
+                    <button type="submit" class="btn btn-primary fw-medium px-4 shadow-sm transition-base">Salvează modificările</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

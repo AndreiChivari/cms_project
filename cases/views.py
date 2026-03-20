@@ -23,46 +23,67 @@ from django.contrib import messages
 
 User = get_user_model()
 
+from django.shortcuts import render
+from django.db.models import Q, Count
+from django.contrib.auth.decorators import login_required
+from datetime import date, timedelta
+from .models import Dosar, MasuraPreventiva
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
 @login_required
 def dashboard(request):
     utilizator = request.user
     
-    # 1. Statistici Globale (toate dosarele din sistem)
+    # 1. STATISTICI GLOBALE
     total_dosare = Dosar.objects.count()
     
-    # LOGICA NOUĂ PENTRU STATISTICI
-    # Căutăm dosarele care au măcar o soluție bifată ca "FINALĂ".
-    # Folosim .distinct() pentru că un dosar ar putea avea, teoretic, două soluții finale
-    # (ex: disjungeri) și nu vrem să numărăm dosarul de două ori.
-    dosare_solutionate = Dosar.objects.filter(
-        stadii_cercetare__solutii__este_finala=True
-    ).distinct().count()
-    
-    # Restul dosarelor sunt "în lucru" (fie abia înregistrate, fie cu stadii intermediare)
-    dosare_in_lucru = total_dosare - dosare_solutionate
-    
-    # 2. Statistici Personale (Dosarele MELE)
-    # Folosim Q objects pentru a spune: "Adu-mi dosarele unde sunt Ofițer SAU Procuror SAU Grefier"
-    if utilizator.is_superuser or utilizator.rol == 'ADMIN':
-        dosare_mele = total_dosare 
-        # Am adăugat prefetch_related înainte de all()
+    # 2. STATISTICI PERSONALE
+    if utilizator.is_superuser or getattr(utilizator, 'rol', '') == 'ADMIN':
+        dosare_mele = total_dosare
+        # Pentru admin, "dosarele mele" sunt toate
+        dosare_solutionate = Dosar.objects.filter(stadii_cercetare__solutii__este_finala=True).distinct().count()
+        dosare_in_lucru = total_dosare - dosare_solutionate
+        
         dosarele_mele_lista = Dosar.objects.prefetch_related(
             'infractiuni', 
             'stadii_cercetare__solutii'
-        ).all().order_by('-data_inregistrarii')[:5] 
+        ).all().order_by('-data_inregistrarii')[:5]
     else:
-        # Interogare complexă cu Q
+        # Condiția pentru a găsi dosarele unde userul este implicat
         conditie_mea = Q(ofiter_caz=utilizator) | Q(procuror_caz=utilizator) | Q(grefier_caz=utilizator)
+        
+        # Total dosare personale
         dosare_mele = Dosar.objects.filter(conditie_mea).count()
         
-        # Am adăugat prefetch_related înainte de filter()
+        # Dosare personale SOLUȚIONATE (au măcar o soluție finală)
+        dosare_solutionate = Dosar.objects.filter(
+            conditie_mea, 
+            stadii_cercetare__solutii__este_finala=True
+        ).distinct().count()
+        
+        # Dosare personale ÎN LUCRU
+        dosare_in_lucru = dosare_mele - dosare_solutionate
+        
+        # Ultimele 5 dosare pentru tabel
         dosarele_mele_lista = Dosar.objects.prefetch_related(
             'infractiuni', 
             'stadii_cercetare__solutii'
         ).filter(conditie_mea).order_by('-data_inregistrarii')[:5]
-        
-    # === LOGICA PENTRU ALERTE MĂSURI PREVENTIVE ===
-     # Găsim toate măsurile care expiră în max 10 zile, dar nu mai vechi de 5 zile de la expirare
+
+    # 3. INDICATOR DE OPERATIVITATE / ÎNCĂRCĂTURĂ
+    # Calculăm câți utilizatori activi au dosare (pentru a afla media)
+    utilizatori_activi = User.objects.filter(
+        Q(dosare_instrumentate__isnull=False) | 
+        Q(dosare_supravegheate__isnull=False) | 
+        Q(dosare_gestionate__isnull=False)
+    ).distinct().count()
+    
+    media_sistem = total_dosare / utilizatori_activi if utilizatori_activi > 0 else 0
+    diferenta_medie = dosare_mele - media_sistem
+    
+    # 4. ALERTE MĂSURI PREVENTIVE
     azi = date.today()
     prag_10_zile = azi + timedelta(days=10)
 
@@ -71,22 +92,31 @@ def dashboard(request):
         data_sfarsit__gte=azi - timedelta(days=5) 
     ).order_by('data_sfarsit')
 
-    # Filtrăm ca fiecare să vadă doar dosarele lui (Polițist, Procuror sau Grefier)
-    if request.user.is_superuser:
+    if utilizator.is_superuser or getattr(utilizator, 'rol', '') == 'ADMIN':
         alerte_masuri = alerte_toate
     else:
         alerte_masuri = alerte_toate.filter(
-            Q(dosar__ofiter_caz=request.user) |
-            Q(dosar__procuror_caz=request.user) |
-            Q(dosar__grefier_caz=request.user)
+            Q(dosar__ofiter_caz=utilizator) |
+            Q(dosar__procuror_caz=utilizator) |
+            Q(dosar__grefier_caz=utilizator)
         )
-    # ============================================
 
+    # 5. CONTEXT PENTRU HTML
     context = {
+        # Profile date
+        'user_rol': getattr(utilizator, 'rol', 'Membru Echipă'),
+        # Stats
         'total_dosare': total_dosare,
-        'dosare_in_lucru': dosare_in_lucru,
-        'dosare_judecata': dosare_solutionate, # Păstrăm numele variabilei pt HTML ca să nu mai modifici acolo
         'dosare_mele': dosare_mele,
+        'dosare_solutionate': dosare_solutionate,
+        'dosare_in_lucru': dosare_in_lucru,
+        # Operativitate
+        'media_sistem': round(media_sistem, 1),
+        'diferenta_medie': round(diferenta_medie, 1),
+        # Procente pentru grafic (evităm împărțirea la zero)
+        'procent_lucru': int((dosare_in_lucru / dosare_mele * 100)) if dosare_mele > 0 else 0,
+        'procent_solutionate': int((dosare_solutionate / dosare_mele * 100)) if dosare_mele > 0 else 0,
+        # Liste
         'dosarele_mele_lista': dosarele_mele_lista,
         'alerte_masuri': alerte_masuri,
     }
