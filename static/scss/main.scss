@@ -18,7 +18,7 @@ $border-radius: 0.2rem; // Colturi putin mai ascutite pentru un aspect mai serio
     letter-spacing: 0.05em;
 }
 
-// Fixam inaltimea navbar-ului
+// Fixăm înălțimea navbar-ului
 .navbar {
     height: 64px;
     padding-top: 0;
@@ -32,8 +32,14 @@ $border-radius: 0.2rem; // Colturi putin mai ascutite pentru un aspect mai serio
 }
 
 .navbar-logo {
-    height: 60px;
-    max-height: 100%;
+    // 50px lasă 7px sus și 7px jos (din cei 64px totali), ceea ce arată perfect
+    height: 50px; 
+    width: auto;
+    object-fit: contain;
+    
+    // TRUCUL MAGIC: Dacă logoul e încă prea mic din cauza marginilor din PNG,
+    // decomentează linia de mai jos și joacă-te cu valoarea (1.2, 1.4, 1.5)
+    // transform: scale(1.3);
 }
 
 // ADĂUGĂRI PENTRU VARIANTA INSTITUȚIONALĂ A NAVBAR-ULUI
