@@ -182,7 +182,7 @@ def lista_dosare(request):
 
     # --- COD NOU PENTRU PAGINARE ---
     # Împărțim rezultatele (dosare) în pagini de câte 10 (poți pune 2 sau 3 acum pentru testare!)
-    paginator = Paginator(dosare, 10) 
+    paginator = Paginator(dosare, 7) 
     
     # Luăm numărul paginii curente din URL (ex: ?page=2)
     page_number = request.GET.get('page')
@@ -459,15 +459,14 @@ def stergere_document(request, pk):
 def generare_pdf_dosar(request, pk):
     dosar = get_object_or_404(Dosar, pk=pk)
     
-    if not dosar.are_drepturi_editare(request.user) and not request.user.is_superuser:
-        raise PermissionDenied("Nu aveți acces la vizualizarea acestui dosar.")
-
     context = {
         'dosar': dosar,
-        'parti_implicate': dosar.parti_implicate.all(),
+        'stadiu_curent': dosar.stadiu_curent,
+        'solutie_curenta': dosar.solutie_curenta,
         'request': request,
     }
     
+    # 3. Generăm PDF-ul
     pdf = render_to_pdf('cases/pdf_template.html', context)
     
     if pdf:

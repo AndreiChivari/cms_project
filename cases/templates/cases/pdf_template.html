@@ -4,95 +4,176 @@
     <meta charset="UTF-8">
     <title>Fișă Dosar {{ dosar.numar_unic }}</title>
     <style>
-        /* PDF-ul va folosi fontul lui nativ și sigur */
-        @page { size: A4; margin: 2cm; }
+        @page { 
+            size: A4; 
+            margin: 1.5cm; 
+            @frame footer {
+                -pdf-frame-content: footer_content;
+                bottom: 1cm;
+                margin-left: 1.5cm;
+                margin-right: 1.5cm;
+                height: 1cm;
+            }
+        }
+
+        /* VARIANTA CU HELVETICA FUNCTIONEAZA PENTRU EXPORTUL FARA DIACRITICE */
+        body { font-family: Helvetica, sans-serif; font-size: 11px; color: #333; line-height: 1.4; }
         
-        body { font-family: Helvetica, sans-serif; font-size: 14px; color: #333; }
+        h1 { text-align: center; font-size: 18px; color: #2c3e50; border-bottom: 2px solid #2c3e50; padding-bottom: 5px; margin-bottom: 20px; }
+        h2 { font-size: 13px; color: #2c3e50; margin-top: 20px; margin-bottom: 5px; border-bottom: 1px solid #bdc3c7; background-color: #f8f9fa; padding: 5px; }
         
-        h1 { text-align: center; font-size: 20px; color: #1a252f; border-bottom: 2px solid #2c3e50; padding-bottom: 10px; }
-        h2 { font-size: 16px; color: #2c3e50; margin-top: 30px; border-bottom: 1px solid #bdc3c7; }
+        .header { font-size: 10px; color: #7f8c8d; margin-bottom: 20px; }
         
-        .header { text-align: left; margin-bottom: 40px; font-size: 12px; color: #7f8c8d; }
-        .row { width: 100%; margin-bottom: 15px; }
-        .label { font-weight: bold; width: 150px; display: inline-block; }
-        .value { display: inline-block; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+        th, td { border: 1px solid #bdc3c7; padding: 6px; text-align: left; vertical-align: top; }
+        th { background-color: #ecf0f1; font-weight: bold; color: #2c3e50; }
         
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid #7f8c8d; padding: 8px; text-align: left; font-size: 12px; }
-        th { background-color: #ecf0f1; font-weight: bold; }
+        .info-table td { border: none; padding: 4px; border-bottom: 1px dashed #ecf0f1; }
+        .info-label { font-weight: bold; width: 130px; color: #555; }
         
-        .footer { text-align: center; margin-top: 50px; font-size: 10px; color: #95a5a6; }
+        .text-center { text-align: center; }
+        .text-muted { color: #7f8c8d; }
+        .badge-final { color: red; font-weight: bold; font-size: 9px; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        MINISTERUL PUBLIC<br>
-        Sistem Informatic de Management al Dosarelor<br>
-        Generat la data: {% now "d.m.Y H:i" %}
+        <strong></strong>Sistemul Informatic de Evidenţă a Dosarelor Penale</strong><br>
+        Document generat la: {% now "d.m.Y H:i" %}
     </div>
 
     <h1>FIȘĂ DOSAR PENAL NR. {{ dosar.numar_unic }}</h1>
 
-    <div class="row">
-        <span class="label">Data Înregistrării:</span>
-        <span class="value">{{ dosar.data_inregistrarii|date:"d M Y" }}</span>
-    </div>
-    <div class="row">
-        <span class="label">Stadiu Cercetări:</span>
-        <span class="value">{{ dosar.get_stadiu_display }}</span>
-    </div>
-    {% if dosar.tip_solutie %}
-    <div class="row">
-        <span class="label">Soluție/Propunere:</span>
-        <span class="value">{{ dosar.get_tip_solutie_display }}</span>
-    </div>
-    <div class="row">
-        <span class="label">Data Soluției:</span>
-        <span class="value">{{ dosar.data_solutiei|date:"d M Y" }}</span>
-    </div>
-    {% endif %}
-    <div class="row">
-        <span class="label">Ofițer de Caz:</span>
-        <span class="value">{{ dosar.ofiter_caz.get_full_name|default:dosar.ofiter_caz.username|default:"-" }}</span>
-    </div>
-    <div class="row">
-        <span class="label">Procuror:</span>
-        <span class="value">{{ dosar.procuror_caz.get_full_name|default:dosar.procuror_caz.username|default:"-" }}</span>
-    </div>
+    <table class="info-table" style="width: 100%; border: 1px solid #bdc3c7; margin-bottom: 20px;">
+        <tr>
+            <td class="info-label">Data înregistrării:</td>
+            <td>{{ dosar.data_inregistrarii|date:"d.m.Y" }}</td>
+            <td class="info-label">Poliţist:</td>
+            <td>{{ dosar.ofiter_caz.get_full_name|default:dosar.ofiter_caz.username|default:"Nedesemnat" }}</td>
+        </tr>
+        <tr>
+            <td class="info-label">Stadiu curent:</td>
+            <td>{{ stadiu_curent.get_tip_stadiu_display|default:"Înregistrat / Fără stadiu" }}</td>
+            <td class="info-label">Procuror:</td>
+            <td>{{ dosar.procuror_caz.get_full_name|default:dosar.procuror_caz.username|default:"Nedesemnat" }}</td>
+        </tr>
+        <tr>
+            <td class="info-label">Soluție curentă:</td>
+            <td>
+                {% if solutie_curenta %}
+                    {{ solutie_curenta.get_tip_solutie_display }} (din {{ solutie_curenta.data_solutiei|date:"d.m.Y" }})
+                    {% if solutie_curenta.este_finala %}<span class="badge-final">[FINALĂ]</span>{% endif %}
+                {% else %}
+                    În lucru...
+                {% endif %}
+            </td>
+            <td class="info-label">Grefier:</td>
+            <td>{{ dosar.grefier_caz.get_full_name|default:dosar.grefier_caz.username|default:"Nedesemnat" }}</td>
+        </tr>
+    </table>
 
-    <h2>I. Infracțiunea Cercetată</h2>
-    <p>{{ dosar.infractiune_cercetata }}</p>
+    <h2>I. Situația de fapt / Rezumat</h2>
+    <p style="text-align: justify; padding: 5px; border: 1px solid #ecf0f1;">{{ dosar.infractiune_cercetata|default:"Nu a fost introdus un rezumat." }}</p>
 
-    <h2>II. Părți Implicate în Cauză</h2>
+    <h2>II. Încadrări juridice</h2>
     <table>
         <thead>
             <tr>
-                <th>Nume Complet</th>
-                <th>Calitate Procesuală</th>
-                <th>CNP</th>
-                <th>Mențiuni</th>
+                <th style="width: 25%;">Act normativ</th>
+                <th style="width: 15%;">Articol</th>
+                <th style="width: 45%;">Denumire Infracțiune</th>
+                <th style="width: 15%;">Data faptei</th>
             </tr>
         </thead>
         <tbody>
-            {% for parte in parti_implicate %}
+            {% for infr in dosar.infractiuni.all %}
             <tr>
-                <td>{{ parte.nume_complet }}</td>
+                <td>{{ infr.get_act_normativ_display }}</td>
+                <td>{% if infr.articol and infr.articol != 'None' %}art. {{ infr.articol }}{% else %}-{% endif %}</td>
+                <td>{{ infr.incadrare_juridica|default:"În curs de stabilire" }}</td>
+                <td>{{ infr.data_comiterii|date:"d.m.Y"|default:"-" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-center text-muted">Nicio încadrare adăugată.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>III. Părți în cauză</h2>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 35%;">Nume complet</th>
+                <th style="width: 20%;">Calitate procesuală</th>
+                <th style="width: 15%;">CNP</th>
+                <th style="width: 30%;">Mențiuni</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for parte in dosar.parti_implicate.all %}
+            <tr>
+                <td><strong>{{ parte.nume_complet }}</strong></td>
                 <td>{{ parte.get_calitate_procesuala_display }}</td>
                 <td>{{ parte.cnp|default:"-" }}</td>
                 <td>{{ parte.mentiuni|default:"-" }}</td>
             </tr>
             {% empty %}
-            <tr>
-                <td colspan="4" style="text-align: center;">Nu există persoane înregistrate în sistem pentru această cauză.</td>
-            </tr>
+            <tr><td colspan="4" class="text-center text-muted">Nu există persoane înregistrate în sistem.</td></tr>
             {% endfor %}
         </tbody>
     </table>
 
-    <div class="footer">
-        Document generat automat din aplicația CMS Urmărire Penală.<br>
-        Utilizator emitent: {{ request.user.get_full_name|default:request.user.username }}
+    <h2>IV. Măsuri Preventive Dispuse</h2>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 35%;">Persoana vizată</th>
+                <th style="width: 25%;">Tip măsură</th>
+                <th style="width: 15%;">Durata</th>
+                <th style="width: 25%;">Perioada</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for masura in dosar.masuri_preventive.all %}
+            <tr>
+                <td>{{ masura.parte.nume_complet }}</td>
+                <td>{{ masura.get_tip_masura_display }}</td>
+                <td>{{ masura.durata_zile }} zile</td>
+                <td>{{ masura.data_inceput|date:"d.m.Y" }} - {{ masura.data_sfarsit|date:"d.m.Y" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-center text-muted">Nu există măsuri preventive.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>V. Acte de urmărire penală (documente)</h2>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 20%;">Tip act</th>
+                <th style="width: 40%;">Titlu document</th>
+                <th style="width: 20%;">Data documentului</th>
+                <th style="width: 20%;">Autor</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for act in dosar.documente.all %}
+            <tr>
+                <td>{{ act.get_tip_display }}</td>
+                <td>{{ act.titlu }}</td>
+                <td>{{ act.data_documentului|date:"d.m.Y" }}</td>
+                <td>{{ act.autor.get_full_name|default:"Sistem" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-center text-muted">Niciun document atașat.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div id="footer_content" style="text-align: right; font-size: 9px; color: #95a5a6; border-top: 1px solid #bdc3c7; padding-top: 5px;">
+        Generat de: {{ request.user.get_full_name|default:request.user.username }} | Pagina <pdf:pagenumber> din <pdf:pagecount>
     </div>
 
 </body>

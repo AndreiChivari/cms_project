@@ -1,7 +1,8 @@
 // 1. Definim culorile personalizate PENTRU O APLICATIE JURIDICA
 // Suprascriem variabilele default inainte de a importa Bootstrap
 
-$primary: #1a365d;    // Un albastru marin (Navy Blue) sobru si profesional
+// $primary: #1a365d;    // Un albastru marin (Navy Blue) sobru si profesional
+$primary: #1c437a;
 $secondary: #4a5568;  // Un gri inchis pentru elemente secundare
 $success: #2f855a;    // Un verde mai temperat pentru actiuni reusite
 $danger: #c53030;     // Un rosu mai putin strident pentru stergerea dosarelor/erori
@@ -35,11 +36,12 @@ $border-radius: 0.2rem; // Colturi putin mai ascutite pentru un aspect mai serio
     // 50px lasă 7px sus și 7px jos (din cei 64px totali), ceea ce arată perfect
     height: 50px; 
     width: auto;
-    object-fit: contain;
+    object-fit:contain;
+    margin-top: 5px;
     
     // TRUCUL MAGIC: Dacă logoul e încă prea mic din cauza marginilor din PNG,
     // decomentează linia de mai jos și joacă-te cu valoarea (1.2, 1.4, 1.5)
-    // transform: scale(1.3);
+    // transform: scale(1.2);
 }
 
 // ADĂUGĂRI PENTRU VARIANTA INSTITUȚIONALĂ A NAVBAR-ULUI

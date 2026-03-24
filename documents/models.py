@@ -25,13 +25,13 @@ class ActUrmarire(models.Model):
     data_documentului = models.DateField(
         default=timezone.now,
         verbose_name="Data emiterii documentului",
-        help_text="Data scrisă pe actul fizic"
+        help_text="Data emiterii/întocmirii documentului"
     )
     
     data_inregistrarii = models.DateField(
         default=timezone.now,
         verbose_name="Data înregistrării",
-        help_text="Data la care a primit număr de intrare/înregistrare"
+        help_text="Data atribuirii numărului de intrare/înregistrare"
     )
 
     tip = models.CharField(max_length=50, choices=TipDocument.choices, default=TipDocument.ORDONANTA)

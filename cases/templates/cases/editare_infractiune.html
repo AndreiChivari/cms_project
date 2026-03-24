@@ -40,20 +40,20 @@
                         
                         <div class="row mb-4">
                             <div class="col-md-6 mb-3 mb-md-0">
-                                <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem;">Articol penal</label>
+                                <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem;">Articol</label>
                                 {{ form.articol }}
                                 <div class="text-muted small mt-1">Ex: 228 alin. 1</div>
                                 <div class="text-danger small mt-1">{{ form.articol.errors }}</div>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem;">Data presupusei fapte</label>
+                                <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem;">Data săvârşirii faptei</label>
                                 {{ form.data_comiterii }}
                                 <div class="text-danger small mt-1">{{ form.data_comiterii.errors }}</div>
                             </div>
                         </div>
 
                         <div class="mb-2">
-                            <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem;">Încadrare juridică (denumire infracțiune)</label>
+                            <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem;">Denumire infracțiune</label>
                             {{ form.incadrare_juridica }}
                             <div class="text-muted small mt-1">Ex: Furt calificat</div>
                             <div class="text-danger small mt-1">{{ form.incadrare_juridica.errors }}</div>

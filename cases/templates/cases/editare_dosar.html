@@ -1,23 +1,30 @@
 {% extends 'base.html' %}
 
-{% block title %}Editare Dosar {{ dosar.numar_unic }}{% endblock %}
+{% block title %}Editare dosar {{ dosar.numar_unic }}{% endblock %}
 
 {% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 pb-3 border-bottom border-secondary border-opacity-25">
+    <div>
+        <a href="{% url 'cases:detalii_dosar' dosar.pk %}" class="text-decoration-none text-muted mb-2 d-inline-block transition-base hover-text-primary" style="font-size: 0.9rem;">
+            &larr; Înapoi la dosar
+        </a>
+        <h3 class="mb-1 fw-bold text-dark d-flex align-items-center gap-2">
+            Editare detalii dosar
+        </h3>
+        <p class="text-muted mb-0" style="font-size: 0.95rem;">
+            Actualizare date generale pentru dosarul nr. <strong class="text-dark">{{ dosar.numar_unic }}</strong>
+        </p>
+    </div>
+</div>
+
 <div class="row justify-content-center mb-5">
     <div class="col-xl-9 col-lg-10">
         
-        <div class="d-flex justify-content-between align-items-center mb-3 mt-2">
-            <h4 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2">
-                <span class="text-primary">📝</span> Editare detalii dosar
-            </h4>
-            <a href="{% url 'cases:detalii_dosar' dosar.pk %}" class="btn btn-sm btn-outline-secondary fw-medium">
-                &larr; Înapoi la dosar
-            </a>
-        </div>
-
-        <div class="card border-0 border-top border-primary border-3 shadow-sm rounded-3 overflow-hidden">
+        <div class="card border-0 border-top border-primary border-3 shadow-sm rounded-3 overflow-hidden mt-2">
             <div class="card-header bg-white py-3 border-bottom border-secondary border-opacity-10">
-                <p class="mb-0 text-muted small fw-medium">Actualizare date generale pentru dosarul nr. <strong class="text-dark">{{ dosar.numar_unic }}</strong></p>
+                <h5 class="mb-0 fw-bold text-dark" style="font-size: 1.05rem;">
+                     <i class="bi bi-pencil-square text-primary"></i>  Formular editare dosar
+                </h5>
             </div>
             
             <form method="POST">
@@ -27,7 +34,7 @@
                     {% if form.errors %}
                         <div class="alert alert-danger shadow-sm border-0 border-start border-danger border-4 py-3 px-4 mb-5 bg-danger bg-opacity-10">
                             <h6 class="fw-bold mb-2 text-danger d-flex align-items-center gap-2">
-                                <span class="fs-5">⚠️</span> Vă rugăm să remediați următoarele probleme:
+                                <i class="bi bi-exclamation-triangle-fill fs-5"></i> Vă rugăm să remediați următoarele probleme:
                             </h6>
                             <ul class="mb-0 text-danger" style="font-size: 0.9rem; padding-left: 1.5rem;">
                             {% for field, errors in form.errors.items %}
@@ -39,41 +46,49 @@
                         </div>
                     {% endif %}
 
-                    <div class="django-form-wrapper">
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger mb-4 shadow-sm border border-danger border-opacity-25 text-danger fw-medium" style="font-size: 0.9rem;">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+
+                    <div class="django-form-wrapper text-dark">
                         
-                        <div class="mb-5">
-                            <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem;">Număr unic (inalterabil)</label>
-                            {{ form.numar_unic }}
-                            <div class="text-danger small mt-1 fw-medium">{{ form.numar_unic.errors }}</div>
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem;">Număr unic (inalterabil)</label>
+                                {{ form.numar_unic }}
+                                <div class="text-danger small mt-1 fw-medium">{{ form.numar_unic.errors }}</div>
+                            </div>
                         </div>
 
-                        <h6 class="text-primary fw-bold mt-4 mb-3 border-bottom border-secondary border-opacity-10 pb-2">Echipa de anchetă</h6>
+                        <h6 class="text-primary fw-bold mt-2 mb-3 border-bottom border-secondary border-opacity-10 pb-2">Personal desemnat</h6>
                         
-                        <div class="row mb-3">
-                            <div class="col-md-4 mb-3 mb-md-0">
-                                <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem;">Ofițer de caz</label>
+                        <div class="row">
+                            <div class="col-md-4 mb-4 mb-md-0">
+                                <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem;">Poliţist</label>
                                 {{ form.ofiter_caz }}
                                 <div class="text-danger small mt-1 fw-medium">{{ form.ofiter_caz.errors }}</div>
                             </div>
-                            <div class="col-md-4 mb-3 mb-md-0">
+                            <div class="col-md-4 mb-4 mb-md-0">
                                 <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem;">Procuror</label>
                                 {{ form.procuror_caz }}
                                 <div class="text-danger small mt-1 fw-medium">{{ form.procuror_caz.errors }}</div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-4 mb-4 mb-md-0">
                                 <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem;">Grefier</label>
                                 {{ form.grefier_caz }}
                                 <div class="text-danger small mt-1 fw-medium">{{ form.grefier_caz.errors }}</div>
                             </div>
                         </div>
 
-                        <div class="row mb-5">
+                        <div class="row mt-4 mb-5">
                             <div class="col-md-6">
                                 <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem;">{{ form.data_schimbare_echipa.label }}</label>
                                 {{ form.data_schimbare_echipa }}
                                 {% if form.data_schimbare_echipa.help_text %}
-                                    <div class="text-warning text-dark fw-medium small mt-1 d-flex align-items-center gap-1">
-                                        <span>💡</span> {{ form.data_schimbare_echipa.help_text }}
+                                    <div class="text-muted fw-medium small mt-1 d-flex align-items-center gap-1">
+                                        <i class="bi bi-lightbulb text-warning"></i> {{ form.data_schimbare_echipa.help_text }}
                                     </div>
                                 {% endif %}
                                 <div class="text-danger small mt-1 fw-medium">{{ form.data_schimbare_echipa.errors }}</div>
@@ -82,22 +97,29 @@
 
                         <h6 class="text-primary fw-bold mt-4 mb-3 border-bottom border-secondary border-opacity-10 pb-2">Situația de fapt</h6>
                         
-                        <div class="mb-2">
-                            <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem;">Stare de fapt / infracțiune cercetată</label>
-                            {{ form.infractiune_cercetata }}
-                            <div class="text-muted small mt-1">Actualizați rezumatul stării de fapt dacă au apărut elemente noi în cercetare.</div>
-                            <div class="text-danger small mt-1 fw-medium">{{ form.infractiune_cercetata.errors }}</div>
+                        <div class="row">
+                            <div class="col-12 mb-2">
+                                <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem;">Rezumatul stării de fapt</label>
+                                {{ form.infractiune_cercetata }}
+                                <div class="text-muted small mt-1">Actualizați rezumatul stării de fapt dacă au apărut elemente noi.</div>
+                                <div class="text-danger small mt-1 fw-medium">{{ form.infractiune_cercetata.errors }}</div>
+                            </div>
                         </div>
                         
                     </div>
                 </div>
 
-                <div class="card-footer bg-light border-top border-secondary border-opacity-10 px-4 py-3 d-flex justify-content-end gap-2">
-                    <a href="{% url 'cases:detalii_dosar' dosar.pk %}" class="btn btn-light border border-secondary border-opacity-25 px-4 fw-medium transition-base">Anulează</a>
-                    <button type="submit" class="btn btn-primary fw-medium px-4 shadow-sm transition-base">Salvează modificările</button>
+                <div class="card-footer bg-light border-top border-secondary border-opacity-10 px-4 py-3 d-flex justify-content-between align-items-center">
+                    <a href="{% url 'cases:detalii_dosar' dosar.pk %}" class="btn btn-light border border-secondary border-opacity-25 px-4 fw-medium transition-base">
+                        Anulează
+                    </a>
+                    <button type="submit" class="btn btn-primary px-4 shadow-sm fw-medium d-flex align-items-center gap-2 transition-base">
+                        <span>Salvează modificările</span> &rarr;
+                    </button>
                 </div>
             </form>
         </div>
+        
     </div>
 </div>
 {% endblock %}

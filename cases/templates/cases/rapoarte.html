@@ -1,5 +1,7 @@
 {% extends 'base.html' %}
 
+{% block title %}Rapoarte avansate{% endblock %}
+
 {% block content %}
 <div class="container-fluid mt-4 mb-5">
     
@@ -45,7 +47,7 @@
                                 </select>
                             </div>
                             <div class="col-6">
-                                <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">Ofițer de Caz</label>
+                                <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">Poliţist</label>
                                 <select name="ofiter" class="form-select form-select-sm border-secondary border-opacity-25">
                                     <option value="">-- Toți --</option>
                                     {% for o in lista_ofiteri %}
@@ -151,7 +153,7 @@
                             {% if coloane.col_stadiu_curent %}<th class="py-3 px-3 fw-bold border-0 bg-primary bg-gradient  text-white" style="font-size: 0.75rem; text-transform: uppercase;">Stadiu</th>{% endif %}
                             {% if coloane.col_data_stadiu %}<th class="py-3 px-3 fw-bold border-0 bg-primary bg-gradient  text-white" style="font-size: 0.75rem; text-transform: uppercase;">Data stadiu</th>{% endif %}
                             {% if coloane.col_solutie_finala %}<th class="py-3 px-3 fw-bold border-0 bg-primary bg-gradient  text-white" style="font-size: 0.75rem; text-transform: uppercase;">Soluție</th>{% endif %}
-                            {% if coloane.col_data_solutie %}<th class="py-3 px-3 fw-bold border-0 bg-primary bg-gradient  text-white" style="font-size: 0.75rem; text-transform: uppercase;">Data soluție</th>{% endif %}
+                            {% if coloane.col_data_solutie %}<th class="py-3 px-3 fw-bold border-0 bg-primary bg-gradient  text-white" style="font-size: 0.75rem; text-transform: uppercase;">Data soluției</th>{% endif %}
                             {% if coloane.col_parti %}<th class="py-3 px-3 fw-bold border-0 bg-primary bg-gradient  text-white" style="font-size: 0.75rem; text-transform: uppercase;">Părți în cauză</th>{% endif %}
                             {% if coloane.col_masuri %}<th class="py-3 px-3 fw-bold border-0 bg-primary bg-gradient  text-white" style="font-size: 0.75rem; text-transform: uppercase;">Măsuri prev.</th>{% endif %}
                         </tr>

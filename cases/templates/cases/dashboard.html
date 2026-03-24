@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Centru de Comandă{% endblock %}
+{% block title %}Pagina principală{% endblock %}
 
 {% block content %}
 <div class="card border-0 shadow-sm mb-4 bg-primary text-white overflow-hidden rounded-3">
@@ -212,7 +212,7 @@
         <div id="urgente" class="card border-0 border-top border-danger border-3 shadow-sm rounded-3 overflow-hidden">
             <div class="card-header bg-white d-flex justify-content-between align-items-center py-3 border-bottom border-secondary border-opacity-10">
                 <h6 class="mb-0 fw-bold text-danger d-flex align-items-center gap-2" style="font-size: 0.9rem;">
-                    <i class="bi bi-exclamation-triangle-fill"></i> Urgențe Măsuri
+                    <i class="bi bi-exclamation-triangle-fill"></i> Urgențe măsuri
                 </h6>
                 <span class="badge bg-danger rounded-pill shadow-sm">{{ alerte_masuri|length }}</span>
             </div>

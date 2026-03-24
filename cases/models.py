@@ -133,10 +133,11 @@ class Dosar(models.Model):
 
 class ParteImplicata(models.Model):
     class Calitate(models.TextChoices):
+        FAPTUITOR = 'FAPTUITOR', 'Făptuitor'
         SUSPECT = 'SUSPECT', 'Suspect'
         INCULPAT = 'INCULPAT', 'Inculpat'
-        PARTE_VATAMATA = 'PARTE_VATAMATA', 'Parte Vătămată'
-        PARTE_CIVILA = 'PARTE_CIVILA', 'Parte Civilă'
+        PARTE_VATAMATA = 'PARTE_VATAMATA', 'Persoană vătămată'
+        PARTE_CIVILA = 'PARTE_CIVILA', 'Parte civilă'
         MARTOR = 'MARTOR', 'Martor'
 
     # Legătura către dosar. Când un dosar e șters, se șterg și părțile implicate din el (CASCADE)
@@ -195,10 +196,10 @@ class Infractiune(models.Model):
 class MasuraPreventiva(models.Model):
     class TipMasura(models.TextChoices):
         RETINERE = 'RETINERE', 'Reținere (24h)'
-        AREST_PREVENTIV = 'AREST_PREVENTIV', 'Arest Preventiv'
-        AREST_DOMICILIU = 'AREST_DOMICILIU', 'Arest la Domiciliu'
-        CONTROL_JUDICIAR = 'CONTROL_JUDICIAR', 'Control Judiciar'
-        CONTROL_JUDICIAR_CAUTIUNE = 'CONTROL_JUDICIAR_CAUTIUNE', 'Control Judiciar pe Cauțiune'
+        AREST_PREVENTIV = 'AREST_PREVENTIV', 'Arest preventiv'
+        AREST_DOMICILIU = 'AREST_DOMICILIU', 'Arest la domiciliu'
+        CONTROL_JUDICIAR = 'CONTROL_JUDICIAR', 'Control judiciar'
+        CONTROL_JUDICIAR_CAUTIUNE = 'CONTROL_JUDICIAR_CAUTIUNE', 'Control judiciar pe cauțiune'
 
     dosar = models.ForeignKey(Dosar, on_delete=models.CASCADE, related_name='masuri_preventive')
     parte = models.ForeignKey(ParteImplicata, on_delete=models.CASCADE, related_name='masuri_preventive')
@@ -273,14 +274,19 @@ class SolutieDosar(models.Model):
         PROCUROR = 'PROCUROR', 'Procuror'
 
     class TipSolutie(models.TextChoices):
-        # Trimitere în judecată
         RECHIZITORIU = 'RECHIZITORIU', 'Rechizitoriu'
         ACORD = 'ACORD', 'Acord de recunoaștere a vinovăției'
         # Clasări (Art. 16 CPP)
         CLASARE_A = 'CLASARE_A', 'Clasare - art. 16 alin. 1 lit. a) fapta nu există'
-        CLASARE_B = 'CLASARE_B', 'Clasare - art. 16 alin. 1 lit. b) fapta nu e prevăzută de lege'
-        CLASARE_C = 'CLASARE_C', 'Clasare - art. 16 alin. 1 lit. c) nu există probe/nu e săvârșită de inculpat'
-        CLASARE_ALTELE = 'CLASARE_ALTELE', 'Clasare - alte temeiuri (lit. d-j)'
+        CLASARE_B = 'CLASARE_B', 'Clasare - art. 16 alin. 1 lit. b) fapta nu e prevăzută de lege ori nu a fost săvârşită cu vinovăţie'
+        CLASARE_C = 'CLASARE_C', 'Clasare - art. 16 alin. 1 lit. c) nu există probe'
+        CLASARE_D = 'CLASARE_D', 'Clasare - art. 16 alin. 1 lit. d) există o cauză justificativă sau de neimputabilitate'
+        CLASARE_E = 'CLASARE_E', 'Clasare - art. 16 alin. 1 lit. e) lipseşte plângerea prealabilă, autorizarea sau sesizarea ori o altă condiţie'
+        CLASARE_F = 'CLASARE_F', 'Clasare - art. 16 alin. 1 lit. f) a intervenit amnistia sau prescripţia, decesul persoanei fizice sau radierea persoanei juridice'
+        CLASARE_G = 'CLASARE_G', 'Clasare - art. 16 alin. 1 lit. g) retragerea plângerii prealabile, împăcarea ori încheierea unui acord de mediere'
+        CLASARE_H = 'CLASARE_H', 'Clasare - art. 16 alin. 1 lit. h) există o cauză de nepedepsire'
+        CLASARE_I = 'CLASARE_I', 'Clasare - art. 16 alin. 1 lit. i) există autoritate de lucru judecat'
+        CLASARE_J = 'CLASARE_J', 'Clasare - art. 16 alin. 1 lit. j) a intervenit un transfer de proceduri cu un alt stat'
         # Altele
         RENUNTARE = 'RENUNTARE', 'Renunțare la urmărirea penală'
         DECLINARE = 'DECLINARE', 'Declinare de competență'

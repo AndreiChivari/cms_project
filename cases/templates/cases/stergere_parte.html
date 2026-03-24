@@ -1,25 +1,55 @@
 {% extends 'base.html' %}
 
-{% block title %}Confirmare Ștergere{% endblock %}
+{% block title %}Confirmare ștergere parte{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card shadow-sm mt-5 border-danger">
-            <div class="card-header bg-danger text-white">
-                <h5 class="mb-0">⚠️ Confirmare Ștergere</h5>
-            </div>
-            <div class="card-body text-center">
-                <p class="fs-5">Ești sigur că vrei să ștergi persoana <strong>{{ parte.nume_complet }}</strong> ({{ parte.get_calitate_procesuala_display }}) din dosarul nr. {{ parte.dosar.numar_unic }}?</p>
-                <p class="text-muted">Această acțiune este ireversibilă!</p>
+<div class="row justify-content-center align-items-center py-5">
+    <div class="col-md-8 col-lg-6 col-xl-5">
+        
+        <div class="card shadow-lg border-0 rounded-4 overflow-hidden mt-4">
+            <form method="POST">
+                {% csrf_token %}
                 
-                <form method="POST" class="mt-4">
-                    {% csrf_token %}
-                    <a href="{% url 'cases:detalii_dosar' parte.dosar.pk %}" class="btn btn-secondary me-2">Nu, anulează</a>
-                    <button type="submit" class="btn btn-danger fw-bold">Da, șterge definitiv</button>
-                </form>
-            </div>
+                <div class="card-body p-4 p-md-5 text-center">
+                    <div class="bg-danger bg-opacity-10 text-danger rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style="width: 80px; height: 80px;">
+                        <i class="bi bi-exclamation-triangle-fill" style="font-size: 2.5rem;"></i>
+                    </div>
+                    
+                    <h3 class="fw-bold text-dark mb-3">Confirmare ştergere</h3>
+                    <p class="text-secondary fs-6 mb-4">
+                        Sunteți sigur că doriţi să ştergeţi persoana selectată? Această acțiune <strong class="text-danger">nu poate fi anulată</strong>.
+                    </p>
+                    
+                    <div class="bg-light border rounded-3 p-4 text-start shadow-sm mb-0">
+                        <div class="row mb-3">
+                            <div class="col-5 text-muted small text-uppercase fw-bold">Persoană</div>
+                            <div class="col-7 fw-bold text-dark">{{ parte.nume_complet }}</div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-5 text-muted small text-uppercase fw-bold">Calitate</div>
+                            <div class="col-7">
+                                <span class="badge border border-dark text-dark">{{ parte.get_calitate_procesuala_display }}</span>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-5 text-muted small text-uppercase fw-bold">Dosar</div>
+                            <div class="col-7 fw-medium text-primary">{{ parte.dosar.numar_unic }}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-footer bg-light border-top border-secondary border-opacity-10 px-4 py-3 d-flex justify-content-end gap-2">
+                    <a href="{% url 'cases:detalii_dosar' parte.dosar.pk %}" class="btn btn-light border border-secondary border-opacity-25 px-4 fw-medium transition-base">
+                        Anulează
+                    </a>
+                    <button type="submit" class="btn btn-danger fw-medium px-4 shadow-sm transition-base">
+                        Da, șterge definitiv
+                    </button>
+                </div>
+                
+            </form>
         </div>
+
     </div>
 </div>
 {% endblock %}

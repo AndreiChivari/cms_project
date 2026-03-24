@@ -12,7 +12,7 @@
             Dosar Penal nr. {{ dosar.numar_unic }}
         </h3>
         <p class="text-muted mb-0 d-flex align-items-center gap-2" style="font-size: 0.9rem;">
-            Status: <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">{{ dosar.stadiu_curent.get_tip_stadiu_display|default:"Înregistrat (Fără stadiu)" }}</span>
+            Stadiu: <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">{{ dosar.stadiu_curent.get_tip_stadiu_display|default:"Înregistrat" }}</span>
         </p>
     </div>
     <div class="d-flex gap-2 mt-3 mt-md-0">
@@ -90,11 +90,11 @@
         <table class="table table-striped table-hover align-middle mb-0" style="font-size: 0.9rem;">
             <thead class="table-light text-muted">
                 <tr>
-                    <th class="py-2 px-4 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase;">Stadiu urmărire</th>
-                    <th class="py-2 px-3 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase;">Data începerii</th>
-                    <th class="py-2 px-3 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase;">Data soluției</th>
-                    <th class="py-2 px-3 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase;">Soluție dispusă / propusă</th>
-                    <th class="py-2 px-4 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase;">Stabilită de</th>
+                    <th class="py-2 px-4 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase; width: 20%;">Stadiu urmărire</th>
+                    <th class="py-2 px-3 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase; width: 12%;">Data începerii</th>
+                    <th class="py-2 px-3 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase; width: 12%;">Data soluției</th>
+                    <th class="py-2 px-3 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase; width: 42%;">Soluție dispusă / propusă</th>
+                    <th class="py-2 px-4 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase; width: 14%;">Stabilită de</th>
                 </tr>
             </thead>
             <tbody>

@@ -1,77 +1,91 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Autentificare Sistem{% endblock %}
+{% block title %}Autentificare utilizator{% endblock %}
+
+{% block header %}
+<div class="bg-white border-bottom shadow-sm py-4">
+    <div class="container-fluid d-flex flex-column align-items-center text-center">
+        <img src="{% static 'images/logo_login.png' %}" 
+             alt="Logo SED"
+             style="height: 85px;" class="mb-3">
+             
+        <!-- <h1 class="fw-bold text-primary mb-1" style="font-size: 2.2rem; letter-spacing: 2px;">SED</h1> -->
+        <h2 class="text-secondary text-uppercase fw-semibold mb-0" style="font-size: 1.2rem; letter-spacing: 1.5px;">
+            Sistemul Informatic de Evidenţă a Dosarelor Penale
+        </h2>
+    </div>
+</div>
+{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center align-items-center" style="min-height: 80vh;">
-    <div class="col-md-5 col-lg-4">
-        <div class="card shadow border-0 rounded-3 overflow-hidden">
-
-            <!-- HEADER -->
-            <div class="card-header bg-primary text-white py-3">
-                <div class="d-flex align-items-center gap-3">
-
-                    <!-- Logo -->
-                    <img src="{% static 'images/logo.png' %}" 
-                         alt="Logo" 
-                         style="height: 60px;">
-
-                    <!-- Text -->
-                    <div>
-                        <h4 class="fw-bold mb-0" style="line-height: 1.2;">CMS Penal</h4>
-                        <p class="mb-0 small opacity-75">Autentificare personal</p>
+<div class="row justify-content-center align-items-center py-3" style="min-height: calc(100vh - 220px);">
+    <div class="col-md-6 col-lg-5 col-xl-4">
+        
+        <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
+            
+            <div class="card-body p-4 p-sm-5">
+                
+                <div class="text-center mb-4 pb-2">
+                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px;">
+                        <i class="bi bi-shield-lock-fill fs-1"></i>
                     </div>
-
+                    <h4 class="fw-bold text-dark mb-1">Autentificare</h4>
+                    <p class="text-muted small mb-0">Introduceți credențialele pentru acces</p>
                 </div>
-            </div>
-
-            <!-- BODY -->
-            <div class="card-body p-4">
 
                 {% if form.errors %}
-                    <div class="alert alert-danger small d-flex align-items-center gap-2">
-                        <span>⚠️</span>
-                        <span>Credențiale invalide. Încercați din nou.</span>
+                    <div class="alert alert-danger d-flex align-items-center gap-2 border-0 border-start border-danger border-4 shadow-sm py-2 px-3 mb-4 bg-danger bg-opacity-10">
+                        <i class="bi bi-exclamation-octagon-fill text-danger fs-5"></i>
+                        <span class="small fw-medium text-danger">Credențiale invalide. Încercați din nou.</span>
                     </div>
                 {% endif %}
 
                 <form method="POST" action="{% url 'login' %}">
                     {% csrf_token %}
 
-                    <!-- Username -->
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Nume utilizator</label>
-                        <input type="text" 
-                               name="username" 
-                               class="form-control form-control" 
-                               autofocus required>
-                    </div>
-
-                    <!-- Password -->
                     <div class="mb-4">
-                        <label class="form-label fw-semibold">Parolă</label>
-                        <input type="password" 
-                               name="password" 
-                               class="form-control form-control" 
-                               required>
+                        <label class="form-label fw-bold text-secondary small text-uppercase mb-1" style="font-size: 0.75rem;">Nume utilizator</label>
+                        <div class="input-group input-group shadow-sm rounded-3 overflow-hidden">
+                            <span class="input-group-text bg-light border-end-0 text-muted px-3">
+                                <i class="bi bi-person-fill"></i>
+                            </span>
+                            <input type="text" 
+                                   name="username" 
+                                   class="form-control border-start-0 ps-0 bg-light" 
+                                   style="box-shadow: none;"
+                                   autofocus required>
+                        </div>
                     </div>
 
-                    <!-- Button -->
-                    <button class="btn btn-primary w-100 fw-semibold py-2">
-                        Conectare
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-secondary small text-uppercase mb-1" style="font-size: 0.75rem;">Parolă</label>
+                        <div class="input-group input-group shadow-sm rounded-3 overflow-hidden">
+                            <span class="input-group-text bg-light border-end-0 text-muted px-3">
+                                <i class="bi bi-key-fill"></i>
+                            </span>
+                            <input type="password" 
+                                   name="password" 
+                                   class="form-control border-start-0 ps-0 bg-light" 
+                                   style="box-shadow: none;"
+                                   required>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary w-100 fw-bold shadow-sm transition-base mt-2 py-2" style="letter-spacing: 0.5px;">
+                        Conectare <i class="bi bi-arrow-right-short ms-1 fs-5 align-middle"></i>
                     </button>
                 </form>
             </div>
 
-            <!-- FOOTER -->
-            <div class="card-footer text-center py-3 bg-light border-0 bg-light">
-                <div class="small text-muted">
-                    Accesul neautorizat este strict interzis.
+            <div class="card-footer text-center py-3 bg-light border-top border-secondary border-opacity-10">
+                <div class="small text-muted fw-medium d-flex justify-content-center align-items-center gap-1">
+                    <i class="bi bi-info-circle"></i> Accesul neautorizat este strict interzis.
                 </div>
             </div>
 
         </div>
+        
     </div>
 </div>
 {% endblock %}

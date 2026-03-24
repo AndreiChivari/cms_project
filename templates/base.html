@@ -10,14 +10,16 @@
     <link href="{% sass_src 'scss/main.scss' %}" rel="stylesheet" type="text/css" />
     
     <link rel="stylesheet" href="{% static 'icons/bootstrap-icons.css' %}">
+
+    <link rel="icon" type="image/png" sizes="64x64" href="{% static 'images/favicon-logo-96px.png' %}">
 </head>
 <body class="bg-light" style="min-height: 100vh; display: flex; flex-direction: column;">
-
+    {% block header %}
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary bg-gradient mb-4 shadow-sm border-bottom border-3 border-secondary border-opacity-25">
             <div class="container-xl h-100"> <a class="navbar-brand fw-bold text-white d-flex align-items-center me-4 h-100" href="{% url 'cases:dashboard' %}">
                     <span class="d-flex align-items-center gap-2">
-                        <img src="{% static 'images/logo1.png' %}" alt="Logo" class="navbar-logo">
-                        <span class="fs-5 letter-spacing-1" style="transform: translateY(1px);">CMS PENAL</span>
+                        <img src="{% static 'images/logo_login.png' %}" alt="Logo" class="navbar-logo">
+                        <!-- <span class="fs-5 letter-spacing-1" style="transform: translateY(1px);">CMS PENAL</span> -->
                     </span>
                 </a>
             
@@ -31,17 +33,17 @@
                     <ul class="navbar-nav me-auto mb-2 mb-lg-0 gap-1 align-items-lg-center">  
                         <li class="nav-item">
                             <a class="nav-link px-3 fw-medium text-white opacity-75 hover-opacity-100 transition-base" href="{% url 'cases:dashboard' %}">
-                                Dashboard
+                                Pagina principală
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link px-3 fw-medium text-white opacity-75 hover-opacity-100 transition-base" href="{% url 'cases:lista_dosare' %}">
-                                Registru Dosare
+                                Registru dosare
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link px-3 fw-medium text-white opacity-75 hover-opacity-100 transition-base" href="{% url 'cases:adaugare_dosar' %}">
-                                Adaugă Dosar
+                                Adaugă dosar
                             </a>
                         </li>
                         <li class="nav-item">
@@ -133,13 +135,14 @@
                 {% else %}
                     <div class="ms-auto">
                         <span class="badge bg-danger bg-opacity-10 border border-danger border-opacity-50 text-white px-3 py-2 rounded-pill d-flex align-items-center gap-2">
-                            <i class="bi bi-lock-fill"></i> Acces Restricționat
+                            <i class="bi bi-lock-fill"></i> Acces restricționat
                         </span>
                     </div>
                 {% endif %}
             </div>
         </div>
     </nav>
+    {% endblock header %}
 
     <main class="container-xl flex-grow-1">
         {% block content %}

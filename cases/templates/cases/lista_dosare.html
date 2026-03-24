@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Registru Dosare{% endblock %}
+{% block title %}Registru dosare{% endblock %}
 
 {% block content %}
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 pb-3 border-bottom border-secondary border-opacity-25">
@@ -29,7 +29,7 @@
                             <i class="bi bi-search"></i>
                         </span>
                         <input type="text" name="q" class="form-control border-start-0 ps-0" 
-                               placeholder="Căutare după număr dosar (ex: 123/P) sau infracțiune (ex: Furt)..." 
+                               placeholder="Căutare după număr dosar (ex: 123/P) ..." 
                                value="{{ query_text }}">
                     </div>
                 </div>
@@ -61,11 +61,11 @@
         <table class="table table-striped table-hover align-middle mb-0" style="font-size: 0.9rem;">
             <thead class="table-light text-muted">
                 <tr>
-                    <th class="py-3 px-4 fw-bold border-0" style="font-size: 0.8rem; text-transform: uppercase;">Număr unic</th>
-                    <th class="py-3 px-3 fw-bold border-0" style="font-size: 0.8rem; text-transform: uppercase;">Data înreg.</th>
-                    <th class="py-3 px-3 fw-bold border-0" style="font-size: 0.8rem; text-transform: uppercase;">Încadrare juridică</th>
-                    <th class="py-3 px-3 fw-bold border-0" style="font-size: 0.8rem; text-transform: uppercase;">Stadiu / soluție</th>
-                    <th class="py-3 px-4 fw-bold border-0" style="font-size: 0.8rem; text-transform: uppercase;">Procuror de caz</th>
+                    <th class="py-3 px-4 fw-bold border-0" style="font-size: 0.8rem; text-transform: uppercase; width: 12%;">Număr unic</th>
+                    <th class="py-3 px-3 fw-bold border-0" style="font-size: 0.8rem; text-transform: uppercase; width: 10%;">Data înreg.</th>
+                    <th class="py-3 px-3 fw-bold border-0" style="font-size: 0.8rem; text-transform: uppercase; width: 25%;">Încadrare juridică</th>
+                    <th class="py-3 px-3 fw-bold border-0" style="font-size: 0.8rem; text-transform: uppercase; width: 33%;">Stadiu / soluție</th>
+                    <th class="py-3 px-4 fw-bold border-0" style="font-size: 0.8rem; text-transform: uppercase; width: 20%;">Echipă de cercetare</th>
                 </tr>
             </thead>
             <tbody>
@@ -75,19 +75,17 @@
                         <td class="px-3 py-3 fw-medium text-dark">{{ dosar.data_inregistrarii|date:"d.m.Y" }}</td>
                         
                         <td class="px-3 py-3">
-                            <div class="text-truncate" style="max-width: 280px;">
-                                {% for infr in dosar.infractiuni.all %}
-                                    <div class="badge bg-white text-secondary border border-secondary border-opacity-25 shadow-sm mb-1 text-wrap text-start fw-normal" style="font-size: 0.8rem;">
-                                        {% if infr.articol and infr.articol != 'None' %}
-                                            art. {{ infr.articol }} - {{ infr.get_act_normativ_display }}
-                                        {% else %}
-                                            {{ infr.get_act_normativ_display }}
-                                        {% endif %}
-                                    </div>
-                                {% empty %}
-                                    <span class="text-muted">-</span>
-                                {% endfor %}
-                            </div>
+                            {% for infr in dosar.infractiuni.all %}
+                                <div class="badge bg-white text-dark border border-secondary border-opacity-25 mb-1 text-wrap text-start fw-normal" style="font-size: 0.75rem;">
+                                    {% if infr.articol and infr.articol != 'None' %}
+                                        art. {{ infr.articol }} - {{ infr.get_act_normativ_display }}
+                                    {% else %}
+                                        {{ infr.get_act_normativ_display }}
+                                    {% endif %}
+                                </div>
+                            {% empty %}
+                                <span class="text-muted">-</span>
+                            {% endfor %}
                         </td>
                         
                         <td class="px-3 py-3">
@@ -96,8 +94,13 @@
                                     <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">{{ stadiu.get_tip_stadiu_display }}</span>
                                     {% if solutie %}
                                         <div class="mt-1" style="font-size: 0.8rem;">
-                                            <span class="{% if solutie.este_finala %}text-danger{% else %}text-success{% endif %} fw-bold d-flex align-items-center gap-1">
+                                            <span class="{% if solutie.este_finala %}text-danger{% else %}text-success{% endif %} fw-bold d-flex align-items-center gap-1 mb-1">
                                                 <span class="fs-6">↳</span> {{ solutie.get_tip_solutie_display }}
+                                                
+                                                {% if solutie.este_finala %}
+                                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 ms-1" style="font-size: 0.65rem;" title="Soluție finală">FINALĂ</span>
+                                                {% endif %}
+                                                
                                             </span>
                                             <span class="text-muted ms-3">{{ solutie.data_solutiei|date:"d.m.Y" }}</span>
                                         </div>
@@ -105,17 +108,50 @@
                                         <div class="mt-1"><span class="text-muted fst-italic small ms-1">În lucru...</span></div>
                                     {% endif %}
                                 {% else %}
-                                    <span class="text-muted fst-italic">Neînceput</span>
+                                    <span class="text-muted fst-italic">Examinare sesizare</span>
                                 {% endif %}
                             {% endwith %}
                         </td>
                         
-                        <td class="px-4 py-3">
-                            {% if dosar.procuror_caz %}
-                                <div class="text-dark fw-medium">{{ dosar.procuror_caz.get_full_name|default:dosar.procuror_caz.username }}</div>
-                            {% else %}
-                                <span class="text-muted">-</span>
-                            {% endif %}
+                        <td class="px-4 py-3" style="font-size: 0.85rem;">
+                            <div class="d-flex flex-column gap-1">
+                                {% if dosar.procuror_caz %}
+                                    <div class="{% if dosar.procuror_caz == request.user %}fw-bold text-primary bg-primary bg-opacity-10 px-2 py-1 rounded{% else %}text-muted{% endif %}">
+                                        <span title="Procuror">Procuror: </span> 
+                                        {{ dosar.procuror_caz.get_full_name|default:dosar.procuror_caz.username }}
+                                    </div>
+                                {% else %}
+                                    <div class="{% if dosar.procuror_caz == request.user %}fw-bold text-primary bg-primary bg-opacity-10 px-2 py-1 rounded{% else %}text-muted{% endif %}">
+                                        <span title="Procuror">Procuror: -</span> 
+                                    </div>                                
+                                {% endif %}
+
+                                {% if dosar.ofiter_caz %}
+                                    <div class="{% if dosar.ofiter_caz == request.user %}fw-bold text-primary bg-primary bg-opacity-10 px-2 py-1 rounded{% else %}text-muted{% endif %}">
+                                        <span title="Ofițer de Caz">Poliţist: </span> 
+                                        {{ dosar.ofiter_caz.get_full_name|default:dosar.ofiter_caz.username }}
+                                    </div>
+                                {% else %}
+                                    <div class="{% if dosar.ofiter_caz == request.user %}fw-bold text-primary bg-primary bg-opacity-10 px-2 py-1 rounded{% else %}text-muted{% endif %}">
+                                        <span title="Ofițer de Caz">Poliţist: -</span> 
+                                    </div>
+                                {% endif %}
+
+                                {% if dosar.grefier_caz %}
+                                    <div class="{% if dosar.grefier_caz == request.user %}fw-bold text-primary bg-primary bg-opacity-10 px-2 py-1 rounded{% else %}text-muted{% endif %}">
+                                        <span title="Grefier">Grefier: </span> 
+                                        {{ dosar.grefier_caz.get_full_name|default:dosar.grefier_caz.username }}
+                                    </div>
+                                {% else %}
+                                    <div class="{% if dosar.grefier_caz == request.user %}fw-bold text-primary bg-primary bg-opacity-10 px-2 py-1 rounded{% else %}text-muted{% endif %}">
+                                        <span title="Grefier">Grefier: -</span> 
+                                    </div>
+                                {% endif %}
+
+                                {% if not dosar.ofiter_caz and not dosar.procuror_caz and not dosar.grefier_caz %}
+                                    <span class="text-muted fst-italic">- Nedesemnat -</span>
+                                {% endif %}
+                            </div>
                         </td>
                     </tr>
                 {% empty %}
@@ -132,36 +168,36 @@
 </div>
 
 {% if page_obj.paginator.num_pages > 1 %}
-<nav class="mt-4 mb-5" aria-label="Paginare Dosare">
-    <ul class="pagination justify-content-center pagination-sm">
+<nav class="mt-4 mb-5 text-center" aria-label="Paginare Dosare">
+    <ul class="pagination pagination-sm justify-content-center d-inline-flex shadow-sm mb-0" style="border-radius: 0.5rem; overflow: hidden;">
         
         {% if page_obj.has_previous %}
-            <li class="page-item shadow-sm">
-                <a class="page-link text-white fw-medium" href="?page={{ page_obj.previous_page_number }}{% if query_text %}&q={{ query_text }}{% endif %}">
-                    &laquo; Pagina anterioară
+            <li class="page-item">
+                <a class="page-link text-primary fw-medium px-3 py-1" href="?page={{ page_obj.previous_page_number }}{% if query_text %}&q={{ query_text }}{% endif %}">
+                    &laquo; Înapoi
                 </a>
             </li>
         {% else %}
-            <li class="page-item disabled shadow-sm">
-                <span class="page-link text-white bg-light">&laquo; Pagina anterioară</span>
+            <li class="page-item disabled">
+                <span class="page-link text-muted bg-light px-3 py-1">&laquo; Înapoi</span>
             </li>
         {% endif %}
 
-        <li class="page-item active shadow-sm" aria-current="page">
-            <span class="page-link bg-primary border-primary fw-bold px-3">
+        <li class="page-item active" aria-current="page">
+            <span class="page-link bg-primary border-primary text-white fw-bold px-4 py-1">
                 {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
             </span>
         </li>
 
         {% if page_obj.has_next %}
-            <li class="page-item shadow-sm">
-                <a class="page-link text-white fw-medium" href="?page={{ page_obj.next_page_number }}{% if query_text %}&q={{ query_text }}{% endif %}">
-                    Pagina următoare &raquo;
+            <li class="page-item">
+                <a class="page-link text-primary fw-medium px-3 py-1" href="?page={{ page_obj.next_page_number }}{% if query_text %}&q={{ query_text }}{% endif %}">
+                    Înainte &raquo;
                 </a>
             </li>
         {% else %}
-            <li class="page-item disabled shadow-sm">
-                <span class="page-link text-white bg-light">Pagina următoare &raquo;</span>
+            <li class="page-item disabled">
+                <span class="page-link text-muted bg-light px-3 py-1">Înainte &raquo;</span>
             </li>
         {% endif %}
         

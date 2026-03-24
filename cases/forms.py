@@ -10,14 +10,21 @@ class DosarForm(forms.ModelForm):
     data_schimbare_echipa = forms.DateField(
         required=False,
         widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-        label="Data preluării noului mandat",
-        help_text="Completează doar dacă modifici Ofițerul, Procurorul sau Grefierul de caz."
+        label="Data desemnării noului membru",
+        help_text="Completează doar dacă modifici organul de cercetare, procurorul sau grefierul."
     )
     
     class Meta:
         model = Dosar
         fields = ['numar_unic', 'infractiune_cercetata', 'ofiter_caz', 'procuror_caz', 'grefier_caz']
         
+        # Adaugam etichete personalizate care vor apărea în HTML
+        labels = {
+            'ofiter_caz': 'Poliţist',
+            'procuror_caz': 'Procuror',
+            'grefier_caz': 'Grefier',
+        }
+
         widgets = {
             'numar_unic': forms.TextInput(attrs={'class': 'form-control', 'readonly': 'readonly'}),
             'infractiune_cercetata': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
@@ -39,12 +46,17 @@ class DosarForm(forms.ModelForm):
         
         if 'ofiter_caz' in self.fields:
             self.fields['ofiter_caz'].queryset = User.objects.filter(rol='POLITIST')
+            # Formatăm afișarea (Afișează numele complet; dacă nu e completat, afișează username-ul)
+            self.fields['ofiter_caz'].label_from_instance = lambda obj: obj.get_full_name() or obj.username
             
         if 'procuror_caz' in self.fields:
             self.fields['procuror_caz'].queryset = User.objects.filter(rol='PROCUROR')
+            self.fields['procuror_caz'].label_from_instance = lambda obj: obj.get_full_name() or obj.username
+            
             
         if 'grefier_caz' in self.fields:
             self.fields['grefier_caz'].queryset = User.objects.filter(rol='GREFIER')
+            self.fields['grefier_caz'].label_from_instance = lambda obj: obj.get_full_name() or obj.username
 
     def clean(self):
         cleaned_data = super().clean()
@@ -59,7 +71,7 @@ class DosarForm(forms.ModelForm):
         
         if echipa_modificata:
             if not data_schimbare:
-                self.add_error('data_schimbare_echipa', "🛑 Este obligatoriu să alegeți data preluării mandatului deoarece ați modificat un membru al echipei!")
+                self.add_error('data_schimbare_echipa', "🛑 Este obligatoriu să alegeți data desemnării deoarece ați modificat un membru al echipei!")
             else:
                 # REGULA 1: Data preluării nu poate fi înaintea dosarului
                 if data_inreg and data_schimbare < data_inreg:
@@ -79,6 +91,14 @@ class CreareDosarForm(forms.ModelForm):
     class Meta:
         model = Dosar
         fields = ['numar_unic', 'data_inregistrarii', 'infractiune_cercetata', 'ofiter_caz', 'procuror_caz', 'grefier_caz']
+        
+        #  Adăugăm etichete personalizate care vor apărea în HTML
+        labels = {
+            'ofiter_caz': 'Poliţist',
+            'procuror_caz': 'Procuror',
+            'grefier_caz': 'Grefier',
+        }
+        
         widgets = {
             'numar_unic': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 123/P/2026'}),
             'data_inregistrarii': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
@@ -98,12 +118,16 @@ class CreareDosarForm(forms.ModelForm):
         super(CreareDosarForm, self).__init__(*args, **kwargs)
         if 'ofiter_caz' in self.fields:
             self.fields['ofiter_caz'].queryset = User.objects.filter(rol='POLITIST')
+            # Formatăm afișarea (Afișează numele complet; dacă nu e completat, afișează username-ul)
+            self.fields['ofiter_caz'].label_from_instance = lambda obj: obj.get_full_name() or obj.username
             
         if 'procuror_caz' in self.fields:
             self.fields['procuror_caz'].queryset = User.objects.filter(rol='PROCUROR')
+            self.fields['procuror_caz'].label_from_instance = lambda obj: obj.get_full_name() or obj.username
             
         if 'grefier_caz' in self.fields:
             self.fields['grefier_caz'].queryset = User.objects.filter(rol='GREFIER')
+            self.fields['grefier_caz'].label_from_instance = lambda obj: obj.get_full_name() or obj.username
 
     def clean_numar_unic(self):
         numar = self.cleaned_data.get('numar_unic')
