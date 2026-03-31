@@ -186,9 +186,22 @@ class ParteImplicataForm(forms.ModelForm):
 class InfractiuneForm(forms.ModelForm):
     class Meta:
         model = Infractiune
-        fields = ['act_normativ', 'articol', 'incadrare_juridica', 'data_comiterii']
+        fields = ['act_normativ', 'articol', 'incadrare_juridica', 'adresa_comiterii', 'data_comiterii']
+        
+        labels = {
+            'act_normativ': 'Act Normativ',
+            'articol': 'Articol Penal',
+            'incadrare_juridica': 'Încadrare Juridică',
+            'adresa_comiterii': 'Locul săvârșirii faptei (Adresa)',
+            'data_comiterii': 'Data comiterii',
+        }
+        
         widgets = {
-            'data_comiterii': forms.DateInput(attrs={'type': 'date'}),
+            'act_normativ': forms.Select(attrs={'class': 'form-select'}),
+            'articol': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 228 alin. 1'}),
+            'incadrare_juridica': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Furt calificat'}),
+            'adresa_comiterii': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Piața Sfatului nr. 1, Brașov'}),
+            'data_comiterii': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
         }
 
 class MasuraPreventivaForm(forms.ModelForm):

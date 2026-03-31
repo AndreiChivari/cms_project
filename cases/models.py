@@ -3,6 +3,7 @@ from django.db import models
 from django.conf import settings # Folosim asta pentru a importa modelul de User corect
 from datetime import date # Folosim pentru calculul alertelor
 from django.utils import timezone # Pentru a putea modifica data inregistrarii
+from geopy.geocoders import Nominatim
 
 class Dosar(models.Model):
 # 1. Rescriem stadiile (doar 3 variante)
@@ -178,6 +179,18 @@ class Infractiune(models.Model):
     incadrare_juridica = models.CharField(max_length=255, blank=True, null=True, help_text="Ex: Furt calificat")
     data_comiterii = models.DateField(null=True, blank=True, help_text="Data presupusei fapte")
 
+    # 1. Câmpurile pentru hartă
+    adresa_comiterii = models.CharField(
+        max_length=255, 
+        blank=True, 
+        null=True, 
+        verbose_name="Locul săvârșirii faptei",
+        help_text="Ex: Strada Mureșenilor nr. 1, Brașov"
+    )
+    # Acestea vor fi completate automat - le lăsăm blank/null
+    latitudine = models.FloatField(null=True, blank=True)
+    longitudine = models.FloatField(null=True, blank=True)
+
     history = HistoricalRecords(verbose_name="Istoric Infracțiune")
 
     class Meta:
@@ -192,6 +205,26 @@ class Infractiune(models.Model):
         if self.incadrare_juridica:
             text = f"{self.incadrare_juridica} ({text})"
         return text
+    
+    # 2. Suprascriem metoda save() pentru a genera coordonatele automat
+    def save(self, *args, **kwargs):
+        # Verificăm dacă ofițerul a introdus o adresă
+        if self.adresa_comiterii:
+            # Inițializăm geolocatorul (necesită un 'user_agent' ca să știe cine face cererea)
+            geolocator = Nominatim(user_agent="cms_penal_licenta")
+            
+            try:
+                # Căutăm adresa
+                locatie = geolocator.geocode(self.adresa_comiterii)
+                if locatie:
+                    self.latitudine = locatie.latitude
+                    self.longitudine = locatie.longitude
+            except Exception as e:
+                # Dacă pică serverul de hărți sau adresa e invalidă, salvăm oricum infracțiunea, dar fără coordonate
+                print(f"Eroare la geocoding: {e}")
+                
+        # Apelăm metoda save() standard a lui Django pentru a finaliza salvarea
+        super().save(*args, **kwargs)
 
 class MasuraPreventiva(models.Model):
     class TipMasura(models.TextChoices):

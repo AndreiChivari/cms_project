@@ -39,3 +39,4 @@ libsass
 django-sass-processor
 gunicorn
 django-compressor
+geopy

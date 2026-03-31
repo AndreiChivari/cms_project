@@ -54,4 +54,7 @@ urlpatterns = [
 
     # Ruta pentru stergerea unui membru
     path('istoric-echipa/<int:pk>/sterge/', views.stergere_istoric_echipa, name='stergere_istoric_echipa'),
+
+    # Ruta pentru harta infractionalitatii
+    path('harta/', views.harta_infractionalitatii, name='harta'),
 ]

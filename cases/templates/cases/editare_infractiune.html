@@ -52,12 +52,22 @@
                             </div>
                         </div>
 
-                        <div class="mb-2">
+                        <div class="mb-4">
                             <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem;">Denumire infracțiune</label>
                             {{ form.incadrare_juridica }}
                             <div class="text-muted small mt-1">Ex: Furt calificat</div>
                             <div class="text-danger small mt-1">{{ form.incadrare_juridica.errors }}</div>
                         </div>
+
+                        <div class="mb-2">
+                            <label class="form-label fw-bold small text-uppercase text-primary mb-1 d-flex align-items-center gap-1" style="font-size: 0.75rem;">
+                                <i class="bi bi-geo-alt-fill"></i> Locul săvârșirii faptei (Adresa)
+                            </label>
+                            {{ form.adresa_comiterii }}
+                            <div class="text-muted small mt-1">Dacă actualizați adresa, sistemul va regenera coordonatele GPS pe hartă.</div>
+                            <div class="text-danger small mt-1">{{ form.adresa_comiterii.errors }}</div>
+                        </div>
+
                     </div>
                 </div>
 

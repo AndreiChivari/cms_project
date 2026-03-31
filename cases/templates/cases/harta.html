@@ -1,0 +1,258 @@
+{% extends 'base.html' %}
+
+{% block title %}Harta Infracționalității - Brașov{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+
+<div class="container-fluid mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom border-secondary border-opacity-25 mt-3">
+        <div>
+            <h3 class="mb-1 fw-bold text-dark d-flex align-items-center gap-2">
+                <i class="bi bi-geo-alt-fill text-danger"></i> Analiza geografică a infracționalității
+            </h3>
+            <p class="text-muted mb-0" style="font-size: 0.95rem;">
+                Filtrarea și identificarea zonelor de risc
+            </p>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4 rounded-4 bg-white">
+        <div class="card-body p-4">
+            <div class="row align-items-end">
+                <div class="col-lg-2 col-md-6 mb-3 mb-lg-0">
+                    <label class="form-label small text-muted fw-bold text-uppercase mb-2"><i class="bi bi-book-half"></i> Act Normativ</label>
+                    <select id="filtru-act" class="form-select border-secondary border-opacity-25 shadow-none bg-light">
+                        <option value="TOATE">Toate</option>
+                        </select>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-3 mb-lg-0">
+                    <label class="form-label small text-muted fw-bold text-uppercase mb-2"><i class="bi bi-tag-fill"></i> Încadrare Juridică</label>
+                    <select id="filtru-incadrare" class="form-select border-secondary border-opacity-25 shadow-none bg-light">
+                        <option value="TOATE">Toate încadrările</option>
+                        </select>
+                </div>
+                <div class="col-lg-3 col-md-4 mb-3 mb-lg-0">
+                    <label class="form-label small text-muted fw-bold text-uppercase mb-2"><i class="bi bi-pin-map-fill"></i> Localitate</label>
+                    <select id="filtru-oras" class="form-select border-secondary border-opacity-25 shadow-none bg-light">
+                        <option value="TOATE">Toate localitățile</option>
+                        </select>
+                </div>
+                <div class="col-lg-2 col-md-4 mb-3 mb-lg-0">
+                    <label class="form-label small text-muted fw-bold text-uppercase mb-2"><i class="bi bi-calendar-event-fill"></i> Perioada</label>
+                    <select id="filtru-timp" class="form-select border-secondary border-opacity-25 shadow-none bg-light">
+                        <option value="TOATE">Dintotdeauna</option>
+                        <option value="30">Ultimele 30 de zile</option>
+                        <option value="90">Ultimele 3 luni</option>
+                        <option value="365">Ultimul an</option>
+                    </select>
+                </div>
+                <div class="col-lg-2 col-md-4">
+                    <button id="btn-reset" class="btn btn-outline-secondary w-100 fw-medium">
+                        <i class="bi bi-arrow-clockwise"></i> Resetează
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm border-start border-primary border-4 h-100 bg-white">
+                <div class="card-body p-3">
+                    <p class="text-muted small text-uppercase fw-bold mb-1">Total Fapte Filtrate</p>
+                    <h2 class="display-6 fw-bold text-dark mb-0" id="stat-total">0</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm border-start border-danger border-4 h-100 bg-white">
+                <div class="card-body p-3">
+                    <p class="text-muted small text-uppercase fw-bold mb-1">Infracțiunea Dominantă</p>
+                    <h5 class="fw-bold text-danger mb-0 mt-2 text-truncate" id="stat-top-crima" title="Bazat pe încadrarea juridică">-</h5>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm border-start border-warning border-4 h-100 bg-white">
+                <div class="card-body p-3">
+                    <p class="text-muted small text-uppercase fw-bold mb-1">Localitatea principală</p>
+                    <h5 class="fw-bold text-dark mb-0 mt-2 text-truncate" id="stat-oras">-</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 rounded-4 overflow-hidden mb-5">
+        <div id="map" style="height: 65vh; width: 100%; z-index: 1;"></div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const dateInitialeJSON = JSON.parse('{{ date_harta_json|safe }}');
+        
+        // 1. Îmbunătățim datele direct la încărcare: le adăugăm proprietatea "oras_extras" ca să ne fie mai ușor la filtre
+        const dateInitiale = dateInitialeJSON.map(punct => {
+            if(punct.adresa && punct.adresa.includes(',')) {
+                punct.oras_extras = punct.adresa.split(',').pop().trim().toUpperCase();
+            } else if (punct.adresa) {
+                punct.oras_extras = punct.adresa.trim().toUpperCase();
+            } else {
+                punct.oras_extras = "NECUNOSCUT";
+            }
+            return punct;
+        });
+        
+        const map = L.map('map').setView([45.657974, 25.601198], 10);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+            maxZoom: 20
+        }).addTo(map);
+        
+        const piniLayer = L.layerGroup();
+        const heatLayer = L.heatLayer([], {
+            radius: 25, blur: 15, maxZoom: 15,
+            gradient: {0.4: 'blue', 0.6: 'cyan', 0.7: 'lime', 0.8: 'yellow', 1.0: 'red'}
+        });
+        
+        heatLayer.addTo(map);
+        L.control.layers({}, {
+            "🔥 Zone de risc (Heatmap)": heatLayer,
+            "📍 Puncte specifice (Pini)": piniLayer
+        }, {collapsed: false}).addTo(map);
+
+        // 2. Populăm Dropdown-urile dinamic
+        function populeazaDropdowns() {
+            const selectAct = document.getElementById('filtru-act');
+            const selectIncadrare = document.getElementById('filtru-incadrare');
+            const selectOras = document.getElementById('filtru-oras'); // Dropdown nou
+            
+            // Extragem liste unice
+            const acteUnice = [...new Set(dateInitiale.map(p => p.act_normativ))].sort();
+            const incadrariUnice = [...new Set(dateInitiale.map(p => p.incadrare))].sort();
+            // Extragem orașele, excluzând pe cele "NECUNOSCUT" pentru a păstra filtrul curat
+            const oraseUnice = [...new Set(dateInitiale.map(p => p.oras_extras))].filter(o => o !== "NECUNOSCUT").sort();
+            
+            acteUnice.forEach(act => {
+                let opt = document.createElement('option');
+                opt.value = act; opt.innerHTML = act;
+                selectAct.appendChild(opt);
+            });
+
+            incadrariUnice.forEach(inc => {
+                let opt = document.createElement('option');
+                opt.value = inc; opt.innerHTML = inc;
+                selectIncadrare.appendChild(opt);
+            });
+
+            oraseUnice.forEach(oras => {
+                let opt = document.createElement('option');
+                opt.value = oras; opt.innerHTML = oras;
+                selectOras.appendChild(opt);
+            });
+        }
+
+        // 3. Funcția de actualizare a hărții și a statisticilor
+        function proceseazaDate(dateFiltrate) {
+            piniLayer.clearLayers();
+            const heatData = [];
+            const incadrariCount = {};
+            const oraseCount = {};
+
+            dateFiltrate.forEach(punct => {
+                heatData.push([punct.lat, punct.lng, 1]);
+
+                const popup = `<div class="text-center p-1" style="min-width: 200px;">
+                    <h6 class="fw-bold text-danger mb-1 border-bottom pb-1 text-uppercase" style="font-size: 0.85rem;">
+                        ${punct.incadrare}
+                    </h6>
+                    <p class="mb-2 small text-muted fw-medium">${punct.act_normativ}, art. ${punct.articol}</p>
+                    
+                    <div class="bg-light p-2 rounded text-start mb-2">
+                        <p class="mb-1 small"><strong>Dosar:</strong> <a href="/cases/dosar/${punct.dosar}/" class="text-decoration-none fw-bold">${punct.dosar}</a></p>
+                        <p class="mb-0 text-muted small"><i class="bi bi-geo-alt-fill text-primary"></i> ${punct.adresa}</p>
+                    </div>
+                    
+                    <p class="mb-0 text-secondary small"><i class="bi bi-calendar-event"></i> Data faptei: ${punct.data ? punct.data : 'Necunoscută'}</p>
+                </div>`;
+                L.marker([punct.lat, punct.lng]).bindPopup(popup).addTo(piniLayer);
+
+                // Statistici
+                if(punct.incadrare !== "Fără încadrare") {
+                    incadrariCount[punct.incadrare] = (incadrariCount[punct.incadrare] || 0) + 1;
+                }
+                
+                if(punct.oras_extras !== "NECUNOSCUT") {
+                    oraseCount[punct.oras_extras] = (oraseCount[punct.oras_extras] || 0) + 1;
+                }
+            });
+
+            heatLayer.setLatLngs(heatData);
+
+            document.getElementById('stat-total').innerText = dateFiltrate.length;
+            
+            if(Object.keys(incadrariCount).length > 0) {
+                document.getElementById('stat-top-crima').innerText = Object.keys(incadrariCount).reduce((a, b) => incadrariCount[a] > incadrariCount[b] ? a : b);
+            } else {
+                document.getElementById('stat-top-crima').innerText = "Insuficiente date";
+            }
+
+            if(Object.keys(oraseCount).length > 0) {
+                document.getElementById('stat-oras').innerText = Object.keys(oraseCount).reduce((a, b) => oraseCount[a] > oraseCount[b] ? a : b);
+            } else {
+                document.getElementById('stat-oras').innerText = "-";
+            }
+        }
+
+        // 4. Funcția care aplică filtrele selectate
+        function aplicaFiltre() {
+            const actSelectat = document.getElementById('filtru-act').value;
+            const incadrareSelectata = document.getElementById('filtru-incadrare').value;
+            const orasSelectat = document.getElementById('filtru-oras').value; // Valoare filtru nou
+            const timpSelectat = document.getElementById('filtru-timp').value;
+            const azi = new Date();
+
+            const dateFiltrate = dateInitiale.filter(punct => {
+                if (actSelectat !== 'TOATE' && punct.act_normativ !== actSelectat) return false;
+                if (incadrareSelectata !== 'TOATE' && punct.incadrare !== incadrareSelectata) return false;
+                if (orasSelectat !== 'TOATE' && punct.oras_extras !== orasSelectat) return false; // Filtrare logică oraș
+                
+                if (timpSelectat !== 'TOATE') {
+                    if (!punct.data) return false;
+                    const dataFaptei = new Date(punct.data);
+                    const diferentaZile = Math.ceil(Math.abs(azi - dataFaptei) / (1000 * 60 * 60 * 24));
+                    if (diferentaZile > parseInt(timpSelectat)) return false;
+                }
+                
+                return true;
+            });
+
+            proceseazaDate(dateFiltrate);
+        }
+
+        // --- INIȚIALIZARE ȘI EVENIMENTE ---
+        populeazaDropdowns();
+        proceseazaDate(dateInitiale);
+
+        document.getElementById('filtru-act').addEventListener('change', aplicaFiltre);
+        document.getElementById('filtru-incadrare').addEventListener('change', aplicaFiltre);
+        document.getElementById('filtru-oras').addEventListener('change', aplicaFiltre); // Ascultător nou
+        document.getElementById('filtru-timp').addEventListener('change', aplicaFiltre);
+        
+        document.getElementById('btn-reset').addEventListener('click', function() {
+            document.getElementById('filtru-act').value = 'TOATE';
+            document.getElementById('filtru-incadrare').value = 'TOATE';
+            document.getElementById('filtru-oras').value = 'TOATE';
+            document.getElementById('filtru-timp').value = 'TOATE';
+            proceseazaDate(dateInitiale);
+        });
+    });
+</script>
+
+<style>
+    .leaflet-control-layers { border-radius: 8px !important; border: none !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1) !important; padding: 6px !important; }
+</style>
+{% endblock %}

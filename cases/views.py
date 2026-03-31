@@ -20,6 +20,7 @@ import io
 import openpyxl
 from openpyxl.styles import Font, Alignment
 from django.contrib import messages
+import json
 
 User = get_user_model()
 
@@ -865,3 +866,31 @@ def generare_rapoarte(request):
     }
     
     return render(request, 'cases/rapoarte.html', context)
+
+@login_required
+def harta_infractionalitatii(request):
+    # Luăm doar infracțiunile care au coordonatele completate
+    infractiuni = Infractiune.objects.filter(latitudine__isnull=False, longitudine__isnull=False)
+    
+    # Le formatăm într-o listă de dicționare pentru a le putea citi în JavaScript
+    date_harta = []
+    # luăm datele cu numele lor reale din baza de date:
+    for inf in infractiuni:
+        date_harta.append({
+            # 'Nume nou pentru JS' : 'Nume real din baza de date Django'
+            'lat': inf.latitudine,
+            'lng': inf.longitudine,
+            'dosar': inf.dosar.numar_unic,
+            'act_normativ': inf.get_act_normativ_display() or "Necunoscut",
+            'incadrare': inf.incadrare_juridica if inf.incadrare_juridica else "Fără încadrare", # <--- NOU
+            'articol': inf.articol if inf.articol else "-", # <--- NOU
+            'adresa': inf.adresa_comiterii,
+            'data': inf.data_comiterii.isoformat() if inf.data_comiterii else None
+        })
+        
+    context = {
+        # Transformăm lista în format JSON sigur pentru HTML
+        'date_harta_json': json.dumps(date_harta)
+    }
+    
+    return render(request, 'cases/harta.html', context)
