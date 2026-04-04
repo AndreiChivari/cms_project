@@ -40,3 +40,5 @@ django-sass-processor
 gunicorn
 django-compressor
 geopy
+pytesseract
+Pillow

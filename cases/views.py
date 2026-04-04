@@ -1,6 +1,7 @@
 import os
 from django.conf import settings
 from django.shortcuts import render, get_object_or_404, redirect
+from urllib3 import request
 from .models import Dosar, ParteImplicata, Infractiune, MasuraPreventiva, IstoricDesemnare, StadiuCercetare, SolutieDosar, Notificare
 from documents.forms import DocumentForm # Importăm formularul nou creat
 from .forms import DosarForm, ParteImplicataForm, CreareDosarForm, InfractiuneForm, MasuraPreventivaForm, StadiuCercetareForm, SolutieDosarForm
@@ -21,6 +22,12 @@ import openpyxl
 from openpyxl.styles import Font, Alignment
 from django.contrib import messages
 import json
+# Importuri pentru ocr
+import pytesseract
+from PIL import Image
+from django.views.decorators.csrf import csrf_exempt
+from PIL import Image, ImageEnhance, ImageFilter
+import re
 
 User = get_user_model()
 
@@ -232,9 +239,28 @@ def detalii_dosar(request, pk):
         elif 'btn_salveaza_parte' in request.POST:
             form_parte = ParteImplicataForm(request.POST)
             if form_parte.is_valid():
+                # 1. Salvăm persoana în dosar
                 parte = form_parte.save(commit=False)
                 parte.dosar = dosar
                 parte.save()
+                
+                # =========================================================
+                # 2. INTEGRARE CROSS-MODULE: Salvăm poza ca Document
+                # =========================================================
+                salveaza_doc = request.POST.get('salveaza_ca_document')
+                fisier_ci = request.FILES.get('fisier_copie_ci')
+                
+                if salveaza_doc == 'DA' and fisier_ci:
+                    ActUrmarire.objects.create(
+                        titlu=f"Copie C.I. - {parte.nume_complet}",
+                        tip=ActUrmarire.TipDocument.ALTUL, # Folosim tipul 'ALTUL'
+                        dosar=dosar,
+                        autor=request.user,
+                        fisier=fisier_ci,
+                        descriere_scurta="Document generat automat la scanarea C.I. (Modul OCR)."
+                    )
+                # =========================================================
+
                 return redirect('cases:detalii_dosar', pk=dosar.pk)
             
         # 2. LOGICA NOUĂ PENTRU SALVAREA INFRACȚIUNII
@@ -881,6 +907,7 @@ def harta_infractionalitatii(request):
             'lat': inf.latitudine,
             'lng': inf.longitudine,
             'dosar': inf.dosar.numar_unic,
+            'dosar_id': inf.dosar.pk,
             'act_normativ': inf.get_act_normativ_display() or "Necunoscut",
             'incadrare': inf.incadrare_juridica if inf.incadrare_juridica else "Fără încadrare", # <--- NOU
             'articol': inf.articol if inf.articol else "-", # <--- NOU
@@ -894,3 +921,98 @@ def harta_infractionalitatii(request):
     }
     
     return render(request, 'cases/harta.html', context)
+
+# --- SETARE CRITICĂ PENTRU WINDOWS ---
+# Spunem Python-ului unde se află executabilul pe care tocmai l-ai instalat
+pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+
+@csrf_exempt  # Dezactivăm temporar protecția CSRF doar pentru acest test
+def test_ocr_api(request):
+    if request.method == 'POST' and request.FILES.get('imagine_buletin'):
+        fisier_imagine = request.FILES['imagine_buletin']
+        
+        try:
+            img = Image.open(fisier_imagine)
+            width, height = img.size
+            img = img.resize((width * 2, height * 2), Image.Resampling.LANCZOS)
+            img = img.convert('L')
+            img = ImageEnhance.Contrast(img).enhance(2.5)
+            img = ImageEnhance.Sharpness(img).enhance(2.0)
+            
+            config_tesseract = r'--oem 3 --psm 6'
+            text_brut = pytesseract.image_to_string(img, lang='ron', config=config_tesseract)
+            
+            # Datele pe care vrem să le completăm
+            date_extrase = {
+                'cnp': '',
+                'nume_complet': '',
+                'adresa': '',
+                'serie': '',
+                'numar': ''
+            }
+            
+            # 1. Căutăm CNP-ul
+            cnp_match = re.search(r'\b[1-9]\d{12}\b', text_brut)
+            if cnp_match:
+                date_extrase['cnp'] = cnp_match.group(0)
+
+            # 2 & 3. Căutăm Seria și Numărul (Împreună)
+            # Explicație: Caută (opțional) eticheta "ID:", urmată de 2 litere (Grupul 1), 
+            # spații opționale, și fix 6 cifre (Grupul 2).
+            # Astfel, "CARTE DE IDENTITATE" este ignorat complet, pentru că "DE" nu este urmat de 6 cifre.
+            serie_numar_match = re.search(r'(?:ID:\s*)?([A-Z]{2})\s*(\d{6})', text_brut, re.IGNORECASE)
+            
+            if serie_numar_match:
+                date_extrase['serie'] = serie_numar_match.group(1).upper()  # ZV
+                date_extrase['numar'] = serie_numar_match.group(2)          # 987987
+                
+            # 2. Funcție de curățare a numelor (ACUM CU REGULA VOCALEI)
+            def curata_nume(text):
+                if not text: return ""
+                # Extragem cuvintele de minim 2 litere (majuscule)
+                cuvinte_brute = re.findall(r'\b[A-ZĂÎÂȘȚ\-]{2,}\b', text.upper())
+                cuvinte_valide = []
+                
+                for cuvant in cuvinte_brute:
+                    # REGULA VOCALEI: Dacă acel cuvânt are cel puțin o vocală, e nume valid!
+                    # Astfel, artefacte ca 'LL', 'XX', 'M' vor fi aruncate automat.
+                    if re.search(r'[AEIOUĂÎÂ]', cuvant):
+                        cuvinte_valide.append(cuvant)
+                        
+                return " ".join(cuvinte_valide)
+
+            nume_match = re.search(r'NUME:\s*([^\n]+)', text_brut, re.IGNORECASE)
+            prenume_match = re.search(r'PRENUME:\s*([^\n]+)', text_brut, re.IGNORECASE)
+            
+            nume_final = ""
+            if nume_match:
+                nume_final += curata_nume(nume_match.group(1))
+            if prenume_match:
+                nume_final += " " + curata_nume(prenume_match.group(1))
+                
+            date_extrase['nume_complet'] = nume_final.strip()
+            
+            # 3. Căutăm și Curățăm Adresa/Domiciliul
+            adresa_match = re.search(r'(?:ADRESA|DOMICILIU):\s*([^\n]+)', text_brut, re.IGNORECASE)
+            if adresa_match:
+                adresa_bruta = adresa_match.group(1).strip()
+                # Eliminăm literele mici izolate (ex: acel 'i' rătăcit din 'i OV')
+                adresa_curata = re.sub(r'\b[a-z]\b', '', adresa_bruta)
+                # Eliminăm spațiile duble rezultate
+                adresa_curata = re.sub(r'\s+', ' ', adresa_curata).strip()
+                
+                date_extrase['adresa'] = adresa_curata
+
+            return JsonResponse({
+                'status': 'success', 
+                'date_structurate': date_extrase
+            })
+            
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'mesaj': str(e)})
+            
+    return JsonResponse({'status': 'error', 'mesaj': 'Metodă invalidă.'})
+
+# Funcția care afișează pagina HTML pe ecran
+def pagina_test_ocr(request):
+    return render(request, 'cases/test_ocr.html')

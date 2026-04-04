@@ -146,8 +146,11 @@ class ParteImplicata(models.Model):
     
     nume_complet = models.CharField(max_length=150)
     cnp = models.CharField(max_length=13, blank=True, null=True, verbose_name="CNP")
+    adresa = models.CharField(max_length=255, blank=True, null=True, verbose_name="Adresă")
     calitate_procesuala = models.CharField(max_length=20, choices=Calitate.choices)
     mentiuni = models.TextField(blank=True, null=True, help_text="Alte date de contact, antecedente, etc.")
+    serie_ci = models.CharField(max_length=10, blank=True, null=True, verbose_name="Serie C.I.")
+    numar_ci = models.CharField(max_length=20, blank=True, null=True, verbose_name="Număr C.I.")
 
     class Meta:
         verbose_name = "Parte Implicată"
@@ -167,7 +170,9 @@ class Infractiune(models.Model):
         L143 = 'L143_2000', 'Trafic de droguri (Legea 143/2000)'
         L241 = 'L241_2005', 'Evaziune fiscală (Legea 241/2005)'
         L50 = 'L50_1991', 'Disciplina în construcții (Legea 50/1991)'
-        ALTUL = 'ALTUL', 'Alt Act Normativ'
+        L217 = 'L217_2003', 'Prevenirea şi combaterea violenţei în familie (Legea 217/2003)'
+        L123 = 'L123_2012', 'Legea energiei electrice şi a gazelor naturale (Legea 123/2012)'
+        ALTUL = 'ALTUL', 'Alt act normativ'
 
     dosar = models.ForeignKey(Dosar, on_delete=models.CASCADE, related_name='infractiuni')
     

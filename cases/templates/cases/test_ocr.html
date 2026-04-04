@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block title %}Laborator Testare OCR{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-header bg-primary text-white p-4">
+                    <h4 class="mb-0"><i class="bi bi-camera-fill me-2"></i> Testare Extragere Text (OCR)</h4>
+                </div>
+                <div class="card-body p-4">
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Alege o poză cu un act de identitate:</label>
+                        <input class="form-control form-control-lg" type="file" id="input-imagine" accept="image/*">
+                    </div>
+                    
+                    <button id="btn-scaneaza" class="btn btn-danger btn-lg w-100 mb-4 fw-bold">
+                        <span id="spinner" class="spinner-border spinner-border-sm d-none me-2" role="status" aria-hidden="true"></span>
+                        <i id="icon-scan" class="bi bi-search"></i> Scanează Documentul
+                    </button>
+                    
+                    <div class="bg-light p-3 rounded-3 border">
+                        <p class="small text-muted fw-bold text-uppercase mb-2">Textul brut extras de Inteligența Artificială:</p>
+                        <pre id="rezultat-text" class="mb-0" style="min-height: 150px; white-space: pre-wrap; font-family: monospace;"></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('btn-scaneaza').addEventListener('click', function() {
+        const inputImagine = document.getElementById('input-imagine');
+        const rezultatText = document.getElementById('rezultat-text');
+        const spinner = document.getElementById('spinner');
+        const iconScan = document.getElementById('icon-scan');
+        
+        if (inputImagine.files.length === 0) {
+            alert('Te rog selectează o imagine mai întâi!');
+            return;
+        }
+
+        // Modificăm UI-ul ca să arate că lucrează (poate dura 2-4 secunde)
+        this.disabled = true;
+        spinner.classList.remove('d-none');
+        iconScan.classList.add('d-none');
+        rezultatText.innerHTML = "Se procesează imaginea. Te rog așteaptă...";
+
+        // Pregătim datele pentru a fi trimise către Django
+        const formData = new FormData();
+        formData.append('imagine_buletin', inputImagine.files[0]);
+
+        // Facem apelul către API-ul nostru
+        fetch('/cases/api/test-ocr/', {  // <-- Asigură-te că ruta se potrivește cu urls.py al tău!
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Afișăm datele extrase inteligent
+                let rezultat = `<strong class="text-success">Extragere cu succes!</strong><br><br>`;
+                rezultat += `<strong>CNP:</strong> <span class="text-primary">${data.date_structurate.cnp}</span><br>`;
+                rezultat += `<strong>Serie C.I.:</strong> <span class="text-primary">${data.date_structurate.serie}</span><br>`;
+                rezultat += `<strong>Număr C.I.:</strong> <span class="text-primary">${data.date_structurate.numar}</span><br><br>`;
+                
+                // Opțional, afișăm și textul brut mai mic dedesubt
+                rezultat += `<hr><span class="small text-muted">Text brut procesat:</span><br>`;
+                rezultat += `<span class="small text-muted" style="font-size: 0.7rem;">${data.text_brut}</span>`;
+                
+                rezultatText.innerHTML = rezultat;
+            } else {
+                rezultatText.innerHTML = "Eroare: " + data.mesaj;
+            }
+        })
+        .catch(error => {
+            rezultatText.innerHTML = "Eroare de rețea: " + error;
+        })
+        .finally(() => {
+            // Revenim la starea inițială a butonului
+            this.disabled = false;
+            spinner.classList.add('d-none');
+            iconScan.classList.remove('d-none');
+        });
+    });
+</script>
+{% endblock %}

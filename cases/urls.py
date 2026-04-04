@@ -57,4 +57,10 @@ urlpatterns = [
 
     # Ruta pentru harta infractionalitatii
     path('harta/', views.harta_infractionalitatii, name='harta'),
+
+    # Ruta pentru testarea API-ului OCR
+    path('api/test-ocr/', views.test_ocr_api, name='test_ocr_api'),
+
+    # Ruta pentru interfața grafică (pagina HTML)
+    path('test-ocr/', views.pagina_test_ocr, name='pagina_test_ocr'),
 ]

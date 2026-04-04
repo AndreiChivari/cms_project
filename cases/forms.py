@@ -174,12 +174,15 @@ class ParteImplicataForm(forms.ModelForm):
     class Meta:
         model = ParteImplicata
         # Nu includem 'dosar' pentru că îl legăm noi în spate (în views.py)
-        fields = ['nume_complet', 'calitate_procesuala', 'cnp', 'mentiuni']
+        fields = ['nume_complet', 'calitate_procesuala', 'cnp', 'adresa', 'mentiuni', 'serie_ci', 'numar_ci']
         
         widgets = {
-            'nume_complet': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nume și Prenume'}),
+            'nume_complet': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nume și Prenume', 'id': 'input-nume'}),
             'calitate_procesuala': forms.Select(attrs={'class': 'form-select'}),
-            'cnp': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Cod Numeric Personal'}),
+            'cnp': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Cod Numeric Personal', 'id': 'input-cnp'}),
+            'serie_ci': forms.TextInput(attrs={'class': 'form-control', 'id': 'input-serie'}),
+            'numar_ci': forms.TextInput(attrs={'class': 'form-control', 'id': 'input-numar'}),
+            'adresa': forms.TextInput(attrs={'class': 'form-control', 'id': 'input-adresa'}),
             'mentiuni': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Date de contact, antecedente etc.'}),
         }
 
@@ -190,10 +193,10 @@ class InfractiuneForm(forms.ModelForm):
         
         labels = {
             'act_normativ': 'Act Normativ',
-            'articol': 'Articol Penal',
+            'articol': 'Articol',
             'incadrare_juridica': 'Încadrare Juridică',
             'adresa_comiterii': 'Locul săvârșirii faptei (Adresa)',
-            'data_comiterii': 'Data comiterii',
+            'data_comiterii': 'Data săvârşirii faptei',
         }
         
         widgets = {
