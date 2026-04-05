@@ -1016,3 +1016,99 @@ def test_ocr_api(request):
 # Funcția care afișează pagina HTML pe ecran
 def pagina_test_ocr(request):
     return render(request, 'cases/test_ocr.html')
+
+# === GRAF RELAŢIONAL ===
+# API apelat de JavaScript pentru a obține datele în formatul necesar pentru vizualizarea grafică
+# extrage datele, rezolvă problema duplicatelor și construiește structura matematică (Noduri și Muchii)
+def date_graf_relational(request):
+    """
+    Acest API returnează datele întregii baze de date 
+    formatate pentru biblioteca de grafuri Vis.js
+    """
+    nodes = []
+    edges = []
+    
+    # ==========================================
+    # 1. GENERĂM NODURILE PENTRU DOSARE
+    # ==========================================
+    dosare = Dosar.objects.all().prefetch_related('stadii_cercetare')
+    for d in dosare:
+        # Folosim proprietatea ta pentru a afla stadiul
+        stadiu = d.stadiu_curent
+        nume_stadiu = stadiu.get_tip_stadiu_display() if stadiu else "În lucru"
+
+        # Verificăm dacă are o soluție
+        solutie = d.solutie_curenta
+        text_solutie = f"\nSoluție: {solutie.get_tip_solutie_display()}" if solutie else ""
+        
+        nodes.append({
+            'id': f'dosar_{d.id}',
+            'label': f'Dosar\n{d.numar_unic}',
+            'group': 'dosar',
+            'title': f'Dosar: {d.numar_unic}\nStadiu: {nume_stadiu}{text_solutie}',
+            'url_dosar': reverse('cases:detalii_dosar', args=[d.pk]) # <--- Trimitem link-ul dosarului
+        })
+        
+    # ==========================================
+    # 2. GENERĂM NODURILE PENTRU PERSOANE ȘI LINIILE (MUCHIILE)
+    # ==========================================
+    parti = ParteImplicata.objects.select_related('dosar').all()
+    
+    # Folosim un dicționar pentru a păstra persoanele și toate calitățile lor
+    # Cheia va fi ID-ul unic (CNP sau Nume), Valoarea va fi un dicționar cu Nume și Lista de calități
+    persoane_unice = {}
+    
+    for parte in parti:
+        # LOGICA DE FUZIUNE: Cum identificăm unic o persoană?
+        # Dacă are CNP, e perfect, CNP-ul e unic.
+        # Dacă nu are CNP, folosim numele lui transformat cu majuscule și fără spații (ex: ION_POPESCU)
+        if parte.cnp:
+            nod_id = f'pers_cnp_{parte.cnp}'
+            label_nod = f'{parte.nume_complet}\n({parte.cnp})'
+        else:
+            nume_curat = parte.nume_complet.strip().upper().replace(" ", "_")
+            nod_id = f'pers_nume_{nume_curat}'
+            label_nod = parte.nume_complet
+            
+        calitate = parte.get_calitate_procesuala_display()
+            
+        # Dacă persoana nu există încă pe hartă, o adăugăm în dicționar
+        if nod_id not in persoane_unice:
+            persoane_unice[nod_id] = {
+                'id': nod_id,
+                'label': label_nod,
+                'nume_complet': parte.nume_complet,
+                'calitati': {calitate} # Folosim un Set pentru calități unice (ex: să nu apară Suspect de 2 ori)
+            }
+        else:
+            # Dacă există deja, doar îi adăugăm noua calitate
+            persoane_unice[nod_id]['calitati'].add(calitate)
+            
+        # Adăugăm linia între persoană și dosar
+        edges.append({
+            'from': nod_id,
+            'to': f'dosar_{parte.dosar.id}',
+            'label': calitate,
+            'font': {'align': 'middle'},
+            'color': {'color': '#a3a3a3', 'highlight': '#ff4b4b'}
+        })
+
+    # Construim lista finală de noduri pentru persoane
+    for pers_id, date_pers in persoane_unice.items():
+        # Creăm un text cu toate calitățile pentru Tooltip (la hover)
+        lista_calitati_html = ", ".join(date_pers['calitati'])
+        
+        nodes.append({
+            'id': date_pers['id'],
+            'label': date_pers['label'],
+            'group': 'persoana',
+            'title': f"{date_pers['nume_complet']}\nCalitate: {lista_calitati_html}",
+            # Salvăm un câmp invizibil cu calitățile ca să le citească JavaScript pentru panoul lateral
+            'calitati_js': lista_calitati_html 
+        })
+        
+    return JsonResponse({'nodes': nodes, 'edges': edges})
+
+# Iar aceasta este funcția simplă care doar va deschide pagina HTML a Grafului
+def graf_relational(request):
+    return render(request, 'cases/graf_relational.html')

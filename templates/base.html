@@ -56,6 +56,11 @@
                                 Harta Infracționalității
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'graf_relational' %}active fw-bold{% endif %}" href="{% url 'cases:graf_relational' %}">
+                                <i class="bi bi-diagram-3-fill me-1"></i> Analiză Relațională
+                            </a>
+                        </li>
                         {% if user.is_staff %}
                         <li class="nav-item ms-lg-2 ps-lg-3 border-start border-light border-opacity-25 d-none d-lg-block h-50 my-auto"></li>
                         <li class="nav-item">

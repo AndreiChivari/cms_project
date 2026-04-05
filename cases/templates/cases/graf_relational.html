@@ -1,0 +1,354 @@
+{% extends 'base.html' %}
+
+{% block title %}Analiză Relațională - Conexiuni{% endblock %}
+
+{% block content %}
+<script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+
+<style>
+    /* Stilul pânzei (canvas-ului) pe care se desenează graful */
+    #mynetwork {
+        width: 100%;
+        height: 75vh; /* Ocupă 75% din înălțimea ecranului */
+        border-radius: 0.5rem;
+        background-color: #f8f9fa; /* Un fundal gri deschis pentru contrast */
+        border: 1px solid #dee2e6;
+        box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+    }
+    
+    /* Ascundem panoul de detalii la început */
+    #panou-detalii {
+        display: none;
+    }
+</style>
+
+<div class="container-fluid mb-4">
+    <div class="row align-items-end mb-3 mt-3 border-bottom pb-3">
+        <div class="col-md-4">
+            <h3 class="mb-1 fw-bold text-dark d-flex align-items-center gap-2">
+                <i class="bi bi-diagram-3-fill text-primary"></i> Analiză Relațională
+            </h3>
+            <p class="text-muted mb-0 small">Identificarea rețelelor și conexiunilor din dosare.</p>
+        </div>
+        
+        <div class="col-md-5">
+            <div class="input-group shadow-sm">
+                <span class="input-group-text bg-white border-primary text-primary"><i class="bi bi-search"></i></span>
+                <input type="text" id="input-cautare" class="form-control border-primary" placeholder="Caută persoană sau dosar (ex: Popescu, 12/P)...">
+                <button class="btn btn-primary fw-medium" id="btn-cauta">Caută</button>
+                <button class="btn btn-outline-secondary fw-medium" id="btn-reset" title="Resetează vizualizarea"><i class="bi bi-arrows-collapse"></i></button>
+            </div>
+        </div>
+        
+        <div class="col-md-3 text-end mt-3 mt-md-0">
+            <button class="btn btn-success shadow-sm fw-bold" id="btn-export">
+                <i class="bi bi-camera-fill me-1"></i> Descarcă Grafic (PNG)
+            </button>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-9 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-2 position-relative">
+                    <div id="loading-spinner" class="position-absolute top-50 start-50 translate-middle text-center" style="z-index: 10;">
+                        <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status"></div>
+                        <p class="mt-2 fw-bold text-muted">Se generează matricea relațională...</p>
+                    </div>
+                    
+                    <div id="mynetwork"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3">
+            <div id="panou-detalii" class="card border-0 shadow-sm h-100 border-top border-4 border-primary">
+                <div class="card-body p-4">
+                    <div class="text-center mb-3 border-bottom pb-3">
+                        <i id="detalii-icon" class="bi bi-person-circle text-primary" style="font-size: 3rem;"></i>
+                        <h5 id="detalii-titlu" class="fw-bold mt-2 mb-0">Nume Persoană</h5>
+                        <span id="detalii-tip" class="badge bg-secondary mt-2">Tip Entitate</span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted small text-uppercase fw-bold mb-1"><i class="bi bi-link-45deg"></i> Conexiuni directe</p>
+                        <h3 id="detalii-conexiuni" class="fw-bold text-dark">0</h3>
+                    </div>
+                    
+                    <div class="alert alert-light border border-secondary border-opacity-25 small mb-0">
+                        <i class="bi bi-info-circle-fill text-primary me-1"></i>
+                        <span id="detalii-info">Dublu-click pe acest nod în grafic pentru a-l centra și a mări imaginea.</span>
+                    </div>
+
+                    <div class="d-grid mt-3">
+                        <a href="#" id="btn-mergi-dosar" class="btn btn-outline-primary btn-sm fw-bold" style="display: none;" target="_blank">
+                            <i class="bi bi-folder2-open"></i> Deschide Dosarul
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="panou-legenda" class="card border-0 shadow-sm bg-light h-100">
+                <div class="card-body p-4">
+                    <h6 class="fw-bold text-muted text-uppercase mb-3 border-bottom pb-2">Legendă Graf</h6>
+                    <div class="d-flex align-items-center mb-2">
+                        <div style="width: 20px; height: 20px; background-color: #3498db; border-radius: 50%;" class="me-2"></div>
+                        <span class="small fw-medium">Persoană Implicată</span>
+                    </div>
+                    <div class="d-flex align-items-center mb-2">
+                        <div style="width: 20px; height: 20px; background-color: #2c3e50; border-radius: 4px;" class="me-2"></div>
+                        <span class="small fw-medium">Dosar Penal</span>
+                    </div>
+                    <div class="d-flex align-items-center mt-4">
+                        <i class="bi bi-mouse me-2 text-muted fs-4"></i>
+                        <span class="small text-muted">Apasă pe un element pentru a vedea detaliile sau folosește rotița (scroll) pentru Zoom.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // 1. Variabile Globale
+    let network = null;
+    let nodesData = new vis.DataSet();
+    let edgesData = new vis.DataSet();
+    // Păstrăm o copie originală a setărilor de culoare pentru funcția de Reset
+    let allNodes = [];
+
+    // 2. Apelăm API-ul creat în views.py
+    fetch("{% url 'cases:api_graf_relational' %}")
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('loading-spinner').style.display = 'none';
+
+            nodesData.add(data.nodes);
+            edgesData.add(data.edges);
+            
+            // Salvăm ID-urile tuturor nodurilor pentru filtrare
+            allNodes = nodesData.get({ returnType: "Object" });
+
+            const container = document.getElementById('mynetwork');
+            const data_vis = { nodes: nodesData, edges: edgesData };
+            const options = {
+                nodes: {
+                    borderWidth: 2,
+                    font: { size: 14, face: 'system-ui', multi: 'html' },
+                    shadow: true,
+                    color: { opacity: 1 } // Opacitate implicită 100%
+                },
+                edges: {
+                    width: 2,
+                    smooth: { type: 'continuous' },
+                    font: { size: 11, align: 'middle', background: '#ffffff', strokeWidth: 0 },
+                    color: { opacity: 1 } // Opacitate implicită 100%
+                },
+                groups: {
+                    dosar: {
+                        shape: 'box',
+                        color: { background: '#2c3e50', border: '#1a252f', highlight: { background: '#e74c3c', border: '#c0392b' } },
+                        font: { color: 'white' },
+                        margin: 10
+                    },
+                    persoana: {
+                        shape: 'dot',
+                        size: 20,
+                        color: { background: '#3498db', border: '#2980b9', highlight: { background: '#e74c3c', border: '#c0392b' } }
+                    }
+                },
+                physics: {
+                    barnesHut: { gravitationalConstant: -2000, centralGravity: 0.3, springLength: 150, springConstant: 0.04 },
+                    stabilization: { iterations: 150 }
+                },
+                interaction: { hover: true, navigationButtons: true }
+            };
+
+            network = new vis.Network(container, data_vis, options);
+
+            // =========================================
+            // EVENIMENT: Click pe Nod (Panoul Lateral)
+            // =========================================
+            network.on("click", function (params) {
+                if (params.nodes.length > 0) {
+                    const nodeId = params.nodes[0];
+                    const nodeInfo = nodesData.get(nodeId);
+                    
+                    document.getElementById('panou-legenda').style.display = 'none';
+                    document.getElementById('panou-detalii').style.display = 'block';
+                    
+                    let titluCurat = nodeInfo.label.replace(/\n/g, ' - ').replace(/<br>/g, ' ');
+                    document.getElementById('detalii-titlu').innerText = titluCurat;
+                    document.getElementById('detalii-conexiuni').innerText = network.getConnectedEdges(nodeId).length;
+
+                    // Găsim butonul în pagină
+                    const btnDosar = document.getElementById('btn-mergi-dosar');
+
+                    if (nodeInfo.group === 'dosar') {
+                        document.getElementById('detalii-tip').innerText = "Dosar Penal";
+                        document.getElementById('detalii-tip').className = "badge bg-dark mt-2";
+                        document.getElementById('detalii-icon').className = "bi bi-folder-fill text-dark";
+                        
+                        // Arătăm butonul și îi dăm link-ul către dosar
+                        if(btnDosar) {
+                            btnDosar.style.display = 'block';
+                            btnDosar.href = nodeInfo.url_dosar;
+                        }
+                    } else {
+                        // Extragem calitățile din câmpul ascuns 'calitati_js'
+                        document.getElementById('detalii-tip').innerText = nodeInfo.calitati_js || "Persoană";
+                        document.getElementById('detalii-tip').className = "badge bg-primary mt-2";
+                        document.getElementById('detalii-icon').className = "bi bi-person-circle text-primary";
+                        
+                        // Dacă e persoană, ascundem butonul
+                        if(btnDosar) {
+                            btnDosar.style.display = 'none';
+                        }
+                    }
+                } else {
+                    document.getElementById('panou-legenda').style.display = 'block';
+                    document.getElementById('panou-detalii').style.display = 'none';
+                }
+            });
+
+            // =========================================
+            // EVENIMENT: Dublu-Click (Zoom și Centrare)
+            // =========================================
+            network.on("doubleClick", function (params) {
+                if (params.nodes.length > 0) {
+                    const nodeId = params.nodes[0];
+                    network.focus(nodeId, {
+                        scale: 1.5, // Mărește de 1.5 ori
+                        animation: {
+                            duration: 1000,
+                            easingFunction: "easeInOutQuad"
+                        }
+                    });
+                }
+            });
+
+            // =========================================
+            // MOTORUL DE CĂUTARE (2 Grade de Separare + Ascundere Totală)
+            // =========================================
+            document.getElementById('btn-cauta').addEventListener('click', function() {
+                const searchString = document.getElementById('input-cautare').value.toLowerCase().trim();
+                
+                if (!searchString) {
+                    document.getElementById('btn-reset').click();
+                    return;
+                }
+
+                // 1. Găsim persoana/dosarul căutat
+                const matchedNodesIds = nodesData.getIds({
+                    filter: function (item) { return item.label.toLowerCase().includes(searchString); }
+                });
+
+                if (matchedNodesIds.length === 0) {
+                    alert("Nu am găsit nicio entitate care să corespundă.");
+                    return;
+                }
+
+                // ALGORITM NOU: Parcurgere completă (Lanț infinit)
+                // Extragem absolut toată rețeaua conectată, indiferent de câți pași distanță se află
+                let allRelevantIds = new Set(matchedNodesIds);
+                let nodesToExplore = [...matchedNodesIds]; // O coadă de noduri pe care trebuie să le verificăm
+
+                // Cât timp mai avem noduri de explorat...
+                while (nodesToExplore.length > 0) {
+                    let currentId = nodesToExplore.shift(); // Luăm nodul curent
+                    let connectedNodes = network.getConnectedNodes(currentId); // Îi găsim vecinii
+                    
+                    connectedNodes.forEach(connId => {
+                        // Dacă am găsit un vecin nou pe care nu l-am mai văzut
+                        if (!allRelevantIds.has(connId)) {
+                            allRelevantIds.add(connId);      // Îl salvăm ca fiind relevant
+                            nodesToExplore.push(connId);     // Îl punem la coadă să-i explorăm și lui vecinii!
+                        }
+                    });
+                }
+
+                // 4. Actualizăm pânza: ASCUNDEM tot ce nu e relevant
+                let updates = [];
+                for (let nodeId in allNodes) {
+                    let node = allNodes[nodeId];
+                    let baseColor = (node.group === 'dosar') ? 'rgba(255, 255, 255, 1)' : 'rgba(0, 0, 0, 1)';
+
+                    if (allRelevantIds.has(nodeId)) {
+                        // E relevant: Îl AFIȘĂM (hidden: false)
+                        updates.push({ id: nodeId, hidden: false, font: { color: baseColor } });
+                    } else {
+                        // Irelevant: Îl ASCUNDEM COMPLET
+                        updates.push({ id: nodeId, hidden: true });
+                    }
+                }
+                nodesData.update(updates);
+                
+                // 5. Facem zoom exact pe grupul infracțional izolat
+                // Folosim Array.from() pentru a converti Set-ul în listă, altfel vis.js nu știe să facă zoom
+                network.fit({ nodes: Array.from(allRelevantIds), animation: { duration: 1000, easingFunction: "easeInOutQuad" }});
+            });
+
+            document.getElementById('input-cautare').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') document.getElementById('btn-cauta').click();
+            });
+
+            // =========================================
+            // BUTONUL DE RESET
+            // =========================================
+            document.getElementById('btn-reset').addEventListener('click', function() {
+                document.getElementById('input-cautare').value = '';
+                
+                let updates = [];
+                for (let nodeId in allNodes) {
+                    let node = allNodes[nodeId];
+                    let textColor = (node.group === 'dosar') ? 'rgba(255, 255, 255, 1)' : 'rgba(0, 0, 0, 1)';
+                    // Repunem toate elementele pe ecran (hidden: false)
+                    updates.push({ id: nodeId, hidden: false, color: { opacity: 1 }, font: { color: textColor } });
+                }
+                nodesData.update(updates);
+                
+                network.unselectAll();
+                network.fit({ animation: { duration: 1000, easingFunction: "easeInOutQuad" }});
+                document.getElementById('panou-legenda').style.display = 'block';
+                document.getElementById('panou-detalii').style.display = 'none';
+            });
+            
+            // =========================================
+            // EXPORTUL CA IMAGINE (PNG)
+            // =========================================
+            document.getElementById('btn-export').addEventListener('click', function() {
+                // 1. Luăm pânza originală
+                const originalCanvas = container.querySelector('canvas');
+                
+                // 2. Creăm o pânză nouă, temporară, în memoria browserului
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = originalCanvas.width;
+                tempCanvas.height = originalCanvas.height;
+                const tempCtx = tempCanvas.getContext('2d');
+                
+                // 3. Desenăm un fundal perfect alb pe pânza temporară
+                tempCtx.fillStyle = "#ffffff";
+                tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+                
+                // 4. Copiem (ștanțăm) graful nostru peste fundalul alb
+                tempCtx.drawImage(originalCanvas, 0, 0);
+                
+                // 5. Generăm imaginea PNG din pânza temporară (graful live nu e afectat)
+                const imgURL = tempCanvas.toDataURL('image/png');
+                
+                // 6. Declanșăm descărcarea
+                const link = document.createElement('a');
+                link.download = 'analiza_relationala_export.png';
+                link.href = imgURL;
+                link.click();
+            });
+
+        })
+        .catch(error => {
+            document.getElementById('loading-spinner').innerHTML = `<p class="text-danger fw-bold"><i class="bi bi-exclamation-triangle"></i> Eroare la încărcarea datelor.</p>`;
+            console.error("Eroare Grafe:", error);
+        });
+});
+</script>
+{% endblock %}

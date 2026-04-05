@@ -63,4 +63,8 @@ urlpatterns = [
 
     # Ruta pentru interfața grafică (pagina HTML)
     path('test-ocr/', views.pagina_test_ocr, name='pagina_test_ocr'),
+
+    # Ruta pentru Analiza Relațională (Graful)
+    path('analiza-conexiuni/', views.graf_relational, name='graf_relational'),
+    path('api/graf-relational/', views.date_graf_relational, name='api_graf_relational'),
 ]
