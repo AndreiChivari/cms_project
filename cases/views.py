@@ -167,45 +167,125 @@ def adaugare_dosar(request):
     return render(request, 'cases/adaugare_dosar.html', context)
 
 @login_required
+@login_required
 def lista_dosare(request):
-    # 1. Luăm toate dosarele inițial
-    dosare = Dosar.objects.all().order_by('-data_inregistrarii')
-    
-    # 2. Citim ce a scris utilizatorul în bara de căutare (dacă a scris ceva)
-    # request.GET.get('nume_camp', 'valoare_default_daca_e_gol')
-    query_text = request.GET.get('q', '') 
+    # 1. Luăm inputul utilizatorului
+    query_text = request.GET.get('q', '').strip() 
     stadiu_filtru = request.GET.get('stadiu', '')
 
-    # 3. Aplicăm filtrul de text (Căutare în număr SAU infracțiune)
-    if query_text:
-        # icontains înseamnă "să conțină textul, ignorând majusculele/minusculele"
-        dosare = dosare.filter(
-            Q(numar_unic__icontains=query_text) | 
-            Q(infractiune_cercetata__icontains=query_text)
-        )
-
-    # 4. Aplicăm filtrul de stadiu (Dropdown)
-    if stadiu_filtru:
-        dosare = dosare.filter(stadiu=stadiu_filtru)
-
-    # --- COD NOU PENTRU PAGINARE ---
-    # Împărțim rezultatele (dosare) în pagini de câte 10 (poți pune 2 sau 3 acum pentru testare!)
-    paginator = Paginator(dosare, 7) 
-    
-    # Luăm numărul paginii curente din URL (ex: ?page=2)
-    page_number = request.GET.get('page')
-    
-    # page_obj va conține DOAR dosarele de pe pagina curentă
-    page_obj = paginator.get_page(page_number)  
-
-    # Trimitem datele către HTML, INCLUSIV ce a căutat omul, ca să lăsăm textul în căsuță
     context = {
-        'page_obj': page_obj,
         'query_text': query_text,
         'stadiu_filtru': stadiu_filtru,
-        'stadii_posibile': Dosar.Stadiu.choices, # Trimitem opțiunile pentru dropdown
     }
-    
+
+    # ==========================================
+    # MODULUL DE CĂUTARE GLOBALĂ (Dacă a căutat ceva)
+    # ==========================================
+    if query_text:
+        # TRUC PENTRU DIACRITICE ÎN SQLITE:
+        # Generăm 3 variante ale textului pentru a ocoli limitarea SQLite privind majusculele Unicode (ă, î, ș, ț, â)
+        q_lower = query_text.lower()
+        q_upper = query_text.upper()
+        q_title = query_text.title()
+
+        # --- TRUC PENTRU CÂMPURILE 'CHOICES' (Act Normativ și Măsuri) ---
+        # 1. Căutăm cuvântul în etichetele Actelor Normative și extragem CHEILE (ex: 'CP')
+        chei_acte_normative = [
+            cheie for cheie, eticheta in Infractiune.ActNormativ.choices
+            if q_lower in eticheta.lower()
+        ]
+        
+        # 2. Căutăm cuvântul în etichetele Măsurilor Preventive și extragem CHEILE (ex: 'AREST_PREVENTIV')
+        chei_masuri = [
+            cheie for cheie, eticheta in MasuraPreventiva.TipMasura.choices
+            if q_lower in eticheta.lower()
+        ]
+
+        # A. Căutăm direct în tabelul Dosare
+        dosare_gasite = Dosar.objects.filter(
+            Q(numar_unic__icontains=query_text) | 
+            Q(infractiune_cercetata__icontains=q_lower) | 
+            Q(infractiune_cercetata__icontains=q_upper) | 
+            Q(infractiune_cercetata__icontains=q_title)
+        ).distinct()
+
+        # B. Căutăm prin modelul de Infracțiune (AM ADĂUGAT ACTUL NORMATIV)
+        dosare_din_infractiuni = Dosar.objects.filter(
+            Q(infractiuni__adresa_comiterii__icontains=q_lower) |
+            Q(infractiuni__adresa_comiterii__icontains=q_upper) |
+            Q(infractiuni__adresa_comiterii__icontains=q_title) |
+            
+            Q(infractiuni__incadrare_juridica__icontains=q_lower) |
+            Q(infractiuni__incadrare_juridica__icontains=q_upper) |
+            Q(infractiuni__incadrare_juridica__icontains=q_title) |
+            
+            Q(infractiuni__articol__icontains=query_text) |
+            Q(infractiuni__act_normativ__in=chei_acte_normative) # <--- Găsește dosarele după cod (ex: "penal" -> CP)
+        ).distinct()
+        
+        toate_dosarele_gasite = (dosare_gasite | dosare_din_infractiuni).distinct().order_by('-data_inregistrarii')
+        
+        # C. Căutăm în Părți Implicate
+        persoane_gasite = ParteImplicata.objects.filter(
+            Q(nume_complet__icontains=q_lower) |
+            Q(nume_complet__icontains=q_upper) |
+            Q(nume_complet__icontains=q_title) |
+            Q(cnp__icontains=query_text) |
+            Q(adresa__icontains=q_lower) |
+            Q(adresa__icontains=q_upper) |
+            Q(adresa__icontains=q_title) |
+            Q(mentiuni__icontains=q_lower) |
+            Q(mentiuni__icontains=q_upper) |
+            Q(mentiuni__icontains=q_title)
+        ).select_related('dosar').order_by('nume_complet')
+
+        # D. Căutăm în Documente/Acte Urmărire
+        documente_gasite = ActUrmarire.objects.filter(
+            Q(titlu__icontains=q_lower) |
+            Q(titlu__icontains=q_upper) |
+            Q(titlu__icontains=q_title) |
+            Q(descriere_scurta__icontains=q_lower) |
+            Q(descriere_scurta__icontains=q_upper) |
+            Q(descriere_scurta__icontains=q_title)
+        ).select_related('dosar').order_by('-data_incarcarii')
+
+        # E. Căutăm în Măsuri Preventive (NOU)
+        masuri_gasite = MasuraPreventiva.objects.filter(
+            Q(tip_masura__in=chei_masuri) | # Dacă a căutat "arest", "reținere" etc.
+            Q(parte__nume_complet__icontains=q_lower) | # Sau dacă a căutat numele persoanei arestate
+            Q(parte__nume_complet__icontains=q_upper) |
+            Q(parte__nume_complet__icontains=q_title)
+        ).select_related('dosar', 'parte').order_by('-data_inceput')
+
+        # Trimitem rezultatele către HTML
+        context.update({
+            'mod_cautare': True,
+            'dosare_gasite': toate_dosarele_gasite,
+            'persoane_gasite': persoane_gasite,
+            'documente_gasite': documente_gasite,
+            'masuri_gasite': masuri_gasite, # <--- Am adăugat noua listă
+            'total_rezultate': toate_dosarele_gasite.count() + persoane_gasite.count() + documente_gasite.count() + masuri_gasite.count()
+        })
+
+    # ==========================================
+    # MODULUL STANDARD (Afișarea Listei, dacă nu a căutat)
+    # ==========================================
+    else:
+        dosare = Dosar.objects.all().order_by('-data_inregistrarii')
+        
+        # Lăsăm filtrul de stadiu (cel din dropdown, dacă există)
+        if stadiu_filtru:
+            pass # Aici vom interveni mai târziu dacă vrei să filtrezi dosarele by default după stadiul din istoric
+
+        paginator = Paginator(dosare, 10) # Am pus 10 dosare pe pagină
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)  
+
+        context.update({
+            'mod_cautare': False,
+            'page_obj': page_obj,
+        })
+        
     return render(request, 'cases/lista_dosare.html', context)
 
 @login_required
