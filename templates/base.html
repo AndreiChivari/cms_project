@@ -31,27 +31,27 @@
                     <ul class="navbar-nav me-auto mb-2 mb-xl-0 gap-1 align-items-xl-center" style="font-size: 0.95rem;">  
                         <li class="nav-item">
                             <a class="nav-link px-2 px-xxl-3 transition-base text-white {% if request.resolver_match.url_name == 'dashboard' %}active fw-bold{% else %}opacity-75 hover-opacity-100 fw-medium{% endif %}" href="{% url 'cases:dashboard' %}">
-                                <i class="bi bi-speedometer"></i> Pagina principală
+                                <i class="bi bi-speedometer2"></i> Pagina principală
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link px-2 px-xxl-3 transition-base text-white {% if request.resolver_match.url_name == 'lista_dosare' or request.resolver_match.url_name == 'detalii_dosar' %}active fw-bold{% else %}opacity-75 hover-opacity-100 fw-medium{% endif %}" href="{% url 'cases:lista_dosare' %}">
-                                Registru dosare
+                                <i class="bi bi-folder2-open"></i> Registru dosare
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link px-2 px-xxl-3 transition-base text-white {% if request.resolver_match.url_name == 'adaugare_dosar' %}active fw-bold{% else %}opacity-75 hover-opacity-100 fw-medium{% endif %}" href="{% url 'cases:adaugare_dosar' %}">
-                                Adaugă dosar
+                                <i class="bi bi-plus-circle"></i> Adaugă dosar
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link px-2 px-xxl-3 transition-base text-white {% if request.resolver_match.url_name == 'rapoarte' %}active fw-bold{% else %}opacity-75 hover-opacity-100 fw-medium{% endif %}" href="{% url 'cases:rapoarte' %}">
-                                Rapoarte
+                                <i class="bi bi-file-earmark-bar-graph"></i> Rapoarte
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link px-2 px-xxl-3 transition-base text-white {% if request.resolver_match.url_name == 'harta' %}active fw-bold{% else %}opacity-75 hover-opacity-100 fw-medium{% endif %}" href="{% url 'cases:harta' %}">
-                                Harta Infracționalității
+                                <i class="bi bi-geo-alt-fill"></i> Harta Infracționalității
                             </a>
                         </li>
                         <li class="nav-item">
