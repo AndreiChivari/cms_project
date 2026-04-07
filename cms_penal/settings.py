@@ -33,6 +33,7 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -167,3 +168,47 @@ LOGIN_URL = 'login'
 
 # Închidem sesiunea după ce închidem browserul pentru a nu ne păstra logaţi
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+# ==========================================
+# CONFIGURARE JAZZMIN (TEMA ADMIN)
+# ==========================================
+JAZZMIN_SETTINGS = {
+    "site_title": "CMS Penal Admin",
+    "site_header": "Registrul Dosarelor",
+    "site_brand": "Admin",
+    "welcome_sign": "Autentificare Sistem Gestiune Dosare",
+    "copyright": "Proiect Licență",
+    
+    # Căutare globală rapidă direct din bara de sus a adminului
+    "search_model": ["cases.Dosar", "accounts.CustomUser"],
+    
+    # Meniu lateral
+    "show_sidebar": True,
+    "navigation_expanded": True,
+    
+    # Iconițe (Folosește FontAwesome pentru tabele)
+    "icons": {
+        "auth": "fas fa-users-cog",
+        "accounts.CustomUser": "fas fa-user-shield",
+        "cases.Dosar": "fas fa-folder-open",
+        "cases.ParteImplicata": "fas fa-users",
+        "cases.Infractiune": "fas fa-gavel",
+        "cases.MasuraPreventiva": "fas fa-lock",
+        "documents.ActUrmarire": "fas fa-file-alt",
+        "simple_history.historicaldosar": "fas fa-history",
+    },
+    
+    # Afișează un buton jos în admin care îți permite să schimbi culorile live!
+    "show_ui_builder": True,
+}
+
+JAZZMIN_UI_TWEAKS = {
+    # Trecem la o temă luminoasă, plată și foarte curată
+    "theme": "flatly", 
+    
+    # Adăugăm un buton în meniul de sus ca să poți comuta manual între Zi / Noapte!
+    "button_classes": {
+        "primary": "btn-primary",
+        "secondary": "btn-secondary",
+    }
+}

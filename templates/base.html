@@ -8,18 +8,16 @@
     <title>{% block title %}CMS Urmărire Penală{% endblock %}</title>
     
     <link href="{% sass_src 'scss/main.scss' %}" rel="stylesheet" type="text/css" />
-    
     <link rel="stylesheet" href="{% static 'icons/bootstrap-icons.css' %}">
-
     <link rel="icon" type="image/png" sizes="64x64" href="{% static 'images/favicon-logo-96px.png' %}">
 </head>
 <body class="bg-light" style="min-height: 100vh; display: flex; flex-direction: column;">
     {% block header %}
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary bg-gradient mb-4 shadow-sm border-bottom border-3 border-secondary border-opacity-25">
-            <div class="container-xl h-100"> <a class="navbar-brand fw-bold text-white d-flex align-items-center me-4 h-100" href="{% url 'cases:dashboard' %}">
+    <nav class="navbar navbar-expand-xl navbar-dark bg-primary bg-gradient mb-4 shadow-sm border-bottom border-3 border-secondary border-opacity-25">
+            <div class="container-fluid px-3 px-xxl-5 h-100"> 
+                <a class="navbar-brand fw-bold text-white d-flex align-items-center me-3 h-100" href="{% url 'cases:dashboard' %}">
                     <span class="d-flex align-items-center gap-2">
                         <img src="{% static 'images/logo_login.png' %}" alt="Logo" class="navbar-logo">
-                        <!-- <span class="fs-5 letter-spacing-1" style="transform: translateY(1px);">CMS PENAL</span> -->
                     </span>
                 </a>
             
@@ -30,48 +28,48 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 {% if user.is_authenticated %}
                     
-                    <ul class="navbar-nav me-auto mb-2 mb-lg-0 gap-1 align-items-lg-center">  
+                    <ul class="navbar-nav me-auto mb-2 mb-xl-0 gap-1 align-items-xl-center" style="font-size: 0.95rem;">  
                         <li class="nav-item">
-                            <a class="nav-link px-3 fw-medium text-white opacity-75 hover-opacity-100 transition-base" href="{% url 'cases:dashboard' %}">
-                                Pagina principală
+                            <a class="nav-link px-2 px-xxl-3 transition-base text-white {% if request.resolver_match.url_name == 'dashboard' %}active fw-bold{% else %}opacity-75 hover-opacity-100 fw-medium{% endif %}" href="{% url 'cases:dashboard' %}">
+                                <i class="bi bi-speedometer"></i> Pagina principală
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link px-3 fw-medium text-white opacity-75 hover-opacity-100 transition-base" href="{% url 'cases:lista_dosare' %}">
+                            <a class="nav-link px-2 px-xxl-3 transition-base text-white {% if request.resolver_match.url_name == 'lista_dosare' or request.resolver_match.url_name == 'detalii_dosar' %}active fw-bold{% else %}opacity-75 hover-opacity-100 fw-medium{% endif %}" href="{% url 'cases:lista_dosare' %}">
                                 Registru dosare
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link px-3 fw-medium text-white opacity-75 hover-opacity-100 transition-base" href="{% url 'cases:adaugare_dosar' %}">
+                            <a class="nav-link px-2 px-xxl-3 transition-base text-white {% if request.resolver_match.url_name == 'adaugare_dosar' %}active fw-bold{% else %}opacity-75 hover-opacity-100 fw-medium{% endif %}" href="{% url 'cases:adaugare_dosar' %}">
                                 Adaugă dosar
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link px-3 fw-medium text-white opacity-75 hover-opacity-100 transition-base" href="{% url 'cases:rapoarte' %}">
+                            <a class="nav-link px-2 px-xxl-3 transition-base text-white {% if request.resolver_match.url_name == 'rapoarte' %}active fw-bold{% else %}opacity-75 hover-opacity-100 fw-medium{% endif %}" href="{% url 'cases:rapoarte' %}">
                                 Rapoarte
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link px-3 fw-medium text-white opacity-75 hover-opacity-100 transition-base" href="{% url 'cases:harta' %}">
+                            <a class="nav-link px-2 px-xxl-3 transition-base text-white {% if request.resolver_match.url_name == 'harta' %}active fw-bold{% else %}opacity-75 hover-opacity-100 fw-medium{% endif %}" href="{% url 'cases:harta' %}">
                                 Harta Infracționalității
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'graf_relational' %}active fw-bold{% endif %}" href="{% url 'cases:graf_relational' %}">
-                                <i class="bi bi-diagram-3-fill me-1"></i> Analiză Relațională
+                            <a class="nav-link px-2 px-xxl-3 transition-base text-white {% if request.resolver_match.url_name == 'graf_relational' %}active fw-bold{% else %}opacity-75 hover-opacity-100 fw-medium{% endif %}" href="{% url 'cases:graf_relational' %}">
+                                <i class="bi bi-diagram-3-fill me-1"></i> Analiza relațională
                             </a>
                         </li>
                         {% if user.is_staff %}
-                        <li class="nav-item ms-lg-2 ps-lg-3 border-start border-light border-opacity-25 d-none d-lg-block h-50 my-auto"></li>
+                        <li class="nav-item ms-xl-1 ps-xl-2 border-start border-light border-opacity-25 d-none d-xl-block h-50 my-auto"></li>
                         <li class="nav-item">
-                            <a class="nav-link px-3 fw-medium text-warning opacity-75 hover-opacity-100 transition-base d-flex align-items-center gap-1" href="/admin/" target="_blank">
+                            <a class="nav-link px-2 px-xxl-3 fw-medium text-warning opacity-75 hover-opacity-100 transition-base d-flex align-items-center gap-1" href="/admin/" target="_blank">
                                 <i class="bi bi-gear-fill"></i> Administrare
                             </a>
                         </li>
                         {% endif %}
                     </ul>
 
-                    <div class="d-flex align-items-center gap-3 mt-3 mt-lg-0">
+                    <div class="d-flex align-items-center gap-2 gap-xl-3 mt-3 mt-xl-0">
                         
                         <div class="nav-item dropdown">
                             <a class="nav-link position-relative text-white opacity-75 hover-opacity-100 p-1" href="#" id="notificariDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="margin-top: 2px;">
@@ -126,10 +124,12 @@
 
                         <div class="d-flex align-items-center border-start border-light border-opacity-25 ps-3">
                             <div class="d-none d-md-flex align-items-center gap-2 me-3">
-                                <div class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 32px; height: 32px;">
+                                <div class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 32px; height: 32px; flex-shrink: 0;">
                                     <span class="fw-bold" style="font-size: 0.85rem;">{{ user.first_name|slice:":1"|default:user.username|slice:":1"|upper }}</span>
                                 </div>
-                                <span class="text-white fw-medium" style="font-size: 0.9rem; letter-spacing: 0.3px;">{{ user.get_full_name|default:user.username }}</span>
+                                <span class="text-white fw-medium text-truncate" style="font-size: 0.9rem; letter-spacing: 0.3px; max-width: 130px;" title="{{ user.get_full_name|default:user.username }}">
+                                    {{ user.get_full_name|default:user.username }}
+                                </span>
                             </div>
                             
                             <form action="{% url 'logout' %}" method="post" class="m-0">
@@ -154,7 +154,7 @@
     </nav>
     {% endblock header %}
 
-    <main class="container-xl flex-grow-1">
+    <main class="container-fluid px-md-4 px-xl-5 flex-grow-1" style="max-width: 1600px;">
         {% block content %}
         {% endblock %}
     </main>
