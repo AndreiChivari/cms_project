@@ -3,7 +3,7 @@ from django.conf import settings
 from django.shortcuts import render, get_object_or_404, redirect
 from urllib3 import request
 from .models import Dosar, ParteImplicata, Infractiune, MasuraPreventiva, IstoricDesemnare, StadiuCercetare, SolutieDosar, Notificare
-from documents.forms import DocumentForm # Importăm formularul nou creat
+from documents.forms import DocumentForm 
 from .forms import DosarForm, ParteImplicataForm, CreareDosarForm, InfractiuneForm, MasuraPreventivaForm, StadiuCercetareForm, SolutieDosarForm
 from documents.models import ActUrmarire
 from django.contrib.auth.decorators import login_required
@@ -11,11 +11,11 @@ from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.core.paginator import Paginator
 from .utils import render_to_pdf
-from django.http import HttpResponse # Adaugă și asta dacă nu există
-from django.conf import settings # <--- Adaugă și asta sus la importuri
-from datetime import datetime, date, timedelta # folosim pentru calculul alertelor
-from django.urls import reverse # folosim pentru a genera link-urile automate către dosare
-from django.http import JsonResponse # folosim JavaScript (AJAX) pentru a sterge notificarile fara a da click pe ele si a nu reîncărca pagina
+from django.http import HttpResponse
+from django.conf import settings 
+from datetime import datetime, date, timedelta # calculul alertelor
+from django.urls import reverse # link-urile automate către dosare
+from django.http import JsonResponse # folosim JavaScript pentru a sterge notificarile fara a da click pe ele si a nu reîncărca pagina
 from django.contrib.auth import get_user_model
 import io
 import openpyxl
@@ -50,7 +50,6 @@ def dashboard(request):
     # 2. STATISTICI PERSONALE
     if utilizator.is_superuser or getattr(utilizator, 'rol', '') == 'ADMIN':
         dosare_mele = total_dosare
-        # Pentru admin, "dosarele mele" sunt toate
         dosare_solutionate = Dosar.objects.filter(stadii_cercetare__solutii__este_finala=True).distinct().count()
         dosare_in_lucru = total_dosare - dosare_solutionate
         
@@ -81,7 +80,7 @@ def dashboard(request):
         ).filter(conditie_mea).order_by('-data_inregistrarii')[:5]
 
     # 3. INDICATOR DE OPERATIVITATE / ÎNCĂRCĂTURĂ
-    # Calculăm câți utilizatori activi au dosare (pentru a afla media)
+    # Calculăm câți utilizatori activi au dosare pentru a afla media
     utilizatori_activi = User.objects.filter(
         Q(dosare_instrumentate__isnull=False) | 
         Q(dosare_supravegheate__isnull=False) | 
@@ -111,7 +110,7 @@ def dashboard(request):
 
     # 5. CONTEXT PENTRU HTML
     context = {
-        # Profile date
+
         'user_rol': getattr(utilizator, 'rol', 'Membru Echipă'),
         # Stats
         'total_dosare': total_dosare,
@@ -138,7 +137,7 @@ def adaugare_dosar(request):
         if form.is_valid():
             dosar = form.save()
 
-            # LOGICA: Creăm istoricul inițial
+            # Creăm istoricul inițial
             if dosar.ofiter_caz:
                 IstoricDesemnare.objects.create(dosar=dosar, utilizator=dosar.ofiter_caz, rol='Ofițer', data_desemnare=dosar.data_inregistrarii)
             if dosar.procuror_caz:
@@ -146,9 +145,7 @@ def adaugare_dosar(request):
             if dosar.grefier_caz:
                 IstoricDesemnare.objects.create(dosar=dosar, utilizator=dosar.grefier_caz, rol='Grefier', data_desemnare=dosar.data_inregistrarii)
 
-            # ==========================================
-            # LOGICA NOUĂ: Notificări la Crearea Dosarului
-            # ==========================================
+            # Notificări la Crearea Dosarului
             link_dosar = reverse('cases:detalii_dosar', args=[dosar.pk])
             mesaj_nou = f"Ai fost desemnat pe dosarul nou {dosar.numar_unic}."
             
@@ -178,9 +175,7 @@ def lista_dosare(request):
         'stadiu_filtru': stadiu_filtru,
     }
 
-    # ==========================================
-    # MODULUL DE CĂUTARE GLOBALĂ (Dacă a căutat ceva)
-    # ==========================================
+    # MODULUL DE CĂUTARE GLOBALĂ (Dacă utilizatorul a căutat ceva)
     if query_text:
         # TRUC PENTRU DIACRITICE ÎN SQLITE:
         # Generăm 3 variante ale textului pentru a ocoli limitarea SQLite privind majusculele Unicode (ă, î, ș, ț, â)
@@ -188,7 +183,6 @@ def lista_dosare(request):
         q_upper = query_text.upper()
         q_title = query_text.title()
 
-        # --- TRUC PENTRU CÂMPURILE 'CHOICES' (Act Normativ și Măsuri) ---
         # 1. Căutăm cuvântul în etichetele Actelor Normative și extragem CHEILE (ex: 'CP')
         chei_acte_normative = [
             cheie for cheie, eticheta in Infractiune.ActNormativ.choices
@@ -209,7 +203,7 @@ def lista_dosare(request):
             Q(infractiune_cercetata__icontains=q_title)
         ).distinct()
 
-        # B. Căutăm prin modelul de Infracțiune (AM ADĂUGAT ACTUL NORMATIV)
+        # B. Căutăm prin modelul de Infracțiune
         dosare_din_infractiuni = Dosar.objects.filter(
             Q(infractiuni__adresa_comiterii__icontains=q_lower) |
             Q(infractiuni__adresa_comiterii__icontains=q_upper) |
@@ -249,10 +243,10 @@ def lista_dosare(request):
             Q(descriere_scurta__icontains=q_title)
         ).select_related('dosar').order_by('-data_incarcarii')
 
-        # E. Căutăm în Măsuri Preventive (NOU)
+        # E. Căutăm în Măsuri Preventive
         masuri_gasite = MasuraPreventiva.objects.filter(
-            Q(tip_masura__in=chei_masuri) | # Dacă a căutat "arest", "reținere" etc.
-            Q(parte__nume_complet__icontains=q_lower) | # Sau dacă a căutat numele persoanei arestate
+            Q(tip_masura__in=chei_masuri) | 
+            Q(parte__nume_complet__icontains=q_lower) | 
             Q(parte__nume_complet__icontains=q_upper) |
             Q(parte__nume_complet__icontains=q_title)
         ).select_related('dosar', 'parte').order_by('-data_inceput')
@@ -267,17 +261,14 @@ def lista_dosare(request):
             'total_rezultate': toate_dosarele_gasite.count() + persoane_gasite.count() + documente_gasite.count() + masuri_gasite.count()
         })
 
-    # ==========================================
     # MODULUL STANDARD (Afișarea Listei, dacă nu a căutat)
-    # ==========================================
     else:
         dosare = Dosar.objects.all().order_by('-data_inregistrarii')
         
-        # Lăsăm filtrul de stadiu (cel din dropdown, dacă există)
         if stadiu_filtru:
-            pass # Aici vom interveni mai târziu dacă vrei să filtrezi dosarele by default după stadiul din istoric
+            pass 
 
-        paginator = Paginator(dosare, 10) # Am pus 10 dosare pe pagină
+        paginator = Paginator(dosare, 10) # dosare afişate pe pagină
         page_number = request.GET.get('page')
         page_obj = paginator.get_page(page_number)  
 
@@ -297,7 +288,7 @@ def detalii_dosar(request, pk):
     
     form_document = DocumentForm()
     form_parte = ParteImplicataForm()
-    form_infractiune = InfractiuneForm() # <--- 1. INIȚIALIZĂM NOUL FORMULAR
+    form_infractiune = InfractiuneForm() 
 
     # 1. Inițializăm formularul NOU, dându-i ID-ul dosarului
     form_masura = MasuraPreventivaForm(dosar_id=dosar.pk)
@@ -324,9 +315,7 @@ def detalii_dosar(request, pk):
                 parte.dosar = dosar
                 parte.save()
                 
-                # =========================================================
-                # 2. INTEGRARE CROSS-MODULE: Salvăm poza ca Document
-                # =========================================================
+                # 2. Integrare între module: Salvăm poza ca Document
                 salveaza_doc = request.POST.get('salveaza_ca_document')
                 fisier_ci = request.FILES.get('fisier_copie_ci')
                 
@@ -343,7 +332,7 @@ def detalii_dosar(request, pk):
 
                 return redirect('cases:detalii_dosar', pk=dosar.pk)
             
-        # 2. LOGICA NOUĂ PENTRU SALVAREA INFRACȚIUNII
+        # 2. LOGICA PENTRU SALVAREA INFRACȚIUNII
         elif 'btn_salveaza_infractiune' in request.POST:
             form_infractiune = InfractiuneForm(request.POST)
             if form_infractiune.is_valid():
@@ -364,11 +353,11 @@ def detalii_dosar(request, pk):
 
     context = {
             'dosar': dosar,
-            'form_document': form_document, # sau cum le-ai numit
+            'form_document': form_document,
             'form_parte': form_parte,
-            'form_infractiune': form_infractiune, # <--- 3. TRIMITEM CĂTRE HTML
-            'form_masura': form_masura, # <--- 3. Îl trimitem către HTML
-            'poate_edita': poate_edita # <--- VERIFICĂ SĂ AI ACEASTĂ LINIE! Fără ea, HTML-ul crede că e False.
+            'form_infractiune': form_infractiune,
+            'form_masura': form_masura,
+            'poate_edita': poate_edita 
         }
     
     return render(request, 'cases/detalii_dosar.html', context)
@@ -389,19 +378,18 @@ def editare_dosar(request, pk):
     
     if request.method == 'POST':
         # request.POST conține noile date. 
-        # instance=dosar îi spune lui Django: "Nu crea un dosar nou, ci actualizează-l pe acesta!"
+        # instance=dosar încarcă dosarul existent în formular, iar request.POST îl actualizează cu noile valori.
         form = DosarForm(request.POST, instance=dosar)
         if form.is_valid():
-            # Preluăm data din noul câmp. Dacă grefierul a uitat să o pună, punem automat data de azi.
+            # Preluăm data din noul câmp. Dacă grutilizatorul nu a trecut-o punem automat data de azi.
             data_schimbare = form.cleaned_data.get('data_schimbare_echipa') or date.today()
             
             nou_dosar = form.save() # Salvăm dosarul cu noua echipă
 
-            # 2. Funcție internă care face schimbul curat pentru fiecare rol
-            # Funcție internă care face schimbul curat pentru fiecare rol
+            # Funcție internă care face schimbul pentru fiecare rol
             def actualizeaza_istoric(rol_nume, vechi_user, nou_user):
                 if vechi_user != nou_user:
-                    # Dacă exista cineva înainte, îi "închidem" mandatul
+                    # Dacă exista cineva înainte, îi închidem mandatul
                     if vechi_user:
                         IstoricDesemnare.objects.filter(
                             dosar=nou_dosar, utilizator=vechi_user, rol=rol_nume, data_finalizare__isnull=True
@@ -412,9 +400,8 @@ def editare_dosar(request, pk):
                         IstoricDesemnare.objects.create(
                             dosar=nou_dosar, utilizator=nou_user, rol=rol_nume, data_desemnare=data_schimbare
                         )
-                        # ==========================================
-                        # LOGICA NOUĂ: Notificare pt Noul Venit
-                        # ==========================================
+
+                        # Notificare pentru noul membru 
                         link_dosar = reverse('cases:detalii_dosar', args=[nou_dosar.pk])
                         Notificare.objects.create(
                             utilizator=nou_user, 
@@ -439,7 +426,6 @@ def editare_dosar(request, pk):
     }
     return render(request, 'cases/editare_dosar.html', context)
 
-# opțiunea unui buton "Șterge" în tabelul unde afișezi istoricul echipei.
 @login_required
 def stergere_istoric_echipa(request, pk):
     # 1. Preluăm înregistrarea din istoric
@@ -447,13 +433,6 @@ def stergere_istoric_echipa(request, pk):
     
     # 2. DEFINIM VARIABILA DOSAR (obiectul întreg, nu doar ID-ul)
     dosar = istoric.dosar
-    
-    # ==========================================
-    # SINCRONIZARE BAZĂ DE DATE
-    # Dacă persoana ștearsă este chiar membrul activ de pe dosar, 
-    # golim câmpul de pe dosar ca să-l putem re-adăuga mai târziu.
-    # ==========================================
-    # ATENȚIE: Verifică dacă rolurile tale se numesc fix așa ('Ofițer', 'Procuror', 'Grefier') în models.py
     
     # 3. SINCRONIZARE BAZĂ DE DATE
     if istoric.rol == 'Ofițer' and dosar.ofiter_caz == istoric.utilizator:
@@ -506,14 +485,13 @@ def stergere_parte(request, pk):
     parte = get_object_or_404(ParteImplicata, pk=pk)
     dosar_id = parte.dosar.pk
     
-    # SECURITATE:
-    # Corectură: Verificăm drepturile pe dosar
+    # Verificăm drepturile pe dosar
     if not parte.dosar.are_drepturi_editare(request.user) and not request.user.is_superuser:
         raise PermissionDenied("Nu ai permisiunea de a edita acest dosar.")
 
     # Pentru ștergere, este o bună practică să cerem confirmare printr-un formular POST
     if request.method == 'POST':
-        parte.delete() # Șterge efectiv din baza de date
+        parte.delete() # Șterge din baza de date
         return redirect('cases:detalii_dosar', pk=dosar_id)
         
     context = {'parte': parte}
@@ -528,7 +506,7 @@ def editare_document(request, pk):
         raise PermissionDenied("Nu ai permisiunea de a edita acest dosar.")
     
     if request.method == 'POST':
-        # ATENȚIE: request.FILES este obligatoriu aici pentru a putea schimba PDF-ul/Word-ul!
+        # request.FILES este obligatoriu aici pentru a putea schimba PDF-ul/Word-ul
         form = DocumentForm(request.POST, request.FILES, instance=document)
         if form.is_valid():
             form.save()
@@ -548,9 +526,7 @@ def stergere_document(request, pk):
         raise PermissionDenied("Nu ai permisiunea de a edita acest dosar.")
      
     if request.method == 'POST':
-        # TRUC PENTRU LICENȚĂ: Django șterge înregistrarea din baza de date, 
-        # dar în mod implicit NU șterge fișierul fizic de pe hard disk!
-        # Mai jos îi spunem să șteargă și fișierul fizic, dacă există.
+        # șteargem și fișierul fizic, dacă există
         if document.fisier:
             document.fisier.delete(save=False)
             
@@ -559,8 +535,6 @@ def stergere_document(request, pk):
         
     context = {'document': document}
     return render(request, 'cases/stergere_document.html', context)
-
-# ... restul funcțiilor tale (lista_dosare, detalii_dosar, dashboard etc.) rămân exact la fel ...
 
 @login_required
 def generare_pdf_dosar(request, pk):
@@ -590,11 +564,11 @@ def stergere_masura(request, pk):
     masura = get_object_or_404(MasuraPreventiva, pk=pk)
     dosar_id = masura.dosar.pk
     
-    # Securitate: Verificăm dacă utilizatorul are drepturi pe dosarul respectiv
+    # Verificăm dacă utilizatorul are drepturi pe dosarul respectiv
     if not masura.dosar.are_drepturi_editare(request.user) and not request.user.is_superuser:
         raise PermissionDenied("Nu ai permisiunea de a șterge date din acest dosar.")
         
-    # Dacă utilizatorul a apăsat "Da, șterge" (adică a trimis un POST)
+    # Dacă utilizatorul a apăsat "Da, șterge"
     if request.method == 'POST':
         masura.delete()
         return redirect('cases:detalii_dosar', pk=dosar_id)
@@ -706,7 +680,7 @@ def gestionare_stadii(request, pk):
             if form_stadiu.is_valid():
                 stadiu_salvat = form_stadiu.save()
                 
-                # LOGICĂ NOTIFICARE: Citim checkbox-ul
+                # NOTIFICARE: Citim checkbox-ul
                 if form_stadiu.cleaned_data.get('notifica_echipa'):
                     mesaj = f"{request.user.get_full_name() or request.user.username} a adăugat/modificat stadiul ({stadiu_salvat.get_tip_stadiu_display()}) pe dosarul {dosar.numar_unic}."
                     trimite_notificare_colaborare(mesaj)
@@ -729,7 +703,7 @@ def gestionare_stadii(request, pk):
             if form_solutie.is_valid():
                 sol_salvata = form_solutie.save()
                 
-                # LOGICĂ NOTIFICARE: Citim checkbox-ul
+                #  NOTIFICARE: Citim checkbox-ul
                 if form_solutie.cleaned_data.get('notifica_echipa'):
                     mesaj = f"{request.user.get_full_name() or request.user.username} a adăugat/modificat o soluție ({sol_salvata.get_tip_solutie_display()}) pe dosarul {dosar.numar_unic}."
                     trimite_notificare_colaborare(mesaj)
@@ -784,21 +758,18 @@ def sterge_notificare_ajax(request, pk):
 
 @login_required
 def generare_rapoarte(request):
-    # Optimizare: aducem și infractiunile pentru a nu bloca baza de date
     dosare = Dosar.objects.select_related('ofiter_caz', 'procuror_caz', 'grefier_caz').prefetch_related(
         'stadii_cercetare__solutii',
         'parti_implicate',
         'masuri_preventive',
-        'infractiuni' # <--- Adăugat pentru a încărca rapid articolele
+        'infractiuni' 
     ).all().distinct()
     
-    # 1. CAPTURĂM FILTRELE (Criteriile de căutare)
+    # 1. FILTRELE (Criteriile de căutare)
     data_inreg_start = request.GET.get('data_inreg_start')
     data_inreg_end = request.GET.get('data_inreg_end')
     procuror_id = request.GET.get('procuror')
     ofiter_id = request.GET.get('ofiter')
-    
-    # Filtre noi:
     act_normativ = request.GET.get('act_normativ')
     articol = request.GET.get('articol')
     stadiu = request.GET.get('stadiu')
@@ -813,8 +784,6 @@ def generare_rapoarte(request):
         dosare = dosare.filter(procuror_caz_id=procuror_id)
     if ofiter_id:
         dosare = dosare.filter(ofiter_caz_id=ofiter_id)
-        
-    # Aplicăm filtrele noi navigând prin relații
     if act_normativ:
         dosare = dosare.filter(infractiuni__act_normativ=act_normativ)
     if articol:
@@ -824,7 +793,7 @@ def generare_rapoarte(request):
     if solutie:
         dosare = dosare.filter(stadii_cercetare__solutii__tip_solutie=solutie)
 
-    # 2. CAPTURĂM COLOANELE SELECTATE PENTRU AFIȘARE
+    # 2. COLOANELE SELECTATE PENTRU AFIȘARE
     def is_checked(nume_camp, implicit=False):
         if not request.GET: 
             return implicit
@@ -833,11 +802,8 @@ def generare_rapoarte(request):
     coloane = {
         'col_numar': is_checked('col_numar', True),
         'col_data_inreg': is_checked('col_data_inreg', True),
-        
-        # Am separat cele două concepte aici:
         'col_situatie_fapt': is_checked('col_situatie_fapt', True), 
-        'col_incadrare': is_checked('col_incadrare', True),
-        
+        'col_incadrare': is_checked('col_incadrare', True),  
         'col_ofiter': is_checked('col_ofiter', True),
         'col_procuror': is_checked('col_procuror', True),
         'col_stadiu_curent': is_checked('col_stadiu_curent', True),
@@ -848,9 +814,7 @@ def generare_rapoarte(request):
         'col_masuri': is_checked('col_masuri', False),
     }
 
-    # ==========================================
-    # LOGICA DE EXPORT EXCEL NATIV (.XLSX)
-    # ==========================================
+    # EXPORT EXCEL (.XLSX)
     if 'export_excel' in request.GET:
         # 1. Creăm un fișier Excel în memorie
         wb = openpyxl.Workbook()
@@ -888,7 +852,7 @@ def generare_rapoarte(request):
         for dosar in dosare:
             row = []
             
-            # 1. Folosim noile proprietăți inteligente pentru a lua mereu STAREA LA ZI
+            # 1. Folosim proprietățile pentru a lua mereu STAREA LA ZI
             stadiu = dosar.stadiu_curent
             solutie = dosar.solutie_curenta
             
@@ -932,7 +896,7 @@ def generare_rapoarte(request):
                 
             ws.append(row)
             
-        # 4. Ajustăm lățimea coloanelor automat pentru a arăta bine
+        # 4. Ajustăm lățimea coloanelor automat
         for col in ws.columns:
             max_length = 0
             column_letter = col[0].column_letter
@@ -958,7 +922,6 @@ def generare_rapoarte(request):
         response['Content-Disposition'] = f'attachment; filename="Raport_Dosare_{datetime.now().strftime("%Y-%m-%d")}.xlsx"'
         
         return response
-    # ==========================================
 
     # Extragem opțiunile din modele pentru a popula automat dropdown-urile din HTML
     context = {
@@ -983,7 +946,6 @@ def harta_infractionalitatii(request):
     # luăm datele cu numele lor reale din baza de date:
     for inf in infractiuni:
         date_harta.append({
-            # 'Nume nou pentru JS' : 'Nume real din baza de date Django'
             'lat': inf.latitudine,
             'lng': inf.longitudine,
             'dosar': inf.dosar.numar_unic,
@@ -996,14 +958,13 @@ def harta_infractionalitatii(request):
         })
         
     context = {
-        # Transformăm lista în format JSON sigur pentru HTML
+        # Transformăm lista în format JSON pentru HTML
         'date_harta_json': json.dumps(date_harta)
     }
     
     return render(request, 'cases/harta.html', context)
 
-# --- SETARE CRITICĂ PENTRU WINDOWS ---
-# Spunem Python-ului unde se află executabilul pe care tocmai l-ai instalat
+# Calea către executabilul Tesseract
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 @csrf_exempt  # Dezactivăm temporar protecția CSRF doar pentru acest test
@@ -1036,17 +997,16 @@ def test_ocr_api(request):
             if cnp_match:
                 date_extrase['cnp'] = cnp_match.group(0)
 
-            # 2 & 3. Căutăm Seria și Numărul (Împreună)
-            # Explicație: Caută (opțional) eticheta "ID:", urmată de 2 litere (Grupul 1), 
+            # 2 şi 3. Căutăm Seria și Numărul (Împreună)
+            # Caută (opțional) eticheta "ID:", urmată de 2 litere (Grupul 1), 
             # spații opționale, și fix 6 cifre (Grupul 2).
-            # Astfel, "CARTE DE IDENTITATE" este ignorat complet, pentru că "DE" nu este urmat de 6 cifre.
             serie_numar_match = re.search(r'(?:ID:\s*)?([A-Z]{2})\s*(\d{6})', text_brut, re.IGNORECASE)
             
             if serie_numar_match:
-                date_extrase['serie'] = serie_numar_match.group(1).upper()  # ZV
-                date_extrase['numar'] = serie_numar_match.group(2)          # 987987
+                date_extrase['serie'] = serie_numar_match.group(1).upper()  
+                date_extrase['numar'] = serie_numar_match.group(2)          
                 
-            # 2. Funcție de curățare a numelor (ACUM CU REGULA VOCALEI)
+            # 2. Funcție de curățare a numelor (CU REGULA VOCALEI)
             def curata_nume(text):
                 if not text: return ""
                 # Extragem cuvintele de minim 2 litere (majuscule)
@@ -1054,8 +1014,8 @@ def test_ocr_api(request):
                 cuvinte_valide = []
                 
                 for cuvant in cuvinte_brute:
-                    # REGULA VOCALEI: Dacă acel cuvânt are cel puțin o vocală, e nume valid!
-                    # Astfel, artefacte ca 'LL', 'XX', 'M' vor fi aruncate automat.
+                    # Dacă acel cuvânt are cel puțin o vocală, e nume valid
+                    # Astfel, construcţii ca 'LL', 'XX', 'M' nu vor fi acceptate
                     if re.search(r'[AEIOUĂÎÂ]', cuvant):
                         cuvinte_valide.append(cuvant)
                         
@@ -1072,11 +1032,11 @@ def test_ocr_api(request):
                 
             date_extrase['nume_complet'] = nume_final.strip()
             
-            # 3. Căutăm și Curățăm Adresa/Domiciliul
+            # 3. Căutăm și curățăm Adresa/Domiciliul
             adresa_match = re.search(r'(?:ADRESA|DOMICILIU):\s*([^\n]+)', text_brut, re.IGNORECASE)
             if adresa_match:
                 adresa_bruta = adresa_match.group(1).strip()
-                # Eliminăm literele mici izolate (ex: acel 'i' rătăcit din 'i OV')
+                # Eliminăm literele mici izolate 
                 adresa_curata = re.sub(r'\b[a-z]\b', '', adresa_bruta)
                 # Eliminăm spațiile duble rezultate
                 adresa_curata = re.sub(r'\s+', ' ', adresa_curata).strip()
@@ -1113,7 +1073,6 @@ def date_graf_relational(request):
     # ==========================================
     dosare = Dosar.objects.all().prefetch_related('stadii_cercetare')
     for d in dosare:
-        # Folosim proprietatea ta pentru a afla stadiul
         stadiu = d.stadiu_curent
         nume_stadiu = stadiu.get_tip_stadiu_display() if stadiu else "În lucru"
 
@@ -1135,12 +1094,11 @@ def date_graf_relational(request):
     parti = ParteImplicata.objects.select_related('dosar').all()
     
     # Folosim un dicționar pentru a păstra persoanele și toate calitățile lor
-    # Cheia va fi ID-ul unic (CNP sau Nume), Valoarea va fi un dicționar cu Nume și Lista de calități
+    # Cheia va fi ID-ul unic (CNP sau Nume), caloarea va fi un dicționar cu Nume și Lista de calități
     persoane_unice = {}
     
     for parte in parti:
-        # LOGICA DE FUZIUNE: Cum identificăm unic o persoană?
-        # Dacă are CNP, e perfect, CNP-ul e unic.
+        # Identificarea unică a unei persoane. Dacă are CNP, e unic.
         # Dacă nu are CNP, folosim numele lui transformat cu majuscule și fără spații (ex: ION_POPESCU)
         if parte.cnp:
             nod_id = f'pers_cnp_{parte.cnp}'
@@ -1189,6 +1147,6 @@ def date_graf_relational(request):
         
     return JsonResponse({'nodes': nodes, 'edges': edges})
 
-# Iar aceasta este funcția simplă care doar va deschide pagina HTML a Grafului
+# Funcția simplă care va deschide pagina HTML a Grafului
 def graf_relational(request):
     return render(request, 'cases/graf_relational.html')

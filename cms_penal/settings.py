@@ -43,7 +43,7 @@ INSTALLED_APPS = [
     'accounts',
     'cases',
     'documents',
-    'simple_history', # <--- ADĂUGAT PENTRU AUDIT
+    'simple_history', # pentru audit (istoric modificări)
     'sass_processor', # leaga codul sass in Django
 ]
 
@@ -55,7 +55,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'simple_history.middleware.HistoryRequestMiddleware', # <--- ADĂUGAT PENTRU AUDIT (prinde utilizatorul automat)
+    'simple_history.middleware.HistoryRequestMiddleware', # pentru a înregistra cine a făcut modificări în istoric
 ]
 
 ROOT_URLCONF = 'cms_penal.urls'
@@ -127,7 +127,7 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-# Aici se vor aduna fișierele pentru producție (LXC) când vei rula "collectstatic"
+# Folderul care va conține fișierele pentru producție (LXC) după rularea "collectstatic"
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Django va căuta fișiere (fonturi, imagini) în acest folder
@@ -145,7 +145,7 @@ STATICFILES_FINDERS = [
     'sass_processor.finders.CssFinder',
 ]
 
-# Locul unde django-sass-processor va salva fișierele .css după ce le compilează "din mers"
+# Locul unde django-sass-processor va salva fișierele .css după ce le compilează din .scss
 SASS_PROCESSOR_ROOT = BASE_DIR / 'static'
 
 # Specificăm modelul de utilizator personalizat
@@ -157,13 +157,13 @@ MEDIA_URL = '/media/'
 # Locația fizică de pe disc unde se vor salva fișierele
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# După un login cu succes, mergem la dashboard!
+# După un login cu succes, mergem pe dashboard!
 LOGIN_REDIRECT_URL = 'cases:dashboard'
 
 # După deconectare, ne întoarcem la pagina de login
 LOGOUT_REDIRECT_URL = 'login'
 
-# SPUNEM LUI DJANGO UNDE SĂ TRIMITĂ UTILIZATORII NEAUTENTIFICAȚI:
+# Dacă încercăm să accesăm o pagină care necesită autentificare, dar nu suntem logați, vom fi redirecționați către pagina de login.
 LOGIN_URL = 'login'
 
 # Închidem sesiunea după ce închidem browserul pentru a nu ne păstra logaţi
@@ -198,15 +198,13 @@ JAZZMIN_SETTINGS = {
         "simple_history.historicaldosar": "fas fa-history",
     },
     
-    # Afișează un buton jos în admin care îți permite să schimbi culorile live!
+    # Buton plasat jos în panoul admin care permite schimbarea culorilor live
     "show_ui_builder": True,
 }
 
 JAZZMIN_UI_TWEAKS = {
-    # Trecem la o temă luminoasă, plată și foarte curată
     "theme": "flatly", 
     
-    # Adăugăm un buton în meniul de sus ca să poți comuta manual între Zi / Noapte!
     "button_classes": {
         "primary": "btn-primary",
         "secondary": "btn-secondary",

@@ -1,7 +1,7 @@
 from django.urls import path
 from . import views
 
-app_name = 'cases' # Util pentru a genera linkuri dinamice mai târziu
+app_name = 'cases' # pentru a genera linkuri dinamice 
 
 urlpatterns = [
     # Adăugăm ruta pentru dashboard
@@ -11,24 +11,24 @@ urlpatterns = [
     path('', views.lista_dosare, name='lista_dosare'),
 
     # Ruta pentru ADAUGARE
-    path('adauga/', views.adaugare_dosar, name='adaugare_dosar'), # <--- RUTA NOUĂ AICI
+    path('adauga/', views.adaugare_dosar, name='adaugare_dosar'),
 
-    # Ruta NOUĂ pentru detaliile unui singur dosar
-    # <int:pk> îi spune lui Django să aștepte un număr întreg (Primary Key) în URL
+    # Ruta  pentru detaliile unui singur dosar
+    # <int:pk> - (Primary Key) în URL
     path('<int:pk>/', views.detalii_dosar, name='detalii_dosar'),
 
-    # RUTA NOUĂ PENTRU PDF:
+    # RUTA PENTRU PDF
     path('<int:pk>/pdf/', views.generare_pdf_dosar, name='generare_pdf_dosar'),
 
-    # Ruta NOUĂ pentru editare: ex. /cases/1/editeaza/
+    # Ruta pentru editare: ex. /cases/1/editeaza/
     path('<int:pk>/editeaza/', views.editare_dosar, name='editare_dosar'),
 
-    # Rutele NOI pentru Părți Implicate
-    # Observă că aici folosim ID-ul persoanei (pk), nu al dosarului
+    # Rutele pentru Părți Implicate
+
     path('parte/<int:pk>/editeaza/', views.editare_parte, name='editare_parte'),
     path('parte/<int:pk>/sterge/', views.stergere_parte, name='stergere_parte'),
 
-    # Rutele NOI pentru Documente
+    # Rutele pentru Documente
     path('document/<int:pk>/editeaza/', views.editare_document, name='editare_document'),
     path('document/<int:pk>/sterge/', views.stergere_document, name='stergere_document'),
 
@@ -64,7 +64,7 @@ urlpatterns = [
     # Ruta pentru interfața grafică (pagina HTML)
     path('test-ocr/', views.pagina_test_ocr, name='pagina_test_ocr'),
 
-    # Ruta pentru Analiza Relațională (Graful)
+    # Ruta pentru Analiza Relațională
     path('analiza-conexiuni/', views.graf_relational, name='graf_relational'),
     path('api/graf-relational/', views.date_graf_relational, name='api_graf_relational'),
 ]

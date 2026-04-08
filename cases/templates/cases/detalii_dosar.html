@@ -159,10 +159,12 @@
                                         <span class="text-muted small me-2">
                                             {{ istoric.data_desemnare|date:"d.m.y" }} - {% if istoric.data_finalizare %}{{ istoric.data_finalizare|date:"d.m.y" }}{% else %}<span class="text-success fw-bold">Prezent</span>{% endif %}
                                         </span>
+                                        {% if poate_edita %}
                                         <a href="{% url 'cases:stergere_istoric_echipa' istoric.pk %}" 
                                             class="text-danger text-opacity-50 hover-text-danger text-decoration-none px-1" 
                                             onclick="return confirm('Ștergi acest ofițer din istoric?');"
                                             style="font-size: 1.1rem; line-height: 1;">&times;</a>
+                                        {% endif %}
                                     </div>
                                 </div>
                             {% endif %}
@@ -194,10 +196,12 @@
                                         <span class="text-muted small me-2">
                                             {{ istoric.data_desemnare|date:"d.m.y" }} - {% if istoric.data_finalizare %}{{ istoric.data_finalizare|date:"d.m.y" }}{% else %}<span class="text-success fw-bold">Prezent</span>{% endif %}
                                         </span>
+                                        {% if poate_edita %}
                                         <a href="{% url 'cases:stergere_istoric_echipa' istoric.pk %}" 
                                             class="text-danger text-opacity-50 hover-text-danger text-decoration-none px-1" 
                                             onclick="return confirm('Ștergi acest procuror din istoric?');"
                                             style="font-size: 1.1rem; line-height: 1;">&times;</a>
+                                        {% endif %}
                                     </div>
                                 </div>
                             {% endif %}
@@ -229,10 +233,12 @@
                                         <span class="text-muted small me-2">
                                             {{ istoric.data_desemnare|date:"d.m.y" }} - {% if istoric.data_finalizare %}{{ istoric.data_finalizare|date:"d.m.y" }}{% else %}<span class="text-success fw-bold">Prezent</span>{% endif %}
                                         </span>
+                                        {% if poate_edita %}
                                         <a href="{% url 'cases:stergere_istoric_echipa' istoric.pk %}" 
                                             class="text-danger text-opacity-50 hover-text-danger text-decoration-none px-1" 
                                             onclick="return confirm('Ștergi acest grefier din istoric?');"
                                             style="font-size: 1.1rem; line-height: 1;">&times;</a>
+                                        {% endif %}
                                     </div>
                                 </div>
                             {% endif %}

@@ -229,7 +229,7 @@
                         </div>
                         <div class="text-muted d-flex justify-content-between align-items-center" style="font-size: 0.75rem;">
                             <span>Dosar: <a href="{% url 'cases:detalii_dosar' alerta.dosar.pk %}" class="fw-bold text-decoration-none text-primary">{{ alerta.dosar.numar_unic }}</a></span>
-                            <span>Scadent: <strong>{{ alerta.data_sfarsit|date:"d.m.Y" }}</strong></span>
+                            <span>Termen: <strong>{{ alerta.data_sfarsit|date:"d.m.Y" }}</strong></span>
                         </div>
                     </div>
                 {% endfor %}
