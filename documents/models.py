@@ -2,6 +2,41 @@ from django.db import models
 from django.conf import settings
 from cases.models import Dosar
 from django.utils import timezone # Pentru a putea modifica data inregistrarii
+import os
+import uuid
+from django.core.exceptions import ValidationError
+from django.utils.deconstruct import deconstructible
+
+# === REGULILE DE GESTIONARE A DOCUMENTELOR ÎNCĂRCATE ===
+# 1. Politica de denumire a fișierelor
+def cale_upload_document(instance, filename):
+    """
+    Generează o cale unică și sigură pentru fiecare fișier încărcat.
+    Format: documente/dosar_<ID>/<UUID>.<extensie>
+    """
+    ext = filename.split('.')[-1].lower() # Extragem extensia (ex: 'pdf')
+    nume_nou = f"{uuid.uuid4().hex}.{ext}" # Generăm un șir unic de 32 caractere
+    
+    # Organizăm fișierele în foldere specifice fiecărui dosar pentru ordine
+    folder_dosar = f"dosar_{instance.dosar.id}" if instance.dosar else "nesortate"
+    
+    return os.path.join('documente', folder_dosar, nume_nou)
+
+# 2. Validarea tipului de fișier
+def valideaza_extensie_document(value):
+    """Permite doar fișiere cu valoare documentară/probatorie."""
+    extensii_permise = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png']
+    ext = os.path.splitext(value.name)[1].lower()
+    
+    if ext not in extensii_permise:
+        raise ValidationError(f"Format neacceptat: {ext}. Fișierele permise sunt: PDF, DOC, DOCX, JPG, PNG.")
+
+# 3. Validarea dimensiunii
+def valideaza_dimensiune_document(value):
+    """Limitează mărimea fișierului la 10 MB pentru a preveni umplerea serverului."""
+    limita_mb = 10
+    if value.size > limita_mb * 1024 * 1024:
+        raise ValidationError(f"Fișierul este prea mare ({value.size // (1024*1024)}MB). Limita maximă este de {limita_mb}MB.")
 
 class ActUrmarire(models.Model):
     class TipDocument(models.TextChoices):
@@ -18,10 +53,7 @@ class ActUrmarire(models.Model):
         null=True, 
         help_text="Lăsați gol dacă titlul coincide cu tipul documentului"
     )
-
-# ==========================================
-    # CÂMPURI NOI PENTRU DATE COMPLETE
-    # ==========================================
+    # Data emiterii și data înregistrării (pot fi diferite)
     data_documentului = models.DateField(
         default=timezone.now,
         verbose_name="Data emiterii documentului",
@@ -34,6 +66,7 @@ class ActUrmarire(models.Model):
         help_text="Data atribuirii numărului de intrare/înregistrare"
     )
 
+    # Tipul documentului (ex: Ordonanță, Referat, etc.)
     tip = models.CharField(max_length=50, choices=TipDocument.choices, default=TipDocument.ORDONANTA)
     
     # Legătura cu dosarul penal (un dosar poate avea mai multe acte)
@@ -42,8 +75,12 @@ class ActUrmarire(models.Model):
     # Cine a încărcat/emis documentul
     autor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     
-    # Aici se salvează efectiv fișierul. 'upload_to' creează foldere automat în funcție de an și lună!
-    fisier = models.FileField(upload_to='acte_penale/%Y/%m/')
+    # Fișierul încărcat (cu funcția de denumire și validările aplicate)
+    fisier = models.FileField(
+        upload_to=cale_upload_document, # funcția de denumire
+        validators=[valideaza_extensie_document, valideaza_dimensiune_document], # restricțiile
+        verbose_name="Fișier Document"
+    )
     
     data_incarcarii = models.DateTimeField(auto_now_add=True)
     descriere_scurta = models.TextField(blank=True, null=True, help_text="Rezumatul actului (opțional)")

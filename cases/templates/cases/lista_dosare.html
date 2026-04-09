@@ -292,6 +292,14 @@
             </table>
         </div>
     </div>
+    <div class="text-center mt-3 mb-2 small" style="font-size: 0.85rem;">
+        {% if page_obj.paginator.count > 0 %}
+            Afișare rezultate <strong class="text-dark">{{ page_obj.start_index }}</strong> - <strong class="text-dark">{{ page_obj.end_index }}</strong> 
+            din totalul de <strong class="text-dark">{{ page_obj.paginator.count }}</strong> dosare.
+        {% else %}
+            <span class="text-muted">Nu a fost găsit niciun dosar înregistrat.</span>
+        {% endif %}
+    </div>
 
     {% if page_obj.paginator.num_pages > 1 %}
     <nav class="mt-4 mb-5 text-center" aria-label="Paginare Dosare">

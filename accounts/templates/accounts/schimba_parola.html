@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Schimbare Parolă{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0 rounded-3 border-top border-primary border-4">
+                
+                <div class="card-header bg-white py-3 border-bottom border-secondary border-opacity-10">
+                    <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-key-fill text-primary me-2"></i>Schimbare Parolă</h5>
+                </div>
+                
+                <div class="card-body p-4 bg-white">
+                    <p class="text-muted small mb-4">Introduceți parola actuală, apoi alegeți o parolă nouă, sigură. Parola nouă nu trebuie să fie prea asemănătoare cu alte informații personale.</p>
+                    
+                    <form method="POST">
+                        {% csrf_token %}
+                        
+                        {% if form.errors %}
+                            <div class="alert alert-danger py-2 px-3 small mb-4 border-0 border-start border-danger border-4">
+                                <h6 class="fw-bold mb-1 text-danger">A apărut o eroare:</h6>
+                                {{ form.non_field_errors }}
+                            </div>
+                        {% endif %}
+
+                        <div class="django-form-wrapper">
+                            {% for field in form %}
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem;">{{ field.label }}</label>
+                                    {{ field }}
+                                    {% if field.help_text %}
+                                        <div class="form-text small text-muted mt-1" style="font-size: 0.75rem;">{{ field.help_text }}</div>
+                                    {% endif %}
+                                    {% if field.errors %}
+                                        <div class="text-danger small mt-1 fw-bold"><i class="bi bi-exclamation-triangle-fill me-1"></i>{{ field.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top border-secondary border-opacity-10">
+                            <a href="{% url 'index' %}" class="btn btn-light border border-secondary border-opacity-25 px-4 fw-medium">Anulează</a>
+                            <button type="submit" class="btn btn-primary px-4 shadow-sm fw-medium">Actualizează parola</button>
+                        </div>
+                    </form>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

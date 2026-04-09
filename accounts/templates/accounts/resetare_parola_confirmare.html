@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Setare Parolă Nouă{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0 rounded-3 border-top border-primary border-4">
+                
+                <div class="card-header bg-white py-3 border-bottom border-secondary border-opacity-10">
+                    <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-shield-lock text-primary me-2"></i>Setare Parolă Nouă</h5>
+                </div>
+                
+                <div class="card-body p-4 bg-white">
+                    {% if validlink %}
+                        <p class="text-muted small mb-4">Link-ul este valid. Vă rugăm să introduceți noua parolă mai jos. Asigurați-vă că este o parolă complexă, diferită de cele folosite anterior.</p>
+                        
+                        <form method="POST">
+                            {% csrf_token %}
+                            
+                            {% if form.errors %}
+                                <div class="alert alert-danger py-2 px-3 small mb-4 border-0 border-start border-danger border-4">
+                                    <h6 class="fw-bold mb-1 text-danger">A apărut o eroare:</h6>
+                                    {{ form.non_field_errors }}
+                                </div>
+                            {% endif %}
+
+                            <div class="django-form-wrapper">
+                                {% for field in form %}
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem;">{{ field.label }}</label>
+                                        {{ field }}
+                                        {% if field.help_text %}
+                                            <div class="form-text small text-muted mt-1" style="font-size: 0.75rem;">{{ field.help_text }}</div>
+                                        {% endif %}
+                                        {% if field.errors %}
+                                            <div class="text-danger small mt-1 fw-bold"><i class="bi bi-exclamation-triangle-fill me-1"></i>{{ field.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+
+                            <div class="d-grid gap-2 mt-4">
+                                <button type="submit" class="btn btn-primary shadow-sm fw-medium">Salvează și Autentifică-te</button>
+                            </div>
+                        </form>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <div class="bg-danger bg-opacity-10 text-danger rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px;">
+                                <i class="bi bi-x-circle-fill" style="font-size: 2rem;"></i>
+                            </div>
+                            <h5 class="fw-bold text-dark mb-2">Link Invalid sau Expirat</h5>
+                            <p class="text-muted small mb-4">Link-ul pentru resetarea parolei a expirat sau a fost deja utilizat. Vă rugăm să solicitați o nouă resetare.</p>
+                            <a href="{% url 'accounts:password_reset' %}" class="btn btn-primary px-4 fw-medium">Solicită un link nou</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Resetare Parolă{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow-sm border-0 rounded-3 border-top border-primary border-4">
+                <div class="card-body p-4 bg-white text-center">
+                    
+                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px;">
+                        <i class="bi bi-envelope-at-fill" style="font-size: 2rem;"></i>
+                    </div>
+                    
+                    <h5 class="fw-bold text-dark mb-2">Ați uitat parola?</h5>
+                    <p class="text-muted small mb-4">Nicio problemă. Introduceți adresa de email asociată contului și vă vom trimite instrucțiunile de resetare.</p>
+                    
+                    <form method="POST" class="text-start">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem;">Adresă de Email</label>
+                            {{ form.email }}
+                            {% if form.email.errors %}
+                                <div class="text-danger small mt-1 fw-bold">{{ form.email.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary shadow-sm fw-medium">Trimite link de resetare</button>
+                            <a href="{% url 'accounts:login' %}" class="btn btn-light border border-secondary border-opacity-25 fw-medium text-muted">Înapoi la Autentificare</a>
+                        </div>
+                    </form>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,12 +1,12 @@
 from django import forms
 from .models import Dosar, ParteImplicata, Infractiune, MasuraPreventiva, StadiuCercetare, SolutieDosar
-from django.contrib.auth import get_user_model # <--- Importăm modelul de Utilizator
+from django.contrib.auth import get_user_model #  modelul de utilizator
 from django.core.exceptions import ValidationError
 
 User = get_user_model() # Preluăm modelul de utilizator pentru a face filtrarile
 
 class DosarForm(forms.ModelForm):
-    # Câmp "virtual" - nu se salvează direct în tabelul Dosar, ci îl folosim noi pentru Istoric!
+    # Câmp "virtual" - nu se salvează direct în tabelul Dosar, îl folosim pentru Istoric
     data_schimbare_echipa = forms.DateField(
         required=False,
         widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
@@ -18,7 +18,7 @@ class DosarForm(forms.ModelForm):
         model = Dosar
         fields = ['numar_unic', 'infractiune_cercetata', 'ofiter_caz', 'procuror_caz', 'grefier_caz']
         
-        # Adaugam etichete personalizate care vor apărea în HTML
+        # Etichete personalizate care vor apărea în HTML
         labels = {
             'ofiter_caz': 'Poliţist',
             'procuror_caz': 'Procuror',
@@ -35,15 +35,9 @@ class DosarForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(DosarForm, self).__init__(*args, **kwargs)
-        # Ne asigurăm că valoarea disabled este setată și la nivel de validare Python
         self.fields['numar_unic'].disabled = True
 
-        # ==========================================
-        # LOGICA NOUĂ: Filtrarea dropdown-urilor
-        # ==========================================
-        # ATENȚIE: Înlocuiește 'rol' cu numele real al coloanei din modelul tău de utilizatori
-        # și 'OFITER', 'PROCUROR', 'GREFIER' cu valorile exacte pe care le-ai definit tu.
-        
+        # Filtrarea dropdown-urilor
         if 'ofiter_caz' in self.fields:
             self.fields['ofiter_caz'].queryset = User.objects.filter(rol='POLITIST')
             # Formatăm afișarea (Afișează numele complet; dacă nu e completat, afișează username-ul)
@@ -66,20 +60,18 @@ class DosarForm(forms.ModelForm):
         data_inreg = cleaned_data.get('data_inregistrarii') or self.instance.data_inregistrarii
         
         # 1. Verificăm dacă s-a modificat MĂCAR UNUL dintre membrii echipei
-        # Am folosit self.changed_data. Aceasta este o funcție genială a lui Django care știe exact ce câmpuri a modificat utilizatorul față de baza de date!
         echipa_modificata = any(camp in self.changed_data for camp in ['ofiter_caz', 'procuror_caz', 'grefier_caz'])
         
         if echipa_modificata:
             if not data_schimbare:
                 self.add_error('data_schimbare_echipa', "🛑 Este obligatoriu să alegeți data desemnării deoarece ați modificat un membru al echipei!")
             else:
-                # REGULA 1: Data preluării nu poate fi înaintea dosarului
+                # VALIDARE: Data preluării nu poate fi înaintea dosarului
                 if data_inreg and data_schimbare < data_inreg:
                     self.add_error('data_schimbare_echipa', f"Data noului mandat ({data_schimbare.strftime('%d.%m.%Y')}) nu poate fi anterioară înregistrării dosarului ({data_inreg.strftime('%d.%m.%Y')}).")
                 
-                # REGULA 2: Data preluării >= Data ultimei modificări din istoric
+                # VALIDARE: Data preluării >= Data ultimei modificări din istoric
                 if self.instance.pk:
-                    # ATENȚIE: Ajustează "istoric_desemnari" și "data_inceput" cu numele exacte din modelul tău de Istoric!
                     ultima_desemnare = self.instance.istoric_desemnari.order_by('-data_desemnare').first() 
                     
                     if ultima_desemnare and data_schimbare < ultima_desemnare.data_desemnare:
@@ -92,7 +84,6 @@ class CreareDosarForm(forms.ModelForm):
         model = Dosar
         fields = ['numar_unic', 'data_inregistrarii', 'infractiune_cercetata', 'ofiter_caz', 'procuror_caz', 'grefier_caz']
         
-        #  Adăugăm etichete personalizate care vor apărea în HTML
         labels = {
             'ofiter_caz': 'Poliţist',
             'procuror_caz': 'Procuror',
@@ -108,12 +99,7 @@ class CreareDosarForm(forms.ModelForm):
             'grefier_caz': forms.Select(attrs={'class': 'form-select'}),
         }
 
-    # ==========================================
-    # LOGICA NOUĂ: Filtrarea dropdown-urilor
-    # ==========================================
-    # ATENȚIE: Înlocuiește 'rol' cu numele real al coloanei din modelul tău de utilizatori
-    # și 'OFITER', 'PROCUROR', 'GREFIER' cu valorile exacte pe care le-ai definit tu.
-    
+    # iltrarea dropdown-urilor
     def __init__(self, *args, **kwargs):
         super(CreareDosarForm, self).__init__(*args, **kwargs)
         if 'ofiter_caz' in self.fields:
@@ -133,15 +119,14 @@ class CreareDosarForm(forms.ModelForm):
         numar = self.cleaned_data.get('numar_unic')
 
         if numar:
-            # 1. AUTO-CORECȚIE (Litere mari și fără spații)
+            # AUTO-CORECȚIE: Litere mari și fără spații
             numar = numar.upper().strip()
 
-            # REGULA 1: Verificăm prezența lui '/P/'
+            # VALIDARE: Verificăm prezența lui '/P/'
             if '/P/' not in numar:
                 raise ValidationError("Numărul dosarului trebuie să conțină indicativul standard '/P/'. Ex: 123/P/2026")
 
-            # 2. Tăiem textul în două folosind '/P/' ca punct de ruptură
-            # Ex: '123/P/2026' devine o listă: ['123', '2026']
+            # Tăiem textul în două folosind '/P/' 
             bucati = numar.split('/P/')
             
             # Ne asigurăm că există fix două bucăți (să nu fi pus /P/ de două ori din greșeală)
@@ -151,19 +136,15 @@ class CreareDosarForm(forms.ModelForm):
             numar_dosar = bucati[0] # Ce e înainte de /P/ (ex: '123')
             anul_dosar = bucati[1]  # Ce e după /P/ (ex: '2026')
 
-            # ==========================================
-            # REGULA 2: Partea din față să fie STRICT NUMĂR
-            # ==========================================
+            # VALIDARE: Partea din față să fie STRICT NUMĂR
             if not numar_dosar.isdigit():
                 raise ValidationError(f"Numărul dosarului trebuie să conțină doar cifre. Aţi introdus litere/simboluri: '{numar_dosar}'")
 
-            # ==========================================
-            # REGULA 3: Anul să fie STRICT 4 CIFRE
-            # ==========================================
+            # VALIDARE: Anul să fie STRICT 4 CIFRE
             if not anul_dosar.isdigit() or len(anul_dosar) != 4:
                 raise ValidationError(f"Anul trebuie să fie format din exact 4 cifre. Aţi introdus: '{anul_dosar}'")
                 
-            # Extra siguranță logică pentru an
+            # siguranță logică pentru an
             an_cifre = int(anul_dosar)
             if an_cifre < 1990 or an_cifre > 2100:
                 raise ValidationError(f"Anul {an_cifre} nu este valid!")
@@ -173,7 +154,7 @@ class CreareDosarForm(forms.ModelForm):
 class ParteImplicataForm(forms.ModelForm):
     class Meta:
         model = ParteImplicata
-        # Nu includem 'dosar' pentru că îl legăm noi în spate (în views.py)
+        # Nu includem 'dosar' pentru că îl legăm în spate (în views.py)
         fields = ['nume_complet', 'calitate_procesuala', 'cnp', 'adresa', 'mentiuni', 'serie_ci', 'numar_ci']
         
         widgets = {
@@ -255,9 +236,7 @@ class StadiuCercetareForm(forms.ModelForm):
         if not tip_stadiu or not data_incepere or not dosar:
             return cleaned_data # Dacă lipsesc date, lăsăm validarea standard să preia
 
-        # ==========================================
-        # REGULA 1: Niciun stadiu înaintea înregistrării dosarului
-        # ==========================================
+        # VALIDARE: Niciun stadiu înaintea înregistrării dosarului
         if data_incepere < dosar.data_inregistrarii:
             self.add_error('data_incepere', f"Data stadiului ({data_incepere.strftime('%d.%m.%Y')}) nu poate fi înaintea înregistrării dosarului ({dosar.data_inregistrarii.strftime('%d.%m.%Y')}).")
 
@@ -268,16 +247,12 @@ class StadiuCercetareForm(forms.ModelForm):
             ultimul_stadiu = dosar.stadii_cercetare.order_by('-data_incepere', '-id').first()
 
         if ultimul_stadiu:
-            # ==========================================
-            # REGULA 2: Cronologia Stadiilor
-            # ==========================================
+            # VALIDARE: Cronologia Stadiilor
             if data_incepere < ultimul_stadiu.data_incepere:
                 self.add_error('data_incepere', f"Data trebuie să fie consecutivă. Ultimul stadiu a fost pe {ultimul_stadiu.data_incepere.strftime('%d.%m.%Y')}.")
 
-            # ==========================================
-            # REGULA 3: Succesiunea Logică
-            # ==========================================
-            # ATENȚIE: Înlocuiește aceste chei cu cele din models.py (clasa TipStadiu)!!
+            # VALIDARE: Succesiunea Logică
+            # chei din models.py (clasa TipStadiu)
             ORDINE_STADII = {
                 'EXAMINARE': 1,
                 'UP_INCEPUTA': 2,
@@ -325,18 +300,14 @@ class SolutieDosarForm(forms.ModelForm):
         if not data_solutiei or not stadiu:
             return cleaned_data
 
-        # ==========================================
-        # REGULA 1: Cronologia Soluției
-        # ==========================================
+        # VALIDARE: Cronologia Soluției
         if data_solutiei < stadiu.data_incepere:
             self.add_error('data_solutiei', f"Data soluției ({data_solutiei.strftime('%d.%m.%Y')}) nu poate fi anterioară începerii stadiului ({stadiu.data_incepere.strftime('%d.%m.%Y')}).")
 
         if data_solutiei < dosar.data_inregistrarii:
             self.add_error('data_solutiei', f"Soluția nu poate fi anterioară înregistrării dosarului ({dosar.data_inregistrarii.strftime('%d.%m.%Y')}).")
 
-        # ==========================================
-        # REGULA 2: O singură Soluție Finală pe Dosar
-        # ==========================================
+        # VALIDARE: O singură Soluție Finală pe Dosar
         if este_finala:
             # Căutăm dacă mai există VREO soluție finală pe ORICE stadiu al acestui dosar
             solutii_finale = SolutieDosar.objects.filter(stadiu__dosar=dosar, este_finala=True)

@@ -12,6 +12,10 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 import os # Folosit pentru a salva fisierele media (word, pdf); se poate folosi și BASE_DIR direct.
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Încărcăm variabilele din fișierul .env
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,10 +25,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-4y3+f&u*1@7+#m5-41_eo3xeo^v)k0jqsg&0&i55+f_(3e5dm*'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'cheie-de-rezerva-nesigura')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG') == 'True'
 
 # Default este ALLOWED_HOSTS = []. Am adăugat "*" pentru testare pe server
 ALLOWED_HOSTS = ['*']
@@ -45,6 +49,8 @@ INSTALLED_APPS = [
     'documents',
     'simple_history', # pentru audit (istoric modificări)
     'sass_processor', # leaga codul sass in Django
+    'django_otp',
+    'django_otp.plugins.otp_totp',
 ]
 
 MIDDLEWARE = [
@@ -53,9 +59,11 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django_otp.middleware.OTPMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'simple_history.middleware.HistoryRequestMiddleware', # pentru a înregistra cine a făcut modificări în istoric
+    'accounts.middleware.Force2FAMiddleware',
 ]
 
 ROOT_URLCONF = 'cms_penal.urls'
@@ -163,7 +171,7 @@ LOGIN_REDIRECT_URL = 'cases:dashboard'
 # După deconectare, ne întoarcem la pagina de login
 LOGOUT_REDIRECT_URL = 'login'
 
-# Dacă încercăm să accesăm o pagină care necesită autentificare, dar nu suntem logați, vom fi redirecționați către pagina de login.
+# Dacă încercăm să accesăm o pagină care necesită autentificare, dar nu suntem logați, vom fi redirecționați către pagina de login
 LOGIN_URL = 'login'
 
 # Închidem sesiunea după ce închidem browserul pentru a nu ne păstra logaţi
@@ -179,14 +187,14 @@ JAZZMIN_SETTINGS = {
     "welcome_sign": "Autentificare Sistem Gestiune Dosare",
     "copyright": "Proiect Licență",
     
-    # Căutare globală rapidă direct din bara de sus a adminului
+    # Căutare globală rapidă din bara de sus a adminului
     "search_model": ["cases.Dosar", "accounts.CustomUser"],
     
     # Meniu lateral
     "show_sidebar": True,
     "navigation_expanded": True,
     
-    # Iconițe (Folosește FontAwesome pentru tabele)
+    # Iconițe FontAwesome
     "icons": {
         "auth": "fas fa-users-cog",
         "accounts.CustomUser": "fas fa-user-shield",
@@ -210,3 +218,24 @@ JAZZMIN_UI_TWEAKS = {
         "secondary": "btn-secondary",
     }
 }
+
+# SETĂRI PENTRU 2FA - CATEGORII DE UTILIZATORI PENTRU CARE 2FA ESTE OBLIGATORIU
+MANDATORY_2FA_ROLES = ['PROCUROR', 'ADMIN']
+
+# CHEIA DE CRIPTARE PENTRU DATELE SENSIBILE (CNP)
+# Cheia de criptare trebuie transformată înapoi în format "bytes"
+ENCRYPTION_KEY = os.environ.get('ENCRYPTION_KEY').encode('utf-8')
+
+
+# CONFIGURARE SERVER DE EMAIL (SMTP GMAIL)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+
+# Citim adresa și parola în siguranță din fișierul .env
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
+
+# Adresa care va apărea la "Expeditor" când utilizatorul primește mailul
+DEFAULT_FROM_EMAIL = f"SED <{EMAIL_HOST_USER}>"

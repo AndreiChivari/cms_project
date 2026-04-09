@@ -1,0 +1,52 @@
+{% extends "base.html" %} {% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow-sm border-0 rounded-3">
+                
+                <div class="card-header bg-dark text-white text-center py-3">
+                    <h5 class="mb-0"><i class="bi bi-shield-lock-fill me-2"></i> Activare Securitate 2FA</h5>
+                </div>
+                
+                <div class="card-body p-4 text-center bg-white">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} small py-2">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+
+                    {% if device.confirmed %}
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle-fill me-2"></i> Autentificarea în 2 pași este activă pentru contul tău.
+                        </div>
+                        <a href="{% url 'cases:dashboard' %}" class="btn btn-outline-secondary w-100 mt-2">Înapoi la Dashboard</a>
+                    {% else %}
+                        <p class="text-muted small mb-4">
+                            Pentru a securiza contul, scanează codul de mai jos folosind <strong>Google Authenticator</strong> sau altă aplicație similară.
+                        </p>
+
+                        <div class="mb-4 bg-light p-3 rounded-3 d-inline-block border">
+                            <img src="data:image/png;base64,{{ qr_code }}" alt="QR Code" class="img-fluid" style="max-width: 200px;">
+                        </div>
+
+                        <form method="POST">
+                            {% csrf_token %}
+                            <div class="mb-3 text-start">
+                                <label class="form-label fw-bold text-secondary small text-uppercase mb-1">Cod de confirmare</label>
+                                <input type="text" name="token" 
+                                       class="form-control form-control-lg text-center" 
+                                       style="letter-spacing: 5px; font-weight: bold;" 
+                                       placeholder="000000" maxlength="6" required autocomplete="off">
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100 fw-bold shadow-sm py-2">
+                                Verifică și Activează <i class="bi bi-arrow-right-short ms-1 fs-5 align-middle"></i>
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+                
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

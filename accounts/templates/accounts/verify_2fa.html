@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Verificare în 2 Pași{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow-sm border-0 rounded-3 border-top border-primary border-4">
+                
+                <div class="card-header bg-white text-center py-4 border-bottom border-secondary border-opacity-10">
+                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px;">
+                        <i class="bi bi-phone-vibrate-fill" style="font-size: 2rem;"></i>
+                    </div>
+                    <h4 class="mb-0 fw-bold">Autentificare în 2 Pași</h4>
+                    <p class="text-muted small mb-0 mt-2">Introduceți codul din aplicația Authenticator pentru <strong>{{ utilizator.username }}</strong>.</p>
+                </div>
+                
+                <div class="card-body p-4 bg-white">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} small py-2">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="POST">
+                        {% csrf_token %}
+                        <div class="mb-4">
+                            <input type="text" name="token" 
+                                   class="form-control form-control-lg text-center" 
+                                   style="letter-spacing: 10px; font-size: 1.5rem; font-weight: bold; background-color: #f8f9fa;" 
+                                   placeholder="000000" maxlength="6" autofocus required autocomplete="off">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold shadow-sm py-2">
+                            <i class="bi bi-shield-lock-fill me-1"></i> Autentificare
+                        </button>
+                    </form>
+                    
+                    <div class="text-center mt-3">
+                        <form method="POST" action="{% url 'logout' %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-link text-muted small text-decoration-none border-bottom border-secondary p-0 shadow-none">
+                                &larr; Anulează și revino la conectare
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

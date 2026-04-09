@@ -4,6 +4,31 @@ from django.conf import settings # importăm modelul de User corect
 from datetime import date # calculul alertelor
 from django.utils import timezone # pentru a modifica data inregistrarii
 from geopy.geocoders import Nominatim
+from cryptography.fernet import Fernet
+import hmac
+import hashlib
+
+class EncryptedTextField(models.TextField):
+    """Câmp custom care criptează transparent datele la salvarea în baza de date."""
+    
+    def get_prep_value(self, value):
+        # Se execută fix înainte de a scrie în baza de date (INSERT/UPDATE)
+        value = super().get_prep_value(value)
+        if value:
+            f = Fernet(settings.ENCRYPTION_KEY)
+            return f.encrypt(value.encode('utf-8')).decode('utf-8')
+        return value
+
+    def from_db_value(self, value, expression, connection):
+        # Se execută la extragerea datelor din baza de date (SELECT)
+        if value:
+            try:
+                f = Fernet(settings.ENCRYPTION_KEY)
+                return f.decrypt(value.encode('utf-8')).decode('utf-8')
+            except Exception:
+                # O plasă de siguranță: dacă ai deja date necriptate în baza ta actuală, le va lăsa așa
+                return value
+        return value
 
 class Dosar(models.Model):
     class Stadiu(models.TextChoices):
@@ -125,7 +150,13 @@ class ParteImplicata(models.Model):
     dosar = models.ForeignKey(Dosar, on_delete=models.CASCADE, related_name='parti_implicate')
     
     nume_complet = models.CharField(max_length=150)
-    cnp = models.CharField(max_length=13, blank=True, null=True, verbose_name="CNP")
+    # CNP în forma iniţială, necriptat
+    # cnp = models.CharField(max_length=13, blank=True, null=True, verbose_name="CNP")
+    # Stocăm CNP-ul criptat în baza de date. În interfață, va fi afișat normal, 
+    # iar la salvare va fi criptat automat. Folosim un câmp custom EncryptedTextField
+    cnp = EncryptedTextField(blank=True, null=True, verbose_name="CNP")
+    # Blind Index pe care îl vom folosi pentru căutări (nu poate fi decriptat)
+    cnp_hash = models.CharField(max_length=64, blank=True, null=True, editable=False)
     adresa = models.CharField(max_length=255, blank=True, null=True, verbose_name="Adresă")
     calitate_procesuala = models.CharField(max_length=20, choices=Calitate.choices)
     mentiuni = models.TextField(blank=True, null=True, help_text="Alte date de contact, antecedente, etc.")
@@ -138,6 +169,16 @@ class ParteImplicata(models.Model):
 
     def __str__(self):
         return f"{self.nume_complet} ({self.get_calitate_procesuala_display()}) - {self.dosar.numar_unic}"
+    
+    # Suprascriem salvarea pentru a genera hash-ul automat
+    def save(self, *args, **kwargs):
+        if self.cnp:
+            # Creăm un hash ireversibil (HMAC-SHA256) din CNP-ul introdus
+            secret = settings.SECRET_KEY.encode('utf-8')
+            self.cnp_hash = hmac.new(secret, self.cnp.encode('utf-8'), hashlib.sha256).hexdigest()
+        else:
+            self.cnp_hash = None
+        super().save(*args, **kwargs)
     
     history = HistoricalRecords() # Păstrează istoricul modificărilor părților implicate
     

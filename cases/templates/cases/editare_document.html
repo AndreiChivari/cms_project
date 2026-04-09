@@ -26,7 +26,7 @@
                     
                     {% if form.errors %}
                         <div class="alert alert-danger shadow-sm border-0 border-start border-danger border-4 py-2 px-3 mb-4">
-                            <h6 class="fw-bold mb-1 text-danger" style="font-size: 0.9rem;">🛑 Vă rugăm să corectați erorile:</h6>
+                            <h6 class="fw-bold mb-1 text-danger" style="font-size: 0.9rem;">🛑 Vă rugăm să corectați erorile!</h6>
                             {{ form.non_field_errors }}
                         </div>
                     {% endif %}
@@ -47,7 +47,11 @@
                         <div class="mb-4">
                             <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem;">Fișier (lasă gol pentru a-l păstra pe cel vechi)</label>
                             {{ form.fisier }}
-                            <div class="text-danger small mt-1">{{ form.fisier.errors }}</div>
+                            {% if form.fisier.errors %}
+                                <div class="text-danger small mt-2 fw-bold">
+                                    <i class="bi bi-exclamation-triangle-fill me-1"></i> {{ form.fisier.errors.0 }}
+                                </div>
+                            {% endif %}
                         </div>
                         
                         <div class="row mb-4">

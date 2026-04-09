@@ -31,6 +31,8 @@ class CustomUser(AbstractUser):
         help_text="Ex: Parchetul de pe lângă Judecătoria Sector 1 / SIC Brașov"
     )
 
+    totp_activ = models.BooleanField(default=False, verbose_name="2FA Activ")
+
     def __str__(self):
         # Așa va fi afișat utilizatorul în panoul de administrare
         nume_complet = self.get_full_name()

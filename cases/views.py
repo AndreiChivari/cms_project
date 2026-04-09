@@ -28,6 +28,9 @@ from PIL import Image
 from django.views.decorators.csrf import csrf_exempt
 from PIL import Image, ImageEnhance, ImageFilter
 import re
+# Importuri pentru criptare CNP
+import hmac
+import hashlib
 
 User = get_user_model()
 
@@ -220,18 +223,32 @@ def lista_dosare(request):
         toate_dosarele_gasite = (dosare_gasite | dosare_din_infractiuni).distinct().order_by('-data_inregistrarii')
         
         # C. Căutăm în Părți Implicate
-        persoane_gasite = ParteImplicata.objects.filter(
+        # Filtrul de bază (căutarea în textele normale)
+        filtru_persoane = (
             Q(nume_complet__icontains=q_lower) |
             Q(nume_complet__icontains=q_upper) |
             Q(nume_complet__icontains=q_title) |
-            Q(cnp__icontains=query_text) |
             Q(adresa__icontains=q_lower) |
             Q(adresa__icontains=q_upper) |
             Q(adresa__icontains=q_title) |
             Q(mentiuni__icontains=q_lower) |
             Q(mentiuni__icontains=q_upper) |
             Q(mentiuni__icontains=q_title)
-        ).select_related('dosar').order_by('nume_complet')
+        )
+
+        # Verificăm dacă utilizatorul a introdus exact un CNP (13 cifre)
+        if len(query_text) == 13 and query_text.isdigit():
+            # Calculăm hash-ul exact cum o face modelul la salvare
+            secret = settings.SECRET_KEY.encode('utf-8')
+            hash_cautat = hmac.new(secret, query_text.encode('utf-8'), hashlib.sha256).hexdigest()
+            
+            # Adăugăm (prin operatorul OR " | ") condiția de căutare exactă a hash-ului
+            filtru_persoane = filtru_persoane | Q(cnp_hash=hash_cautat)
+
+        # Aplicăm filtrul pe baza de date
+        persoane_gasite = ParteImplicata.objects.filter(
+            filtru_persoane
+        ).select_related('dosar').order_by('nume_complet')[:20]  # Adăugat [:20] pentru a limita afișarea și a preveni blocajele
 
         # D. Căutăm în Documente/Acte Urmărire
         documente_gasite = ActUrmarire.objects.filter(
@@ -261,7 +278,7 @@ def lista_dosare(request):
             'total_rezultate': toate_dosarele_gasite.count() + persoane_gasite.count() + documente_gasite.count() + masuri_gasite.count()
         })
 
-    # MODULUL STANDARD (Afișarea Listei, dacă nu a căutat)
+    # MODUL IMPLICIT (Afișarea Listei, dacă utilizatorul nu a căutat nimic)
     else:
         dosare = Dosar.objects.all().order_by('-data_inregistrarii')
         
@@ -328,7 +345,6 @@ def detalii_dosar(request, pk):
                         fisier=fisier_ci,
                         descriere_scurta="Document generat automat la scanarea C.I. (Modul OCR)."
                     )
-                # =========================================================
 
                 return redirect('cases:detalii_dosar', pk=dosar.pk)
             
@@ -765,7 +781,7 @@ def generare_rapoarte(request):
         'infractiuni' 
     ).all().distinct()
     
-    # 1. FILTRELE (Criteriile de căutare)
+    # 1. FILTRE (Criteriile de căutare)
     data_inreg_start = request.GET.get('data_inreg_start')
     data_inreg_end = request.GET.get('data_inreg_end')
     procuror_id = request.GET.get('procuror')
@@ -923,15 +939,29 @@ def generare_rapoarte(request):
         
         return response
 
+    # PAGINARE: Pentru a păstra toate celelalte query params (filtrele și coloanele selectate) în link-urile de paginare, le reconstruim manual:
+    query_params = request.GET.copy()
+    if 'page' in query_params:
+        del query_params['page']
+    query_string = query_params.urlencode()
+
+    # 2. Împărțim rezultatele (câte 20 de dosare pe pagină)
+    paginator = Paginator(dosare, 20) 
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     # Extragem opțiunile din modele pentru a popula automat dropdown-urile din HTML
     context = {
-        'dosare': dosare,
+        'dosare': page_obj,
         'coloane': coloane,
         'lista_procurori': User.objects.filter(rol='PROCUROR'),
         'lista_ofiteri': User.objects.filter(rol='POLITIST'),
         'acte_normative': Infractiune._meta.get_field('act_normativ').choices,
         'stadii_choices': StadiuCercetare._meta.get_field('tip_stadiu').choices,
         'solutii_choices': SolutieDosar._meta.get_field('tip_solutie').choices,
+        'page_obj': page_obj,
+        'total_rezultate': paginator.count, # Numărul total real de rezultate găsite
+        'query_string': query_string, # Pentru a păstra filtrele și coloanele selectate în link-urile de paginare
     }
     
     return render(request, 'cases/rapoarte.html', context)

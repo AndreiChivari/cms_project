@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Email Trimis{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow-sm border-0 rounded-3 text-center py-4">
+                <div class="card-body">
+                    <div class="bg-success bg-opacity-10 text-success rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                        <i class="bi bi-envelope-check-fill" style="font-size: 2.5rem;"></i>
+                    </div>
+                    <h4 class="fw-bold mb-2">Verificați-vă email-ul!</h4>
+                    <p class="text-muted small mb-4">Dacă adresa introdusă există în baza noastră de date, v-am trimis un link securizat pentru resetarea parolei.</p>
+                    <p class="text-muted small mb-0"><em>Nu ați primit email-ul? Verificați și folderul Spam.</em></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

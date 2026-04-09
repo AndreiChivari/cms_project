@@ -241,8 +241,50 @@
             </div>
         </div>
         <div class="card-footer bg-light border-top border-secondary border-opacity-10 py-2 px-3 text-muted" style="font-size: 0.85rem;">
-            Total rezultate afișate: <strong class="text-dark">{{ dosare.count }}</strong> dosare.
+            {% if total_rezultate > 0 %}
+                Afișare rezultate <strong class="text-dark">{{ page_obj.start_index }}</strong> - <strong class="text-dark">{{ page_obj.end_index }}</strong> 
+                din totalul de <strong class="text-dark">{{ total_rezultate }}</strong> dosare.
+            {% else %}
+                <span class="text-muted">Nu a fost găsit niciun dosar conform filtrelor selectate.</span>
+            {% endif %}
         </div>
     </div>
 </div>
+{% if page_obj.paginator.num_pages > 1 %}
+<nav class="mt-4 mb-2 text-center" aria-label="Paginare Rapoarte">
+    <ul class="pagination pagination-sm justify-content-center d-inline-flex shadow-sm mb-0" style="border-radius: 0.5rem; overflow: hidden;">
+        
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link text-primary fw-medium px-3 py-1" href="?{{ query_string }}&page={{ page_obj.previous_page_number }}">
+                    &laquo; Înapoi
+                </a>
+            </li>
+        {% else %}
+            <li class="page-item disabled">
+                <span class="page-link text-muted bg-light px-3 py-1">&laquo; Înapoi</span>
+            </li>
+        {% endif %}
+
+        <li class="page-item active" aria-current="page">
+            <span class="page-link bg-primary border-primary text-white fw-bold px-4 py-1">
+                {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+            </span>
+        </li>
+
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link text-primary fw-medium px-3 py-1" href="?{{ query_string }}&page={{ page_obj.next_page_number }}">
+                    Înainte &raquo;
+                </a>
+            </li>
+        {% else %}
+            <li class="page-item disabled">
+                <span class="page-link text-muted bg-light px-3 py-1">Înainte &raquo;</span>
+            </li>
+        {% endif %}
+        
+    </ul>
+</nav>
+{% endif %}
 {% endblock %}

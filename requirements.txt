@@ -42,3 +42,6 @@ django-compressor
 geopy
 pytesseract
 Pillow
+django-jazzmin
+django-otp
+qrcode

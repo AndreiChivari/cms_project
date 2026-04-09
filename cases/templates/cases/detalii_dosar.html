@@ -745,7 +745,15 @@ document.getElementById('input-ocr-scan').addEventListener('change', function(e)
             
             <form method="POST" action="{% url 'cases:detalii_dosar' dosar.pk %}" enctype="multipart/form-data">
                 {% csrf_token %} 
+
                 <div class="modal-body px-4 py-4 django-form-wrapper">
+                    {% if form_document.errors %}
+                        <div class="alert alert-danger shadow-sm border-0 border-start border-danger border-4 py-2 px-3 mb-4">
+                            <h6 class="fw-bold mb-1 text-danger" style="font-size: 0.9rem;"><i class="bi bi-x-circle-fill me-2"></i>Eroare la adăugarea documentului:</h6>
+                            {{ form_document.non_field_errors }}
+                            <p class="mb-0 small">Verificați câmpurile marcate cu roșu mai jos.</p>
+                        </div>
+                    {% endif %}
                     
                     <div class="mb-4">
                         <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">Titlu document</label>
@@ -757,9 +765,15 @@ document.getElementById('input-ocr-scan').addEventListener('change', function(e)
                             <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">Tip act</label>
                             {{ form_document.tip }}
                         </div>
+
                         <div class="col-md-6">
                             <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">Alege fișierul (opțional)</label>
                             {{ form_document.fisier }}
+                            {% if form_document.fisier.errors %}
+                                <div class="text-danger small mt-2 fw-bold">
+                                    <i class="bi bi-exclamation-triangle-fill me-1"></i> {{ form_document.fisier.errors.0 }}
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
                     
@@ -795,5 +809,17 @@ document.getElementById('input-ocr-scan').addEventListener('change', function(e)
         </div>
     </div>
 </div>
+
+{% if form_document.errors %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Găsește modalul în pagină
+        var myModalElement = document.getElementById('adaugaDocumentModal');
+        // Creează o instanță Bootstrap și forțează deschiderea
+        var myModal = new bootstrap.Modal(myModalElement);
+        myModal.show();
+    });
+</script>
+{% endif %}
 
 {% endblock %}
