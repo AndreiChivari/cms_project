@@ -239,3 +239,10 @@ EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
 
 # Adresa care va apărea la "Expeditor" când utilizatorul primește mailul
 DEFAULT_FROM_EMAIL = f"SED <{EMAIL_HOST_USER}>"
+
+# CONFIGURARE SERVICII GEOGRAFICE
+# Setăm un fallback sigur către OpenStreetMap standard în caz că lipsește din .env
+MAP_TILE_SERVER_URL = os.environ.get(
+    'MAP_TILE_SERVER_URL', 
+    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+)

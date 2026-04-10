@@ -72,4 +72,51 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Găsim câmpurile din formularul generat de Django
+        const durataInput = document.getElementById('id_durata_zile');
+        const dataInceputInput = document.getElementById('id_data_inceput');
+        const dataSfarsitInput = document.getElementById('id_data_sfarsit');
+
+        // Verificăm dacă suntem pe o pagină care are aceste câmpuri
+        if (durataInput && dataInceputInput && dataSfarsitInput) {
+            
+            function calculeazaDataSfarsit() {
+                const durata = parseInt(durataInput.value);
+                const dataInceputVal = dataInceputInput.value;
+
+                // Dacă avem ambele valori completate valid
+                if (!isNaN(durata) && dataInceputVal) {
+                    const dataCalculata = new Date(dataInceputVal);
+                    
+                    // Atenție juridică: Modifică formula de mai jos în funcție de specificul calculului (CPP)
+                    // Matematic: 1 Ian + 30 zile = 31 Ian. 
+                    // Dacă juridic ziua de început se ia în calcul integral (ex. expiră pe 30 Ian), adaugă un "- 1" după durata.
+                    dataCalculata.setDate(dataCalculata.getDate() + durata - 1); 
+
+                    // Formatăm data înapoi în standardul YYYY-MM-DD acceptat de input-ul HTML
+                    const an = dataCalculata.getFullYear();
+                    const luna = String(dataCalculata.getMonth() + 1).padStart(2, '0');
+                    const zi = String(dataCalculata.getDate()).padStart(2, '0');
+
+                    // Setăm valoarea în câmpul de final
+                    dataSfarsitInput.value = `${an}-${luna}-${zi}`;
+                    
+                    // Opțional: Facem câmpul să "pâlpâie" un pic vizual pentru a arăta că s-a autocompletat
+                    dataSfarsitInput.classList.add('bg-success', 'bg-opacity-10', 'text-success');
+                    setTimeout(() => {
+                        dataSfarsitInput.classList.remove('bg-success', 'bg-opacity-10', 'text-success');
+                    }, 500);
+                }
+            }
+
+            // Ascultăm evenimentele de tastare/schimbare pe ambele câmpuri
+            durataInput.addEventListener('input', calculeazaDataSfarsit);
+            dataInceputInput.addEventListener('change', calculeazaDataSfarsit);
+        }
+    });
+</script>
+
 {% endblock %}

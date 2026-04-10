@@ -2,9 +2,9 @@ import os
 from django.conf import settings
 from django.shortcuts import render, get_object_or_404, redirect
 from urllib3 import request
-from .models import Dosar, ParteImplicata, Infractiune, MasuraPreventiva, IstoricDesemnare, StadiuCercetare, SolutieDosar, Notificare
+from .models import Dosar, ParteImplicata, Infractiune, MasuraPreventiva, IstoricDesemnare, StadiuCercetare, SolutieDosar, Notificare, TermenProcedural
 from documents.forms import DocumentForm 
-from .forms import DosarForm, ParteImplicataForm, CreareDosarForm, InfractiuneForm, MasuraPreventivaForm, StadiuCercetareForm, SolutieDosarForm
+from .forms import DosarForm, ParteImplicataForm, CreareDosarForm, InfractiuneForm, MasuraPreventivaForm, StadiuCercetareForm, SolutieDosarForm, TermenProceduralForm
 from documents.models import ActUrmarire
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
@@ -93,27 +93,100 @@ def dashboard(request):
     media_sistem = total_dosare / utilizatori_activi if utilizatori_activi > 0 else 0
     diferenta_medie = dosare_mele - media_sistem
     
-    # 4. ALERTE MĂSURI PREVENTIVE
+    # 4. AGREGARE ALERTE (TIMELINE INTELIGENT)
+    ZILE_IN_AVANS = 30  # Cu câte zile înainte apare alerta
+    ZILE_TOLERANTA = 3  # Câte zile după expirare mai stă pe ecran
     azi = date.today()
-    prag_10_zile = azi + timedelta(days=10)
+    prag_viitor = azi + timedelta(days=ZILE_IN_AVANS)
+    prag_trecut = azi - timedelta(days=ZILE_TOLERANTA)
+    
+    # Pregătim condiția pentru utilizatorii normali (să vadă doar alertele din dosarele lor)
+    conditie_alerte_user = Q(dosar__ofiter_caz=utilizator) | Q(dosar__procuror_caz=utilizator) | Q(dosar__grefier_caz=utilizator)
 
-    alerte_toate = MasuraPreventiva.objects.filter(
-        data_sfarsit__lte=prag_10_zile,
-        data_sfarsit__gte=azi - timedelta(days=5) 
-    ).order_by('data_sfarsit')
+    timeline_alerte = []
 
-    if utilizator.is_superuser or getattr(utilizator, 'rol', '') == 'ADMIN':
-        alerte_masuri = alerte_toate
-    else:
-        alerte_masuri = alerte_toate.filter(
-            Q(dosar__ofiter_caz=utilizator) |
-            Q(dosar__procuror_caz=utilizator) |
-            Q(dosar__grefier_caz=utilizator)
-        )
+    # --- 4.1. Extragem Măsurile Preventive ---
+    masuri_qs = MasuraPreventiva.objects.filter(
+        data_sfarsit__lte=prag_viitor,
+        data_sfarsit__gte=prag_trecut # Arată și ce a expirat în ultimele zile setate
+    )
+    # Filtrăm pe roluri
+    if not (utilizator.is_superuser or getattr(utilizator, 'rol', '') == 'ADMIN'):
+        masuri_qs = masuri_qs.filter(conditie_alerte_user)
+
+    for m in masuri_qs:
+        timeline_alerte.append({
+            'tip_alerta': 'MASURA',
+            'titlu': f"Măsură: {m.get_tip_masura_display()}",
+            'subtitlu': f"Parte: {m.parte.nume_complet}",
+            'dosar': m.dosar,
+            'data_limita': m.data_sfarsit,
+            'zile_ramase': m.zile_ramase,
+            'expirat': m.zile_ramase < 0
+        })
+
+    # --- 4.2. Extragem Termenele Procedurale ---
+    termene_qs = TermenProcedural.objects.filter(
+        data_limita__lte=prag_viitor,
+        data_limita__gte=prag_trecut
+    )
+    # Filtrăm pe roluri
+    if not (utilizator.is_superuser or getattr(utilizator, 'rol', '') == 'ADMIN'):
+        termene_qs = termene_qs.filter(conditie_alerte_user)
+
+    for t in termene_qs:
+        timeline_alerte.append({
+            'tip_alerta': 'TERMEN',
+            'titlu': f"Termen: {t.get_tip_termen_display()}",
+            'subtitlu': t.detalii if t.detalii else "Atenție la termenul procedural!",
+            'dosar': t.dosar,
+            'data_limita': t.data_limita,
+            'zile_ramase': t.zile_ramase,
+            'expirat': t.zile_ramase < 0
+        })
+
+    # --- 4.3. Unificare și Ordonare ---
+    # Ordonăm toată lista combinată în funcție de zilele rămase (cele mai puține zile primele)
+    timeline_alerte = sorted(timeline_alerte, key=lambda x: x['zile_ramase'])
+    
+    # Păstrăm doar primele 10 urgențe ca să nu încărcăm vizual prea mult dashboard-ul
+    timeline_alerte = timeline_alerte[:10]
+
+# ==========================================
+    # 4.5. DATE PENTRU GRAFICUL CU BARE (Ultimele 6 luni)
+    # ==========================================
+    luni_ro = {1: 'Ian', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'Mai', 6: 'Iun', 
+               7: 'Iul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'}
+    
+    labels_grafic = []
+    date_grafic = []
+    
+    # Ne setăm ca punct de pornire data de 1 a lunii curente
+    luna_start = azi.replace(day=1)
+
+    # Mergem 5 luni în spate + luna curentă = 6 luni
+    for i in range(11, -1, -1):
+        an_calcul = luna_start.year
+        luna_calcul = luna_start.month - i
+        
+        # Dacă luna scade sub 1 (ex. suntem în Februarie și mergem 3 luni în spate), ajustăm anul
+        if luna_calcul <= 0:
+            an_calcul -= 1
+            luna_calcul += 12
+            
+        nume_eticheta = f"{luni_ro[luna_calcul]} {an_calcul}"
+        labels_grafic.append(nume_eticheta)
+        
+        # Numărăm dosarele pentru acea lună și an
+        if utilizator.is_superuser or getattr(utilizator, 'rol', '') == 'ADMIN':
+            nr_dosare = Dosar.objects.filter(data_inregistrarii__year=an_calcul, data_inregistrarii__month=luna_calcul).count()
+        else:
+            nr_dosare = Dosar.objects.filter(conditie_mea, data_inregistrarii__year=an_calcul, data_inregistrarii__month=luna_calcul).count()
+            
+        date_grafic.append(nr_dosare)
 
     # 5. CONTEXT PENTRU HTML
     context = {
-
         'user_rol': getattr(utilizator, 'rol', 'Membru Echipă'),
         # Stats
         'total_dosare': total_dosare,
@@ -123,12 +196,18 @@ def dashboard(request):
         # Operativitate
         'media_sistem': round(media_sistem, 1),
         'diferenta_medie': round(diferenta_medie, 1),
-        # Procente pentru grafic (evităm împărțirea la zero)
+        # Procente pentru grafic
         'procent_lucru': int((dosare_in_lucru / dosare_mele * 100)) if dosare_mele > 0 else 0,
         'procent_solutionate': int((dosare_solutionate / dosare_mele * 100)) if dosare_mele > 0 else 0,
         # Liste
         'dosarele_mele_lista': dosarele_mele_lista,
-        'alerte_masuri': alerte_masuri,
+        
+        # Variabila NOASTRĂ NOUĂ unificată
+        'timeline_alerte': timeline_alerte,
+
+        # DATE NOI PENTRU GRAFIC (transformate în format JSON ca să le înțeleagă JavaScript-ul)
+        'labels_grafic': json.dumps(labels_grafic),
+        'date_grafic': json.dumps(date_grafic),
     }
     
     return render(request, 'cases/dashboard.html', context)
@@ -305,7 +384,8 @@ def detalii_dosar(request, pk):
     
     form_document = DocumentForm()
     form_parte = ParteImplicataForm()
-    form_infractiune = InfractiuneForm() 
+    form_infractiune = InfractiuneForm()
+    form_termen = TermenProceduralForm() 
 
     # 1. Inițializăm formularul NOU, dându-i ID-ul dosarului
     form_masura = MasuraPreventivaForm(dosar_id=dosar.pk)
@@ -366,6 +446,16 @@ def detalii_dosar(request, pk):
                 masura.dosar = dosar
                 masura.save()
                 return redirect('cases:detalii_dosar', pk=dosar.pk)
+            
+        # 2. Dacă a apăsat pe Salvare TERMEN PROCEDURAL (Cod Nou)
+        elif 'btn_salveaza_termen' in request.POST:
+            form_termen = TermenProceduralForm(request.POST)
+            if form_termen.is_valid():
+                termen = form_termen.save(commit=False)
+                termen.dosar = dosar
+                termen.save()
+                messages.success(request, 'Termenul procedural a fost adăugat cu succes.')
+                return redirect('cases:detalii_dosar', pk=dosar.pk)
 
     context = {
             'dosar': dosar,
@@ -373,6 +463,7 @@ def detalii_dosar(request, pk):
             'form_parte': form_parte,
             'form_infractiune': form_infractiune,
             'form_masura': form_masura,
+            'form_termen': form_termen,
             'poate_edita': poate_edita 
         }
     
@@ -620,6 +711,49 @@ def editare_masura(request, pk):
         'dosar': masura.dosar
     }
     return render(request, 'cases/editare_masura.html', context)
+
+@login_required
+def editare_termen(request, pk):
+    termen = get_object_or_404(TermenProcedural, pk=pk)
+    dosar = termen.dosar
+    
+    if not termen.dosar.are_drepturi_editare(request.user) and not request.user.is_superuser:
+        raise PermissionDenied("Nu ai permisiunea de a edita date din acest dosar.")
+
+    if request.method == 'POST':
+        form = TermenProceduralForm(request.POST, instance=termen)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Termenul procedural a fost actualizat cu succes.')
+            return redirect('cases:detalii_dosar', pk=dosar.pk)
+    else:
+        form = TermenProceduralForm(instance=termen)
+
+    context = {
+        'form': form,
+        'termen': termen,
+        'dosar': dosar
+    }
+    return render(request, 'cases/editare_termen.html', context)
+
+@login_required
+def stergere_termen(request, pk):
+    termen = get_object_or_404(TermenProcedural, pk=pk)
+    dosar = termen.dosar
+
+    if not termen.dosar.are_drepturi_editare(request.user) and not request.user.is_superuser:
+        raise PermissionDenied("Nu ai permisiunea de a șterge date din acest dosar.")
+
+    if request.method == 'POST':
+        termen.delete()
+        messages.success(request, 'Termenul procedural a fost șters definitiv.')
+        return redirect('cases:detalii_dosar', pk=dosar.pk)
+
+    context = {
+        'termen': termen,
+        'dosar': dosar
+    }
+    return render(request, 'cases/stergere_termen.html', context)
 
 @login_required
 def editare_infractiune(request, pk):
@@ -989,7 +1123,8 @@ def harta_infractionalitatii(request):
         
     context = {
         # Transformăm lista în format JSON pentru HTML
-        'date_harta_json': json.dumps(date_harta)
+        'date_harta_json': json.dumps(date_harta),
+        'tile_server_url': settings.MAP_TILE_SERVER_URL, # Trimitem adresa hărții
     }
     
     return render(request, 'cases/harta.html', context)

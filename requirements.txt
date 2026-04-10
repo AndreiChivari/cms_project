@@ -45,3 +45,4 @@ Pillow
 django-jazzmin
 django-otp
 qrcode
+python-dotenv

@@ -1,5 +1,5 @@
 from django import forms
-from .models import Dosar, ParteImplicata, Infractiune, MasuraPreventiva, StadiuCercetare, SolutieDosar
+from .models import Dosar, ParteImplicata, Infractiune, MasuraPreventiva, StadiuCercetare, SolutieDosar, TermenProcedural
 from django.contrib.auth import get_user_model #  modelul de utilizator
 from django.core.exceptions import ValidationError
 
@@ -321,3 +321,13 @@ class SolutieDosarForm(forms.ModelForm):
                 self.add_error('este_finala', "🛑 Acest dosar are deja o soluție definitivă înregistrată. Nu pot exista două soluții finale pe același dosar!")
 
         return cleaned_data
+    
+class TermenProceduralForm(forms.ModelForm):
+    class Meta:
+        model = TermenProcedural
+        fields = ['tip_termen', 'data_limita', 'detalii']
+        widgets = {
+            'tip_termen': forms.Select(attrs={'class': 'form-select border-start-0 bg-light'}),
+            'data_limita': forms.DateInput(attrs={'type': 'date', 'class': 'form-control border-start-0 bg-light'}),
+            'detalii': forms.Textarea(attrs={'class': 'form-control bg-light', 'rows': 3, 'placeholder': 'Detalii suplimentare...'}),
+        }

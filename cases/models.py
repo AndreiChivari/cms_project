@@ -381,3 +381,51 @@ class Notificare(models.Model):
     def __str__(self):
         stare = "Citită" if self.citita else "NOUĂ"
         return f"[{stare}] {self.utilizator} - {self.mesaj}"
+    
+
+class TermenProcedural(models.Model):
+    TIP_TERMEN_CHOICES = [
+        ('PRESCRIPTIE_GEN', 'Prescripție Generală'),
+        ('PRESCRIPTIE_SPEC', 'Prescripție Specială'),
+        ('INSTANTA', 'Termen Instanță (Contestație durată)'),
+        ('PROROGARE', 'Termen Prorogare / Declinare'),
+        ('ALTUL', 'Alt tip de termen procedural'),
+    ]
+
+    # Legăm termenul direct de Dosar (nu de o persoană)
+    dosar = models.ForeignKey(
+        'Dosar', 
+        on_delete=models.CASCADE, 
+        related_name='termene_procedurale'
+    )
+    tip_termen = models.CharField(
+        max_length=20, 
+        choices=TIP_TERMEN_CHOICES, 
+        verbose_name="Tip Termen"
+    )
+    data_limita = models.DateField(
+        verbose_name="Dată Limită / Scadență"
+    )
+    detalii = models.TextField(
+        blank=True, 
+        null=True, 
+        verbose_name="Detalii / Observații",
+        help_text="Ex: Judecătoria Brașov a stabilit termen pentru finalizarea urmăririi penale."
+    )
+    adaugat_la = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Termen Procedural"
+        verbose_name_plural = "Termene Procedurale"
+        # Ordonăm automat după data limită (cele mai urgente primele)
+        ordering = ['data_limita']
+
+    def __str__(self):
+        return f"{self.get_tip_termen_display()} - {self.dosar.numar_unic}"
+
+    # Proprietate calculată dinamic (foarte utilă pentru Dashboard)
+    @property
+    def zile_ramase(self):
+        if self.data_limita:
+            return (self.data_limita - date.today()).days
+        return 0

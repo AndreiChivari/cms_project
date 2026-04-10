@@ -1,6 +1,6 @@
 from django.contrib import admin
 from simple_history.admin import SimpleHistoryAdmin
-from .models import Dosar, ParteImplicata, Infractiune, MasuraPreventiva, IstoricDesemnare, StadiuCercetare, SolutieDosar, Notificare
+from .models import Dosar, ParteImplicata, Infractiune, MasuraPreventiva, IstoricDesemnare, StadiuCercetare, SolutieDosar, Notificare, TermenProcedural
 import csv
 from django.http import HttpResponse
 
@@ -118,3 +118,9 @@ class NotificareAdmin(admin.ModelAdmin):
     list_display = ('utilizator', 'mesaj', 'citita', 'data_crearii')
     list_filter = ('citita', 'data_crearii')
     search_fields = ('utilizator__username', 'mesaj', 'utilizator__first_name', 'utilizator__last_name')
+
+@admin.register(TermenProcedural)
+class TermenProceduralAdmin(admin.ModelAdmin):
+    list_display = ('dosar', 'tip_termen', 'data_limita', 'zile_ramase')
+    list_filter = ('tip_termen', 'data_limita')
+    search_fields = ('dosar__numar_unic', 'detalii')

@@ -162,7 +162,7 @@
                                         {% if poate_edita %}
                                         <a href="{% url 'cases:stergere_istoric_echipa' istoric.pk %}" 
                                             class="text-danger text-opacity-50 hover-text-danger text-decoration-none px-1" 
-                                            onclick="return confirm('Ștergi acest ofițer din istoric?');"
+                                            onclick="return confirm('Ștergi acest organ de cercetare din istoric?');"
                                             style="font-size: 1.1rem; line-height: 1;">&times;</a>
                                         {% endif %}
                                     </div>
@@ -395,6 +395,68 @@
                 {% empty %}
                 <tr>
                     <td colspan="5" class="text-center py-4 text-muted bg-white">Nu există măsuri preventive dispuse în această cauză.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card border-0 border-top border-info border-3 shadow-sm mb-4 rounded-3 overflow-hidden">
+    <div class="card-header bg-white py-3 border-bottom border-secondary border-opacity-10 d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2" style="font-size: 0.95rem;">
+            <i class="bi bi-calendar-event text-info"></i> Termene procedurale și alerte
+        </h6>
+        {% if poate_edita %}
+        <button type="button" class="btn btn-sm btn-outline-info fw-medium" data-bs-toggle="modal" data-bs-target="#adaugaTermenModal">
+            <i class="bi bi-plus-lg me-1"></i> Adaugă termen
+        </button>
+        {% endif %}
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+            <thead class="table-light text-muted">
+                <tr>
+                    <th class="py-2 px-4 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase;">Tip Termen</th>
+                    <th class="py-2 px-3 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase;">Data Limită</th>
+                    <th class="py-2 px-3 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase;">Timp Rămas</th>
+                    <th class="py-2 px-3 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase;">Detalii</th>
+                    {% if poate_edita %}
+                    <th class="py-2 px-4 fw-medium border-0 text-end" style="font-size: 0.8rem; text-transform: uppercase;">Acţiuni</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for termen in dosar.termene_procedurale.all %}
+                <tr class="{% if termen.zile_ramase <= 3 and termen.zile_ramase >= 0 %}bg-danger bg-opacity-10{% elif termen.zile_ramase <= 30 and termen.zile_ramase > 3 %}bg-warning bg-opacity-10{% elif termen.zile_ramase < 0 %}bg-dark bg-opacity-10{% endif %}">
+                    <td class="px-4 py-2 text-dark fw-medium">
+                        <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">{{ termen.get_tip_termen_display }}</span>
+                    </td>
+                    <td class="px-3 py-2"><strong class="text-dark">{{ termen.data_limita|date:"d.m.Y" }}</strong></td>
+                    <td class="px-3 py-2">
+                        {% if termen.zile_ramase < 0 %}
+                            <span class="text-danger fw-bold"><i class="bi bi-exclamation-triangle"></i> Expirat</span>
+                        {% else %}
+                            {{ termen.zile_ramase }} zile
+                        {% endif %}
+                    </td>
+                    <td class="px-3 py-2 text-muted small">{{ termen.detalii|default:"-"|truncatechars:40 }}</td>
+                    {% if poate_edita %}
+                    <td class="px-4 py-2 text-end">
+                        <div class="btn-group">
+                            <a href="{% url 'cases:editare_termen' termen.pk %}" class="btn btn-sm btn-light border border-secondary border-opacity-25 text-primary bg-white" title="Editează">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <a href="{% url 'cases:stergere_termen' termen.pk %}" class="btn btn-sm btn-light border border-secondary border-opacity-25 text-danger bg-white" title="Șterge">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </div>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center py-4 text-muted bg-white">Nu există termene procedurale setate pentru această cauză.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -642,7 +704,6 @@ document.getElementById('input-ocr-scan').addEventListener('change', function(e)
     .finally(() => {
         icon.classList.remove('d-none');
         spinner.classList.add('d-none');
-        // NU ștergem this.value aici, altfel Python nu va mai avea ce să salveze la final!
     });
 });
 </script>
@@ -727,6 +788,42 @@ document.getElementById('input-ocr-scan').addEventListener('change', function(e)
                 <div class="modal-footer border-top border-secondary border-opacity-10 px-4 py-3 bg-light">
                     <button type="button" class="btn btn-light border border-secondary border-opacity-25" data-bs-dismiss="modal">Anulează</button>
                     <button type="submit" name="btn_salveaza_masura" class="btn btn-primary px-4 shadow-sm fw-medium">Salvează măsura</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="adaugaTermenModal" tabindex="-1" aria-labelledby="termenModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-3">
+            <div class="modal-header bg-light border-bottom border-secondary border-opacity-10 px-4 pt-3 pb-3">
+                <h5 class="modal-title text-dark fw-bold d-flex align-items-center gap-2" style="font-size: 1.05rem;" id="termenModalLabel">
+                    <i class="bi bi-calendar-plus text-info"></i> Adaugă termen procedural
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{% url 'cases:detalii_dosar' dosar.pk %}">
+                {% csrf_token %}
+                <div class="modal-body px-4 py-4 django-form-wrapper">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem;">Tipul termenului</label>
+                            {{ form_termen.tip_termen }}
+                        </div>
+                        <div class="col-md-6 mt-3 mt-md-0">
+                            <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem;">Dată limită / Scadență</label>
+                            {{ form_termen.data_limita }}
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem;">Detalii (Opțional)</label>
+                        {{ form_termen.detalii }}
+                    </div>
+                </div>
+                <div class="modal-footer border-top border-secondary border-opacity-10 px-4 py-3 bg-light">
+                    <button type="button" class="btn btn-light border border-secondary border-opacity-25" data-bs-dismiss="modal">Anulează</button>
+                    <button type="submit" name="btn_salveaza_termen" class="btn btn-info text-white px-4 shadow-sm fw-medium">Salvează termenul</button>
                 </div>
             </form>
         </div>
@@ -821,5 +918,51 @@ document.getElementById('input-ocr-scan').addEventListener('change', function(e)
     });
 </script>
 {% endif %}
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Găsim câmpurile din formularul generat de Django
+        const durataInput = document.getElementById('id_durata_zile');
+        const dataInceputInput = document.getElementById('id_data_inceput');
+        const dataSfarsitInput = document.getElementById('id_data_sfarsit');
+
+        // Verificăm dacă suntem pe o pagină care are aceste câmpuri
+        if (durataInput && dataInceputInput && dataSfarsitInput) {
+            
+            function calculeazaDataSfarsit() {
+                const durata = parseInt(durataInput.value);
+                const dataInceputVal = dataInceputInput.value;
+
+                // Dacă avem ambele valori completate valid
+                if (!isNaN(durata) && dataInceputVal) {
+                    const dataCalculata = new Date(dataInceputVal);
+                    
+                    // Atenție juridică: Modifică formula de mai jos în funcție de specificul calculului (CPP)
+                    // Matematic: 1 Ian + 30 zile = 31 Ian. 
+                    // Dacă juridic ziua de început se ia în calcul integral (ex. expiră pe 30 Ian), adaugă un "- 1" după durata.
+                    dataCalculata.setDate(dataCalculata.getDate() + durata - 1); 
+
+                    // Formatăm data înapoi în standardul YYYY-MM-DD acceptat de input-ul HTML
+                    const an = dataCalculata.getFullYear();
+                    const luna = String(dataCalculata.getMonth() + 1).padStart(2, '0');
+                    const zi = String(dataCalculata.getDate()).padStart(2, '0');
+
+                    // Setăm valoarea în câmpul de final
+                    dataSfarsitInput.value = `${an}-${luna}-${zi}`;
+                    
+                    // Opțional: Facem câmpul să "pâlpâie" un pic vizual pentru a arăta că s-a autocompletat
+                    dataSfarsitInput.classList.add('bg-success', 'bg-opacity-10', 'text-success');
+                    setTimeout(() => {
+                        dataSfarsitInput.classList.remove('bg-success', 'bg-opacity-10', 'text-success');
+                    }, 500);
+                }
+            }
+
+            // Ascultăm evenimentele de tastare/schimbare pe ambele câmpuri
+            durataInput.addEventListener('input', calculeazaDataSfarsit);
+            dataInceputInput.addEventListener('change', calculeazaDataSfarsit);
+        }
+    });
+</script>
 
 {% endblock %}

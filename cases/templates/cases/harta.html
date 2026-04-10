@@ -3,9 +3,21 @@
 {% block title %}Harta Infracționalității - Brașov{% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<!-- <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+<script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script> -->
+
+{% load static %} <link rel="stylesheet" href="{% static 'leaflet/leaflet.css' %}" />
+<script src="{% static 'leaflet/leaflet.js' %}"></script>
+<script src="{% static 'leaflet/leaflet-heat.js' %}"></script>
+
+<link rel="stylesheet" href="{% static 'leaflet/MarkerCluster.css' %}" />
+<link rel="stylesheet" href="{% static 'leaflet/MarkerCluster.Default.css' %}" />
+<script src="{% static 'leaflet/leaflet.markercluster.js' %}"></script>
 
 <div class="container-fluid mb-4">
     <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom border-secondary border-opacity-25 mt-3">
@@ -26,30 +38,29 @@
                     <label class="form-label small text-muted fw-bold text-uppercase mb-2"><i class="bi bi-book-half"></i> Act Normativ</label>
                     <select id="filtru-act" class="form-select border-secondary border-opacity-25 shadow-none bg-light">
                         <option value="TOATE">Toate</option>
-                        </select>
+                    </select>
                 </div>
                 <div class="col-lg-3 col-md-6 mb-3 mb-lg-0">
                     <label class="form-label small text-muted fw-bold text-uppercase mb-2"><i class="bi bi-tag-fill"></i> Încadrare Juridică</label>
                     <select id="filtru-incadrare" class="form-select border-secondary border-opacity-25 shadow-none bg-light">
                         <option value="TOATE">Toate încadrările</option>
-                        </select>
+                    </select>
                 </div>
-                <div class="col-lg-3 col-md-4 mb-3 mb-lg-0">
+                <div class="col-lg-2 col-md-4 mb-3 mb-lg-0">
                     <label class="form-label small text-muted fw-bold text-uppercase mb-2"><i class="bi bi-pin-map-fill"></i> Localitate</label>
                     <select id="filtru-oras" class="form-select border-secondary border-opacity-25 shadow-none bg-light">
                         <option value="TOATE">Toate localitățile</option>
-                        </select>
-                </div>
-                <div class="col-lg-2 col-md-4 mb-3 mb-lg-0">
-                    <label class="form-label small text-muted fw-bold text-uppercase mb-2"><i class="bi bi-calendar-event-fill"></i> Perioada</label>
-                    <select id="filtru-timp" class="form-select border-secondary border-opacity-25 shadow-none bg-light">
-                        <option value="TOATE">Dintotdeauna</option>
-                        <option value="30">Ultimele 30 de zile</option>
-                        <option value="90">Ultimele 3 luni</option>
-                        <option value="365">Ultimul an</option>
                     </select>
                 </div>
-                <div class="col-lg-2 col-md-4">
+                <div class="col-lg-3 col-md-5 mb-3 mb-lg-0">
+                    <label class="form-label small text-muted fw-bold text-uppercase mb-2"><i class="bi bi-calendar-range-fill"></i> Interval Temporal</label>
+                    <div class="input-group shadow-none">
+                        <input type="date" id="filtru-data-start" class="form-control border-secondary border-opacity-25 bg-light" title="De la data de">
+                        <span class="input-group-text bg-light border-secondary border-opacity-25">-</span>
+                        <input type="date" id="filtru-data-stop" class="form-control border-secondary border-opacity-25 bg-light" title="Până la data de">
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-3">
                     <button id="btn-reset" class="btn btn-outline-secondary w-100 fw-medium">
                         <i class="bi bi-arrow-clockwise"></i> Resetează
                     </button>
@@ -107,12 +118,21 @@
         });
         
         const map = L.map('map').setView([45.657974, 25.601198], 10);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        
+        // Preluăm adresa dinamică trimisă de backend (din fișierul .env via settings.py)
+        const tileServerUrl = '{{ tile_server_url|safe }}';
+        
+        L.tileLayer(tileServerUrl, {
             attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
             maxZoom: 20
         }).addTo(map);
         
-        const piniLayer = L.layerGroup();
+        // NOU: Instanțiem Clustering-ul în loc de un simplu LayerGroup
+        const piniLayer = L.markerClusterGroup({
+            chunkedLoading: true,
+            maxClusterRadius: 50 // Cât de apropiați trebuie să fie pinii pentru a se grupa (default e 80)
+        });
+        
         const heatLayer = L.heatLayer([], {
             radius: 25, blur: 15, maxZoom: 15,
             gradient: {0.4: 'blue', 0.6: 'cyan', 0.7: 'lime', 0.8: 'yellow', 1.0: 'red'}
@@ -121,14 +141,14 @@
         heatLayer.addTo(map);
         L.control.layers({}, {
             "🔥 Zone de risc (Heatmap)": heatLayer,
-            "📍 Puncte specifice (Pini)": piniLayer
+            "📍 Puncte specifice (Pini Grupate)": piniLayer
         }, {collapsed: false}).addTo(map);
 
         // 2. Populăm Dropdown-urile dinamic
         function populeazaDropdowns() {
             const selectAct = document.getElementById('filtru-act');
             const selectIncadrare = document.getElementById('filtru-incadrare');
-            const selectOras = document.getElementById('filtru-oras'); // Dropdown nou
+            const selectOras = document.getElementById('filtru-oras'); 
             
             // Extragem liste unice
             const acteUnice = [...new Set(dateInitiale.map(p => p.act_normativ))].sort();
@@ -161,6 +181,9 @@
             const heatData = [];
             const incadrariCount = {};
             const oraseCount = {};
+            
+            // Array pentru a ține toți markerii înainte de a-i adăuga în cluster
+            const markeriDeAdaugat = [];
 
             dateFiltrate.forEach(punct => {
                 heatData.push([punct.lat, punct.lng, 1]);
@@ -178,7 +201,10 @@
                     
                     <p class="mb-0 text-secondary small"><i class="bi bi-calendar-event"></i> Data faptei: ${punct.data ? punct.data : 'Necunoscută'}</p>
                 </div>`;
-                L.marker([punct.lat, punct.lng]).bindPopup(popup).addTo(piniLayer);
+                
+                // Creăm markerul și îl adăugăm în array, NU direct pe hartă
+                const marker = L.marker([punct.lat, punct.lng]).bindPopup(popup);
+                markeriDeAdaugat.push(marker);
 
                 // Statistici
                 if(punct.incadrare !== "Fără încadrare") {
@@ -189,6 +215,11 @@
                     oraseCount[punct.oras_extras] = (oraseCount[punct.oras_extras] || 0) + 1;
                 }
             });
+
+            // Adăugăm toți markerii în layer-ul de clustering o singură dată (mai rapid)
+            piniLayer.addLayers(markeriDeAdaugat);
+            // Dacă vrei ca pinii să fie vizibili by default, folosește linia de jos. Dacă vrei doar heatmap-ul, comenteaz-o.
+            map.addLayer(piniLayer); 
 
             heatLayer.setLatLngs(heatData);
 
@@ -211,20 +242,33 @@
         function aplicaFiltre() {
             const actSelectat = document.getElementById('filtru-act').value;
             const incadrareSelectata = document.getElementById('filtru-incadrare').value;
-            const orasSelectat = document.getElementById('filtru-oras').value; // Valoare filtru nou
-            const timpSelectat = document.getElementById('filtru-timp').value;
-            const azi = new Date();
+            const orasSelectat = document.getElementById('filtru-oras').value; 
+            
+            // NOU: Citirea datelor din interval
+            const dataStart = document.getElementById('filtru-data-start').value;
+            const dataStop = document.getElementById('filtru-data-stop').value;
 
             const dateFiltrate = dateInitiale.filter(punct => {
                 if (actSelectat !== 'TOATE' && punct.act_normativ !== actSelectat) return false;
                 if (incadrareSelectata !== 'TOATE' && punct.incadrare !== incadrareSelectata) return false;
-                if (orasSelectat !== 'TOATE' && punct.oras_extras !== orasSelectat) return false; // Filtrare logică oraș
+                if (orasSelectat !== 'TOATE' && punct.oras_extras !== orasSelectat) return false;
                 
-                if (timpSelectat !== 'TOATE') {
-                    if (!punct.data) return false;
+                // NOU: Filtrare precisă pe intervalul de date ales
+                if (dataStart || dataStop) {
+                    if (!punct.data) return false; // Excludem faptele fără dată dacă s-a cerut un filtru temporal
+                    
                     const dataFaptei = new Date(punct.data);
-                    const diferentaZile = Math.ceil(Math.abs(azi - dataFaptei) / (1000 * 60 * 60 * 24));
-                    if (diferentaZile > parseInt(timpSelectat)) return false;
+                    
+                    if (dataStart) {
+                        const start = new Date(dataStart);
+                        if (dataFaptei < start) return false;
+                    }
+                    
+                    if (dataStop) {
+                        const stop = new Date(dataStop);
+                        stop.setHours(23, 59, 59, 999); // Includem întreaga zi selectată
+                        if (dataFaptei > stop) return false;
+                    }
                 }
                 
                 return true;
@@ -239,14 +283,20 @@
 
         document.getElementById('filtru-act').addEventListener('change', aplicaFiltre);
         document.getElementById('filtru-incadrare').addEventListener('change', aplicaFiltre);
-        document.getElementById('filtru-oras').addEventListener('change', aplicaFiltre); // Ascultător nou
-        document.getElementById('filtru-timp').addEventListener('change', aplicaFiltre);
+        document.getElementById('filtru-oras').addEventListener('change', aplicaFiltre);
+        
+        // NOU: Ascultători pentru cele două câmpuri de dată
+        document.getElementById('filtru-data-start').addEventListener('change', aplicaFiltre);
+        document.getElementById('filtru-data-stop').addEventListener('change', aplicaFiltre);
         
         document.getElementById('btn-reset').addEventListener('click', function() {
             document.getElementById('filtru-act').value = 'TOATE';
             document.getElementById('filtru-incadrare').value = 'TOATE';
             document.getElementById('filtru-oras').value = 'TOATE';
-            document.getElementById('filtru-timp').value = 'TOATE';
+            // Resetarea câmpurilor de dată
+            document.getElementById('filtru-data-start').value = '';
+            document.getElementById('filtru-data-stop').value = '';
+            
             proceseazaDate(dateInitiale);
         });
     });
@@ -254,5 +304,12 @@
 
 <style>
     .leaflet-control-layers { border-radius: 8px !important; border: none !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1) !important; padding: 6px !important; }
+    /* NOU: O mică ajustare pentru cluster-ele markerilor să arate bine */
+    .marker-cluster-small { background-color: rgba(13, 110, 253, 0.6); }
+    .marker-cluster-small div { background-color: rgba(13, 110, 253, 0.9); color: white; font-weight: bold; }
+    .marker-cluster-medium { background-color: rgba(255, 193, 7, 0.6); }
+    .marker-cluster-medium div { background-color: rgba(255, 193, 7, 0.9); color: dark; font-weight: bold; }
+    .marker-cluster-large { background-color: rgba(220, 53, 69, 0.6); }
+    .marker-cluster-large div { background-color: rgba(220, 53, 69, 0.9); color: white; font-weight: bold; }
 </style>
 {% endblock %}

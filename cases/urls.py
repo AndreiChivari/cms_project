@@ -24,7 +24,6 @@ urlpatterns = [
     path('<int:pk>/editeaza/', views.editare_dosar, name='editare_dosar'),
 
     # Rutele pentru Părți Implicate
-
     path('parte/<int:pk>/editeaza/', views.editare_parte, name='editare_parte'),
     path('parte/<int:pk>/sterge/', views.stergere_parte, name='stergere_parte'),
 
@@ -32,9 +31,13 @@ urlpatterns = [
     path('document/<int:pk>/editeaza/', views.editare_document, name='editare_document'),
     path('document/<int:pk>/sterge/', views.stergere_document, name='stergere_document'),
 
-    # Rute noi pentru stergerea si modificarea masurilor
+    # Rute pentru stergerea si modificarea masurilor
     path('masura/<int:pk>/sterge/', views.stergere_masura, name='stergere_masura'),
     path('masura/<int:pk>/editeaza/', views.editare_masura, name='editare_masura'),
+
+    # Rute pentru termene procedurale
+    path('termen/<int:pk>/editeaza/', views.editare_termen, name='editare_termen'),
+    path('termen/<int:pk>/sterge/', views.stergere_termen, name='stergere_termen'),
 
     # Rute pentru actiunile Infracțiunii
     path('infractiune/<int:pk>/editeaza/', views.editare_infractiune, name='editare_infractiune'),
@@ -61,10 +64,10 @@ urlpatterns = [
     # Ruta pentru testarea API-ului OCR
     path('api/test-ocr/', views.test_ocr_api, name='test_ocr_api'),
 
-    # Ruta pentru interfața grafică (pagina HTML)
+    # Ruta pentru interfața grafică OCR de test (pagina HTML)
     path('test-ocr/', views.pagina_test_ocr, name='pagina_test_ocr'),
 
-    # Ruta pentru Analiza Relațională
+    # Ruta pentru analiza relațională
     path('analiza-conexiuni/', views.graf_relational, name='graf_relational'),
     path('api/graf-relational/', views.date_graf_relational, name='api_graf_relational'),
 ]
