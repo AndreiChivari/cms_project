@@ -46,3 +46,4 @@ django-jazzmin
 django-otp
 qrcode
 python-dotenv
+docxtpl==0.20.2

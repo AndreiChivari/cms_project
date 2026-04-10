@@ -31,6 +31,9 @@ import re
 # Importuri pentru criptare CNP
 import hmac
 import hashlib
+# Import pentru generare şi salvare documente Word
+from docxtpl import DocxTemplate
+from django.core.files.base import ContentFile
 
 User = get_user_model()
 
@@ -1219,12 +1222,14 @@ def test_ocr_api(request):
     return JsonResponse({'status': 'error', 'mesaj': 'Metodă invalidă.'})
 
 # Funcția care afișează pagina HTML pe ecran
+@login_required
 def pagina_test_ocr(request):
     return render(request, 'cases/test_ocr.html')
 
 # === GRAF RELAŢIONAL ===
 # API apelat de JavaScript pentru a obține datele în formatul necesar pentru vizualizarea grafică
 # extrage datele, rezolvă problema duplicatelor și construiește structura matematică (Noduri și Muchii)
+@login_required
 def date_graf_relational(request):
     """
     Acest API returnează datele întregii baze de date 
@@ -1313,5 +1318,214 @@ def date_graf_relational(request):
     return JsonResponse({'nodes': nodes, 'edges': edges})
 
 # Funcția simplă care va deschide pagina HTML a Grafului
+@login_required
 def graf_relational(request):
     return render(request, 'cases/graf_relational.html')
+
+@login_required
+def genereaza_act(request, pk):
+    dosar = get_object_or_404(Dosar, pk=pk)
+
+    if not dosar.are_drepturi_editare(request.user):
+        raise PermissionDenied("Nu ai permisiunea de a edita acest dosar.")
+    
+    if request.method == 'POST':
+        tip_act = request.POST.get('tip_act')
+        
+        # --- 1. SETĂM EMITENTUL ȘI VARIABILELE INDIVIDUALE ---
+        alegere_emitent = request.POST.get('emitent', 'politie') 
+        
+        # Reguli stricte de competență
+        if tip_act in ['ord_clasare', 'ord_renuntare']:
+            alegere_emitent = 'procuror'
+        elif tip_act in ['ref_clasare', 'ref_renuntare']:
+            alegere_emitent = 'politie'
+            
+        nume_user = request.user.get_full_name() or request.user.username
+        unitate = getattr(request.user, 'unitate', 'Unitate nespecificată')
+        grad = getattr(request.user, 'grad_profesional', '')
+        
+        if alegere_emitent == 'procuror':
+            functie_antet = "Procuror"
+            nume_semnatar = nume_user
+        else:
+            functie_antet = "Organ de cercetare penală al poliției judiciare"
+            nume_semnatar = f"{grad} {nume_user}"
+
+        # --- 2. LOGICA PENTRU FIECARE ACT ȘI ALEGEREA ȘABLONULUI ---
+        context_doc = {}
+        template_name = ""
+        nume_fisier = ""
+        
+        if tip_act == 'citatie':
+            id_persoana = request.POST.get('persoana_citata')
+            parte = get_object_or_404(ParteImplicata, pk=id_persoana)
+            
+            # FORMATĂM DATA ȘI ORA PENTRU CITAȚIE
+            data_ora_raw = request.POST.get('data_ora')
+            data_ora_formatata = data_ora_raw 
+            if data_ora_raw:
+                try:
+                    dt_obj = datetime.strptime(data_ora_raw, '%Y-%m-%dT%H:%M')
+                    data_ora_formatata = dt_obj.strftime('%d.%m.%Y, ora %H:%M')
+
+                    # CREAREA AUTOMATĂ A TERMENULUI DE AUDIERE ÎN SECŢIUNEA DE TERMENE
+                    TermenProcedural.objects.create(
+                        dosar=dosar,
+                        tip_termen='AUDIERE',
+                        data_limita=dt_obj.date(),
+                        detalii=f"Citat: {parte.nume_complet} pentru {request.POST.get('scop')}"
+                    )
+                except ValueError:
+                    pass
+            
+            if alegere_emitent == 'procuror':
+                template_name = 'citatie_procuror_template.docx'
+            else:
+                template_name = 'citatie_politie_template.docx'
+                
+            nume_fisier = f"Citatie_{parte.nume_complet.replace(' ', '_')}_{dosar.numar_unic}.docx"
+            
+            context_doc = {
+                'numar_dosar': dosar.numar_unic,
+                'nume_persoana': parte.nume_complet,
+                'calitate': parte.get_calitate_procesuala_display() if hasattr(parte, 'get_calitate_procesuala_display') else parte.calitate_procesuala,
+                'adresa': parte.adresa if parte.adresa else "Adresă necunoscută",
+                'data_ora': data_ora_formatata, 
+                'scop': request.POST.get('scop'),
+                'functie': functie_antet,
+                'nume_semnatar': nume_semnatar,
+                'unitate': unitate
+            }
+            
+        elif tip_act in ['oiup', 'ord_clasare', 'ref_clasare', 'ord_renuntare', 'ref_renuntare']:
+            # Formatăm data emiterii actului
+            data_raw = request.POST.get('data_actului')
+            data_formatata = "____/____/________"
+            if data_raw:
+                dt = datetime.strptime(data_raw, '%Y-%m-%d')
+                data_formatata = dt.strftime('%d.%m.%Y')
+            
+            # --- DATE SPECIFICE DOSARULUI ---
+            data_inreg = dosar.data_inregistrarii.strftime('%d.%m.%Y') if dosar.data_inregistrarii else "---"
+            
+            infr_raw = getattr(dosar, 'infractiune_cercetata', 'faptele reclamate')
+            if infr_raw and len(infr_raw) > 0:
+                infr_cercetata = infr_raw[0].lower() + infr_raw[1:]
+            else:
+                infr_cercetata = "faptele reclamate"
+            
+            prima_infractiune = dosar.infractiuni.first()
+            if prima_infractiune:
+                incad_raw = prima_infractiune.incadrare_juridica
+                if incad_raw and len(incad_raw) > 0:
+                    incadrare = incad_raw[0].lower() + incad_raw[1:]
+                else:
+                    incadrare = "nespecificată"
+                    
+                articol = prima_infractiune.articol
+                act_normativ = prima_infractiune.get_act_normativ_display() if hasattr(prima_infractiune, 'get_act_normativ_display') else prima_infractiune.act_normativ
+            else:
+                incadrare = "nespecificată"
+                articol = "---"
+                act_normativ = "---"
+
+            # Lista persoanelor alese pentru comunicare
+            ids_comunicare = request.POST.getlist('persoane_comunicare') 
+            parti_selectate = ParteImplicata.objects.filter(id__in=ids_comunicare)
+            lista_parti = [{'nume_complet': p.nume_complet} for p in parti_selectate]
+
+            # --- CONTEXTUL COMUN ---
+            context_doc = {
+                'numar_dosar': dosar.numar_unic,
+                'data_actului': data_formatata,
+                'temei': request.POST.get('temei_clasare', ''), 
+                'functie': functie_antet,
+                'nume_semnatar': nume_semnatar,
+                'unitate': unitate,
+                'data_inregistrarii': data_inreg,
+                'infractiune_cercetata': infr_cercetata,
+                'incadrare_juridica': incadrare,
+                'articol': articol,
+                'act_normativ': act_normativ,
+                'lista_comunicare': lista_parti 
+            }
+            
+            # ---> BLOCUL CARE LIPSEA: SETAREA ȘABLOANELOR <---
+            if tip_act == 'oiup':
+                if alegere_emitent == 'procuror':
+                    template_name = 'oiup_procuror_template.docx'
+                else:
+                    template_name = 'oiup_politie_template.docx'
+                nume_fisier = f"OIUP_{dosar.numar_unic}.docx"
+                
+            elif tip_act == 'ord_clasare':
+                template_name = 'ordonanta_clasare.docx'
+                nume_fisier = f"Ordonanta_Clasare_{dosar.numar_unic}.docx"
+                
+            elif tip_act == 'ref_clasare':
+                template_name = 'clasare_ref_template.docx'
+                nume_fisier = f"Referat_Clasare_{dosar.numar_unic}.docx"
+                
+            elif tip_act == 'ord_renuntare':
+                template_name = 'renuntare_ord_template.docx'
+                nume_fisier = f"Ordonanta_Renuntare_{dosar.numar_unic}.docx"
+                
+            elif tip_act == 'ref_renuntare':
+                template_name = 'renuntare_ref_template.docx'
+                nume_fisier = f"Referat_Renuntare_{dosar.numar_unic}.docx"
+
+        # --- 3. GENERAREA FIZICĂ A DOCUMENTULUI ȘI SALVAREA ---
+        if template_name:
+            template_path = os.path.join(settings.BASE_DIR, 'cases', 'templates', 'acte', template_name)
+            
+            if not os.path.exists(template_path):
+                messages.error(request, f'Eroare: Șablonul {template_name} nu a fost găsit pe server.')
+                return redirect('cases:detalii_dosar', pk=dosar.pk)
+
+            doc = DocxTemplate(template_path)
+            doc.render(context_doc)
+            
+            file_stream = io.BytesIO()
+            doc.save(file_stream)
+            
+            # --- NOU: SALVAREA ÎN BAZA DE DATE ---
+            # Facem un dicționar pentru a transforma codul actului într-un text lizibil
+            nume_tipuri_acte = {
+                'citatie': 'Citație',
+                'oiup': 'Ordonanță Începere UP',
+                'ord_clasare': 'Ordonanță Clasare',
+                'ref_clasare': 'Referat Clasare',
+                'ord_renuntare': 'Ordonanță Renunțare',
+                'ref_renuntare': 'Referat Renunțare',
+            }
+            tip_frumos = nume_tipuri_acte.get(tip_act, tip_act.upper())
+            
+            # Curățăm titlul ca să nu arate urât în tabelă (ex: "Citatie Popescu_Ion_123_P_2024" -> "Citatie Popescu Ion 123 P 2024")
+            titlu_curat = nume_fisier.replace('.docx', '').replace('_', ' ')
+
+            # Creăm și salvăm obiectul
+            # (Presupun că ai importat modelul ActUrmarire sus de tot)
+            act = ActUrmarire(
+                dosar=dosar,
+                tip=tip_frumos[:50], 
+                titlu=titlu_curat,
+                autor=request.user,
+                data_documentului=datetime.today().date(),
+            )
+            
+            # act.fisier.save() face automat și scrierea fișierului pe disc (în media/) și act.save() în baza de date!
+            act.fisier.save(nume_fisier.replace("/", "_"), ContentFile(file_stream.getvalue()))
+            
+            # Mesaj de succes care va apărea când utilizatorul dă refresh la pagina dosarului (fiindcă fișierul se descarcă automat, browserul nu dă refresh instant)
+            messages.success(request, f'{tip_frumos} a fost generat(ă) și salvat(ă) în arhiva dosarului.')
+
+            # Resetăm pointerul stream-ului pentru a-l trimite și spre descărcare
+            file_stream.seek(0)
+            response = HttpResponse(file_stream.read(), content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+            response['Content-Disposition'] = f'attachment; filename="{nume_fisier.replace("/", "_")}"'
+            
+            return response
+
+    messages.error(request, 'A apărut o eroare la generarea actului. Verificați datele.')
+    return redirect('cases:detalii_dosar', pk=dosar.pk)

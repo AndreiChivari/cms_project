@@ -70,4 +70,7 @@ urlpatterns = [
     # Ruta pentru analiza relațională
     path('analiza-conexiuni/', views.graf_relational, name='graf_relational'),
     path('api/graf-relational/', views.date_graf_relational, name='api_graf_relational'),
+
+    # Ruta pentru procesarului formularului din modal
+    path('dosar/<int:pk>/genereaza-act/', views.genereaza_act, name='genereaza_act'),
 ]

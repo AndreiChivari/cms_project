@@ -23,6 +23,9 @@
             <a href="{% url 'cases:editare_dosar' dosar.pk %}" class="btn btn-sm btn-primary shadow-sm px-3 fw-medium">
                 <i class="bi bi-pencil-square me-1"></i> Editează dosar
             </a>
+            <button type="button" class="btn btn-primary shadow-sm fw-medium" data-bs-toggle="modal" data-bs-target="#genereazaActModal">
+                <i class="bi bi-file-earmark-word me-1"></i> Generează Act
+            </button>
         {% endif %}
     </div>
 </div>
@@ -906,6 +909,173 @@ document.getElementById('input-ocr-scan').addEventListener('change', function(e)
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="genereazaActModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-3">
+            <div class="modal-header bg-light border-bottom border-secondary border-opacity-10 px-4 pt-3 pb-3">
+                <h5 class="modal-title text-dark fw-bold d-flex align-items-center gap-2">
+                    <i class="bi bi-printer text-primary"></i> Generare Act Procedural
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <form method="POST" action="{% url 'cases:genereaza_act' dosar.pk %}">
+                {% csrf_token %}
+                <div class="modal-body px-4 py-4">
+                    
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-uppercase text-muted">Alege tipul actului</label>
+                            <select class="form-select bg-light border-primary border-opacity-25" name="tip_act" id="selectTipAct" required>
+                                <option value="">-- Selectează un act procedural --</option>
+                                <option value="citatie">Citație</option>
+                                <option value="oiup">Ordonanță de începere a urmăririi penale</option>
+                                <option value="ref_clasare">Referat cu propunere de clasare</option>
+                                <option value="ord_clasare">Ordonanță de clasare</option>
+                                <option value="ref_renuntare">Referat propunere renunțare UP</option>
+                                <option value="ord_renuntare">Ordonanță renunțare la UP</option>
+                            </select>
+                    </div>
+
+                    <div id="blocEmitent" class="mb-4 p-3 bg-light rounded border d-none">
+                        <label class="form-label fw-bold small text-uppercase text-dark mb-2">Cine emite actul?</label>
+                        <div class="d-flex gap-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="emitent" id="emitentPolitie" value="politie" checked>
+                                <label class="form-check-label" for="emitentPolitie">Poliție (Organ de cercetare)</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="emitent" id="emitentProcuror" value="procuror">
+                                <label class="form-check-label" for="emitentProcuror">Procuror</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="blocDataActului" class="mb-3 d-none">
+                        <label class="form-label fw-bold small text-uppercase text-muted">Data emiterii actului</label>
+                        <input type="date" class="form-control" name="data_actului" id="inputDataActului">
+                    </div>
+
+                    <div id="blocCitatie" class="d-none">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-uppercase text-muted">Persoana Citată</label>
+                            <select class="form-select" name="persoana_citata">
+                                {% for parte in dosar.parti_implicate.all %}
+                                    <option value="{{ parte.id }}">{{ parte.nume_complet }} ({{ parte.get_calitate_procesuala_display }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-uppercase text-muted">Data și Ora prezentării</label>
+                            <input type="datetime-local" class="form-control" name="data_ora">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-uppercase text-muted">Scopul citării</label>
+                            <input type="text" class="form-control" name="scop" placeholder="ex: audiere în calitate de suspect">
+                        </div>
+                    </div>
+
+                    <div id="blocTemeiClasare" class="mb-3 d-none">
+                        <label class="form-label fw-bold small text-uppercase text-muted">Temei clasare (Art. 16 CPP)</label>
+                        <select class="form-select" name="temei_clasare">
+                            <option value="a">a) Fapta nu există</option>
+                            <option value="b">b) Fapta nu este prev. de legea penală / lipsă vinovăție</option>
+                            <option value="c">c) Nu există probe că o persoană a săvârșit infracțiunea</option>
+                            <option value="d">d) Există o cauză justificativă sau de neimputabilitate</option>
+                            <option value="e">e) Lipsește plângerea prealabilă / a intervenit retragerea</option>
+                            <option value="f">f) A intervenit amnistia sau prescripția</option>
+                        </select>
+                    </div>
+                    
+                    <div id="blocComunicare" class="mb-2 d-none">
+                        <label class="form-label fw-bold small text-uppercase text-muted mb-1">Se comunică către (Bifați):</label>
+                        <div class="border rounded p-2 bg-white shadow-sm" style="max-height: 150px; overflow-y: auto;">
+                            {% for parte in dosar.parti_implicate.all %}
+                            <div class="form-check mb-1">
+                                <input class="form-check-input" type="checkbox" name="persoane_comunicare" value="{{ parte.id }}" id="chk_parte_{{ parte.id }}">
+                                <label class="form-check-label small" for="chk_parte_{{ parte.id }}" style="cursor: pointer;">
+                                    <span class="fw-medium text-dark">{{ parte.nume_complet }}</span> 
+                                    <span class="text-muted fst-italic">({{ parte.get_calitate_procesuala_display|default:parte.calitate_procesuala }})</span>
+                                </label>
+                            </div>
+                            {% empty %}
+                            <span class="text-muted small">Nu există părți adăugate în dosar.</span>
+                            {% endfor %}
+                        </div>
+                        <small class="text-muted" style="font-size: 0.7rem;"><i class="bi bi-info-circle me-1"></i>Doar persoanele selectate vor apărea în document.</small>
+                    </div>
+
+                </div>
+                <div class="modal-footer border-top border-secondary border-opacity-10 px-4 py-3 bg-light">
+                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Anulează</button>
+                    <button type="submit" class="btn btn-primary fw-medium px-4 shadow-sm" id="btnGenereaza" disabled>
+                        <i class="bi bi-download me-1"></i> Descarcă Documentul
+                    </button>
+                </div>
+            </form>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const selTip = document.getElementById('selectTipAct');
+        const btnGen = document.getElementById('btnGenereaza');
+        
+        // Blocurile noastre
+        const bEmitent = document.getElementById('blocEmitent');
+        const bData = document.getElementById('blocDataActului');
+        const bCitatie = document.getElementById('blocCitatie');
+        const bTemei = document.getElementById('blocTemeiClasare'); // NOU
+        const bComunicare = document.getElementById('blocComunicare'); // NOU
+
+        document.getElementById('inputDataActului').valueAsDate = new Date();
+
+        if(selTip) {
+            selTip.addEventListener('change', function() {
+                const val = this.value;
+                
+                // Ascundem tot
+                bEmitent.classList.add('d-none');
+                bData.classList.add('d-none');
+                bCitatie.classList.add('d-none');
+                bTemei.classList.add('d-none');
+                bComunicare.classList.add('d-none');
+                btnGen.disabled = true;
+                
+                if(!val) return;
+                
+                btnGen.disabled = false;
+
+                if(val === 'citatie') {
+                    bEmitent.classList.remove('d-none');
+                    bCitatie.classList.remove('d-none');
+                } 
+                else if (val === 'oiup') {
+                    bEmitent.classList.remove('d-none');
+                    bData.classList.remove('d-none');
+                }
+                else if (val === 'ref_clasare') {
+                    // Referat: Doar Data și Temeiul (fără comunicare)
+                    bData.classList.remove('d-none');
+                    bTemei.classList.remove('d-none');
+                }
+                else if (val === 'ord_clasare') {
+                    // Ordonanță: Data, Temeiul ȘI Comunicarea
+                    bData.classList.remove('d-none');
+                    bTemei.classList.remove('d-none');
+                    bComunicare.classList.remove('d-none');
+                }
+                else if (val === 'ref_renuntare') {
+                    // La referat de renunțare avem nevoie DOAR de Dată
+                    bData.classList.remove('d-none');
+                }
+                else if (val === 'ord_renuntare') {
+                    // La ordonanța de renunțare avem nevoie de Dată + Comunicare
+                    bData.classList.remove('d-none');
+                    bComunicare.classList.remove('d-none');
+                }
+            });
+        }
+    });
+</script>
 
 {% if form_document.errors %}
 <script>

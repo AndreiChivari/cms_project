@@ -389,6 +389,7 @@ class TermenProcedural(models.Model):
         ('PRESCRIPTIE_SPEC', 'Prescripție Specială'),
         ('INSTANTA', 'Termen Instanță (Contestație durată)'),
         ('PROROGARE', 'Termen Prorogare / Declinare'),
+        ('AUDIERE', 'Audiere'),
         ('ALTUL', 'Alt tip de termen procedural'),
     ]
 
