@@ -33,6 +33,16 @@ class CustomUser(AbstractUser):
 
     totp_activ = models.BooleanField(default=False, verbose_name="2FA Activ")
 
+    # --- INFRASTRUCTURĂ SEMNĂTURĂ DIGITALĂ ---
+    certificat_pem = models.TextField(
+        blank=True, null=True, 
+        help_text="Certificatul public X.509 al utilizatorului"
+    )
+    cheie_privata_criptata = models.BinaryField(
+        blank=True, null=True, 
+        help_text="Cheia privată RSA criptată cu Fernet"
+    )
+
     def __str__(self):
         # Așa va fi afișat utilizatorul în panoul de administrare
         nume_complet = self.get_full_name()

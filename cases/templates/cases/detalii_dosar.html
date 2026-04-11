@@ -495,20 +495,44 @@
                 {% for act in dosar.documente.all %}
                     <tr>
                         <td class="px-4 py-2"><span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">{{ act.get_tip_display }}</span></td>
-                        <td class="px-3 py-2 text-dark fw-medium">{{ act.titlu }}</td>
+                        
+                        <td class="px-3 py-2 text-dark fw-medium">
+                            {{ act.titlu }}
+                            {% if "[SEMNAT]" in act.titlu %}
+                                <i class="bi bi-patch-check-fill text-success ms-1" data-bs-toggle="tooltip" title="Document securizat prin semnătură digitală"></i>
+                            {% endif %}
+                        </td>
+                        
                         <td class="px-3 py-2">{{ act.data_documentului|date:"d M Y" }}</td>
                         <td class="px-3 py-2">{{ act.data_inregistrarii|date:"d M Y" }}</td>
                         <td class="px-3 py-2 text-muted" style="font-size: 0.85rem;">{{ act.data_incarcarii|date:"d M Y, H:i" }}</td>
                         <td class="px-3 py-2">{{ act.autor.get_full_name|default:"Sistem" }}</td>
+                        
                         <td class="px-4 py-2 text-end">
-                            <div class="btn-group">
+                            <div class="d-flex justify-content-end align-items-center gap-1">
+                                
                                 {% if act.fisier %}
-                                    <a href="{{ act.fisier.url }}" target="_blank" class="btn btn-sm btn-light border border-secondary border-opacity-25 text-dark" title="Vizualizare"><i class="bi bi-eye"></i></a>
+                                    <a href="{{ act.fisier.url }}" download="{{ act.titlu }}" class="btn btn-sm btn-light border border-secondary border-opacity-25 text-primary" title="Descarcă documentul">
+                                        <i class="bi bi-download"></i>
+                                    </a>
+                                    
+                                    {% if ".pdf" in act.fisier.name|lower and "[SEMNAT]" not in act.titlu and poate_edita %}
+                                        <form method="POST" action="{% url 'cases:semneaza_act' act.pk %}" class="m-0 p-0 d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-success shadow-sm" title="Aplică Semnătura Digitală">
+                                                <i class="bi bi-pen-fill"></i>
+                                            </button>
+                                        </form>
+                                    {% endif %}
                                 {% endif %}
+                                
                                 {% if poate_edita %}
-                                <a href="{% url 'cases:editare_document' act.pk %}" class="btn btn-sm btn-light border border-secondary border-opacity-25 text-success" title="Editare"><i class="bi bi-pencil"></i></a>
-                                <a href="{% url 'cases:stergere_document' act.pk %}" class="btn btn-sm btn-light border border-secondary border-opacity-25 text-danger" title="Ștergere"><i class="bi bi-trash"></i></a>
+                                <div class="btn-group ms-1">
+                                    <a href="{% url 'cases:editare_document' act.pk %}" class="btn btn-sm btn-light border border-secondary border-opacity-25 text-success" title="Editare"><i class="bi bi-pencil"></i></a>
+                                    <a href="{% url 'cases:stergere_document' act.pk %}" class="btn btn-sm btn-light border border-secondary border-opacity-25 text-danger" title="Ștergere"><i class="bi bi-trash"></i></a>
+                                </div>
                                 {% endif %}
+                                
                             </div>
                         </td>
                     </tr>

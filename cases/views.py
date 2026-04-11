@@ -34,6 +34,20 @@ import hashlib
 # Import pentru generare şi salvare documente Word
 from docxtpl import DocxTemplate
 from django.core.files.base import ContentFile
+# --- IMPORTURI NOI PENTRU SEMNĂTURĂ ---
+from pyhanko.sign import signers
+from pyhanko.pdf_utils.reader import PdfFileReader
+from pyhanko.pdf_utils.incremental_writer import IncrementalPdfFileWriter
+from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives import serialization
+from cryptography import x509
+from asn1crypto import pem
+from asn1crypto import x509 as asn1_x509
+from asn1crypto import pem
+from asn1crypto import x509 as asn1_x509
+from asn1crypto import keys as asn1_keys  # <-- Importul nou
+from pyhanko.sign.fields import SigFieldSpec, append_signature_field
+from pyhanko.stamp import text
 
 User = get_user_model()
 
@@ -1528,4 +1542,126 @@ def genereaza_act(request, pk):
             return response
 
     messages.error(request, 'A apărut o eroare la generarea actului. Verificați datele.')
+    return redirect('cases:detalii_dosar', pk=dosar.pk)
+
+@login_required
+def semneaza_act(request, pk_act):
+    # 1. Găsim actul (presupunând că modelul se numește ActUrmarire)
+    act = get_object_or_404(ActUrmarire, pk=pk_act)
+    dosar = act.dosar
+    user = request.user
+    
+    # 2. Verificări de siguranță
+    if not dosar.are_drepturi_editare(user):
+        raise PermissionDenied("Nu ai permisiunea de a semna în acest dosar.")
+        
+    if not act.fisier.name.lower().endswith('.pdf'):
+        messages.error(request, "Eroare: Doar documentele în format PDF pot fi semnate digital.")
+        return redirect('cases:detalii_dosar', pk=dosar.pk)
+        
+    if not user.cheie_privata_criptata or not user.certificat_pem:
+        messages.error(request, "Nu ai o identitate digitală generată. Contactează administratorul.")
+        return redirect('cases:detalii_dosar', pk=dosar.pk)
+
+    if request.method == 'POST':
+        try:
+            # 3. DECRIPTĂM CHEIA PRIVATĂ (Folosind cheia Fernet din settings)
+            f = Fernet(settings.ENCRYPTION_KEY)
+            private_key_pem = f.decrypt(user.cheie_privata_criptata)
+            
+            # --- MODIFICAREA ESTE AICI ---
+# 4. PREGĂTIM OBIECTELE CRIPTOGRAFICE (EXCLUSIV CU asn1crypto)
+            
+            # a) Încărcăm cheia privată
+            # private_key_pem a fost deja decriptat cu Fernet mai sus
+            _, _, priv_der_bytes = pem.unarmor(private_key_pem)
+            private_key = asn1_keys.PrivateKeyInfo.load(priv_der_bytes)
+            
+            # b) Încărcăm certificatul public
+            cert_bytes = user.certificat_pem.encode('utf-8')
+            _, _, cert_der_bytes = pem.unarmor(cert_bytes)
+            cert = asn1_x509.Certificate.load(cert_der_bytes)
+            
+            # c) Inițializăm semnatarul pyHanko
+            signer = signers.SimpleSigner(
+                signing_cert=cert,
+                signing_key=private_key,
+                cert_registry=None
+            )
+            # --- SFÂRȘIT MODIFICARE ---
+            
+            # 5. DESCHIDEM PDF-UL ȘI PREGĂTIM SCRIEREA
+# 5. DESCHIDEM PDF-UL ÎN MEMORIE (Citire + Scriere)
+            pdf_stream = act.fisier.open('rb')
+            pdf_bytes = pdf_stream.read()
+            pdf_stream.close() # Închidem stream-ul original
+            
+            # Punem biții într-un buffer nou, unde pyHanko va putea și citi, dar și scrie semnătura!
+            in_out_buffer = io.BytesIO(pdf_bytes)
+            pdf_writer = IncrementalPdfFileWriter(in_out_buffer, strict=False)
+            
+            # 6. APLICĂM SEMNĂTURA CRIPTOGRAFICĂ
+            # 6. APLICĂM SEMNĂTURA CRIPTOGRAFICĂ (CU ȘTAMPILĂ VIZUALĂ)
+            nume_camp = f'Semnatura_{user.username}'
+            
+            # a) Creăm un "dreptunghi" vizibil pe prima pagină
+            # Sistemul de coordonate: (X_stânga, Y_jos, X_dreapta, Y_sus)
+            # Punctul 0,0 este în colțul stânga-jos al paginii.
+            # O pagină A4 are cam 595 x 842 puncte. (300, 50, 550, 130) îl va pune în dreapta-jos.
+            append_signature_field(
+                pdf_writer,
+                SigFieldSpec(
+                    sig_field_name=nume_camp,
+                    on_page=-1, # 0 = prima pagină, -1 = ultima pagină
+                    box=(320, 40, 550, 120) 
+                )
+            )
+            
+            # b) Definim cum arată textul ștampilei
+            # Folosim Python (f-strings) pentru a injecta Numele și Motivul. 
+            # Lăsăm doar %(ts)s pentru ca pyHanko să pună secunda exactă a semnăturii.
+            nume_afisare = user.get_full_name() or user.username
+            motiv_semnare = "Semnatura digitala aprobata"
+            
+            stil_stampila = text.TextStampStyle(
+                stamp_text=f'SEMNAT DIGITAL\nSemnatar: {nume_afisare}\nData: %(ts)s\nMotiv: {motiv_semnare}'
+            )
+            
+            # c) Inițializăm procesul de semnare (atașând și stilul vizual creat)
+            pdf_signer = signers.PdfSigner(
+                signers.PdfSignatureMetadata(
+                    field_name=nume_camp, 
+                    reason="Semnătură digitală aprobată",
+                    location=getattr(user, 'unitate', "Sistem Management Dosare")
+                ),
+                signer=signer,
+                stamp_style=stil_stampila
+            )
+            
+            # d) Scriem semnătura pe fișier
+            pdf_signer.sign_pdf(pdf_writer, in_place=True)
+            
+            # 7. SUPRASCRIEM FIȘIERUL VECHI CU CEL SEMNAT
+            in_out_buffer.seek(0)
+            act.fisier.save(act.fisier.name, ContentFile(in_out_buffer.read()))
+            
+            # Adăugăm un mic "badge" in titlu ca sa vedem in platforma ca e semnat
+            if "[SEMNAT]" not in act.titlu:
+                act.titlu = f"[SEMNAT] {act.titlu}"
+            act.save()
+            
+            messages.success(request, f'Documentul "{act.titlu}" a fost semnat digital cu succes!')
+            
+        except Exception as e:
+            # --- COD NOU PENTRU DEBUGGING (Aflăm ce se strică) ---
+            print("\n" + "="*40)
+            print("🚨 EROARE LA SEMNAREA DIGITALĂ 🚨")
+            print(f"Tip eroare: {type(e).__name__}")
+            print(f"Mesaj: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            print("="*40 + "\n")
+            
+            messages.error(request, f"Eroare la semnarea documentului: {str(e)}")
+            
     return redirect('cases:detalii_dosar', pk=dosar.pk)

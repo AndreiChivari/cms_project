@@ -73,4 +73,7 @@ urlpatterns = [
 
     # Ruta pentru procesarului formularului din modal
     path('dosar/<int:pk>/genereaza-act/', views.genereaza_act, name='genereaza_act'),
+
+    # Ruta pentru semnarea digitală a actelor
+    path('act/<int:pk_act>/semneaza/', views.semneaza_act, name='semneaza_act'),
 ]
