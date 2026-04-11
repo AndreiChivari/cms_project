@@ -85,6 +85,22 @@ class ActUrmarire(models.Model):
     data_incarcarii = models.DateTimeField(auto_now_add=True)
     descriere_scurta = models.TextField(blank=True, null=True, help_text="Rezumatul actului (opțional)")
 
+    # --- GESTIUNEA SEMNĂTURILOR DIGITALE ---
+    fisier_semnat = models.FileField(
+        upload_to='documente/semnate/%Y/%m/', 
+        null=True, blank=True,
+        help_text="Varianta finală, securizată cu semnătură digitală"
+    )
+    este_semnat = models.BooleanField(default=False)
+    semnat_de = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='acte_semnate_de_mine'
+    )
+    data_semnarii = models.DateTimeField(null=True, blank=True)
+
+
     class Meta:
         verbose_name = "Act de Urmărire Penală"
         verbose_name_plural = "Acte de Urmărire Penală"

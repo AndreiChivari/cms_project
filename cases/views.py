@@ -48,6 +48,10 @@ from asn1crypto import x509 as asn1_x509
 from asn1crypto import keys as asn1_keys  # <-- Importul nou
 from pyhanko.sign.fields import SigFieldSpec, append_signature_field
 from pyhanko.stamp import text
+import logging
+from django.utils import timezone
+
+logger = logging.getLogger(__name__)
 
 User = get_user_model()
 
@@ -1638,30 +1642,40 @@ def semneaza_act(request, pk_act):
                 stamp_style=stil_stampila
             )
             
-            # d) Scriem semnătura pe fișier
+# d) Scriem semnătura pe fișier
             pdf_signer.sign_pdf(pdf_writer, in_place=True)
             
-            # 7. SUPRASCRIEM FIȘIERUL VECHI CU CEL SEMNAT
+            # 7. SALVĂM VERSIUNEA SEMNATĂ (FĂRĂ SĂ DISTRUGEM ORIGINALUL)
             in_out_buffer.seek(0)
-            act.fisier.save(act.fisier.name, ContentFile(in_out_buffer.read()))
             
-            # Adăugăm un mic "badge" in titlu ca sa vedem in platforma ca e semnat
-            if "[SEMNAT]" not in act.titlu:
-                act.titlu = f"[SEMNAT] {act.titlu}"
+            # Extragem numele original (ex: "ordonanta_123") și extensia (".pdf")
+            nume_original, extensie = os.path.splitext(os.path.basename(act.fisier.name))
+            nume_fisier_semnat = f"{nume_original}_semnat{extensie}"
+            
+            # Salvăm documentul în noul câmp 'fisier_semnat'
+            act.fisier_semnat.save(nume_fisier_semnat, ContentFile(in_out_buffer.read()), save=False)
+            
+            # Actualizăm noile câmpuri din model
+            act.este_semnat = True
+            act.semnat_de = user
+            act.data_semnarii = timezone.now()
+            # Am eliminat complet acel hack cu act.titlu = "[SEMNAT]" !
+            
             act.save()
             
             messages.success(request, f'Documentul "{act.titlu}" a fost semnat digital cu succes!')
             
         except Exception as e:
-            # --- COD NOU PENTRU DEBUGGING (Aflăm ce se strică) ---
-            print("\n" + "="*40)
-            print("🚨 EROARE LA SEMNAREA DIGITALĂ 🚨")
-            print(f"Tip eroare: {type(e).__name__}")
-            print(f"Mesaj: {str(e)}")
-            import traceback
-            traceback.print_exc()
-            print("="*40 + "\n")
-            
-            messages.error(request, f"Eroare la semnarea documentului: {str(e)}")
+            # Jurnalizăm eroarea în fundal pentru administratori
+            logger.error(
+                f"Eroare semnare act {pk_act} de user {user.username}: "
+                f"{type(e).__name__}: {str(e)}", 
+                exc_info=True
+            )
+            # Afișăm un mesaj elegant utilizatorului
+            messages.error(
+                request, 
+                "A apărut o eroare la semnarea documentului. Verificați că fișierul PDF este valid și reîncercați."
+            )
             
     return redirect('cases:detalii_dosar', pk=dosar.pk)

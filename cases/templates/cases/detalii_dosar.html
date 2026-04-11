@@ -23,8 +23,8 @@
             <a href="{% url 'cases:editare_dosar' dosar.pk %}" class="btn btn-sm btn-primary shadow-sm px-3 fw-medium">
                 <i class="bi bi-pencil-square me-1"></i> Editează dosar
             </a>
-            <button type="button" class="btn btn-primary shadow-sm fw-medium" data-bs-toggle="modal" data-bs-target="#genereazaActModal">
-                <i class="bi bi-file-earmark-word me-1"></i> Generează Act
+            <button type="button" class="btn btn-sm btn-primary shadow-sm px-3 fw-medium" data-bs-toggle="modal" data-bs-target="#genereazaActModal">
+                <i class="bi bi-file-earmark-word me-1"></i> Generează act
             </button>
         {% endif %}
     </div>
@@ -498,8 +498,12 @@
                         
                         <td class="px-3 py-2 text-dark fw-medium">
                             {{ act.titlu }}
-                            {% if "[SEMNAT]" in act.titlu %}
-                                <i class="bi bi-patch-check-fill text-success ms-1" data-bs-toggle="tooltip" title="Document securizat prin semnătură digitală"></i>
+                            {% if act.este_semnat %}
+                                <i class="bi bi-patch-check-fill text-success ms-1" 
+                                   data-bs-toggle="tooltip" 
+                                   data-bs-placement="top"
+                                   title="Semnat digital de {{ act.semnat_de.get_full_name|default:act.semnat_de.username }} la {{ act.data_semnarii|date:'d.m.Y H:i' }}">
+                                </i>
                             {% endif %}
                         </td>
                         
@@ -512,18 +516,22 @@
                             <div class="d-flex justify-content-end align-items-center gap-1">
                                 
                                 {% if act.fisier %}
-                                    <a href="{{ act.fisier.url }}" download="{{ act.titlu }}" class="btn btn-sm btn-light border border-secondary border-opacity-25 text-primary" title="Descarcă documentul">
-                                        <i class="bi bi-download"></i>
+                                    <a href="{{ act.fisier.url }}" download="{{ act.titlu }}_original" class="btn btn-sm btn-light border border-secondary border-opacity-25 text-primary" title="Descarcă draft-ul (nesemnat)">
+                                        <i class="bi bi-file-earmark-text"></i>
                                     </a>
-                                    
-                                    {% if ".pdf" in act.fisier.name|lower and "[SEMNAT]" not in act.titlu and poate_edita %}
-                                        <form method="POST" action="{% url 'cases:semneaza_act' act.pk %}" class="m-0 p-0 d-inline">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn btn-sm btn-success shadow-sm" title="Aplică Semnătura Digitală">
-                                                <i class="bi bi-pen-fill"></i>
-                                            </button>
-                                        </form>
-                                    {% endif %}
+                                {% endif %}
+
+                                {% if act.este_semnat and act.fisier_semnat %}
+                                    <a href="{{ act.fisier_semnat.url }}" download="{{ act.titlu }}_SEMNAT.pdf" class="btn btn-sm btn-danger bg-opacity-10 border border-success border-opacity-25 shadow-sm" title="Descarcă documentul securizat">
+                                        <i class="bi bi-shield-lock"></i>
+                                    </a>
+                                {% elif act.fisier and ".pdf" in act.fisier.name|lower and poate_edita %}
+                                    <form method="POST" action="{% url 'cases:semneaza_act' act.pk %}" class="m-0 p-0 d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-success shadow-sm" title="Aplică semnătura digitală">
+                                            <i class="bi bi-vector-pen"></i>
+                                        </button>
+                                    </form>
                                 {% endif %}
                                 
                                 {% if poate_edita %}

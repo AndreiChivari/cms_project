@@ -399,6 +399,14 @@ class TermenProcedural(models.Model):
         on_delete=models.CASCADE, 
         related_name='termene_procedurale'
     )
+    # Titlu scurt pentru calendar
+    titlu = models.CharField(
+        max_length=150,
+        blank=True, # Îl lăsăm opțional în formular
+        default='', # Folosim pentru a evita erori de câmp gol pentru datele existente
+        verbose_name="Titlu (Scurt)",
+        help_text="Ex: Audiere martor Popescu. Dacă e lăsat gol, se va genera automat."
+    )
     tip_termen = models.CharField(
         max_length=20, 
         choices=TIP_TERMEN_CHOICES, 
@@ -406,6 +414,13 @@ class TermenProcedural(models.Model):
     )
     data_limita = models.DateField(
         verbose_name="Dată Limită / Scadență"
+    )
+    # Oră opțională
+    ora = models.TimeField(
+        blank=True,
+        null=True,
+        verbose_name="Oră (Opțional)",
+        help_text="Lăsați gol pentru evenimente care durează toată ziua (ex: Prescripție)"
     )
     detalii = models.TextField(
         blank=True, 
@@ -419,7 +434,7 @@ class TermenProcedural(models.Model):
         verbose_name = "Termen Procedural"
         verbose_name_plural = "Termene Procedurale"
         # Ordonăm automat după data limită (cele mai urgente primele)
-        ordering = ['data_limita']
+        ordering = ['data_limita', 'ora']
 
     def __str__(self):
         return f"{self.get_tip_termen_display()} - {self.dosar.numar_unic}"
@@ -430,3 +445,10 @@ class TermenProcedural(models.Model):
         if self.data_limita:
             return (self.data_limita - date.today()).days
         return 0
+    
+    # auto-completare
+    def save(self, *args, **kwargs):
+        # Dacă utilizatorul nu a pus un titlu, generăm automat unul bazat pe tipul termenului și numărul dosarului
+        if not self.titlu:
+            self.titlu = f"{self.get_tip_termen_display()} ({self.dosar.numar_unic})"
+        super().save(*args, **kwargs)
