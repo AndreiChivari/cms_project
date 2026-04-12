@@ -263,4 +263,23 @@
         document.getElementById('btn_salveaza_solutie').disabled = true;
     }
 </script>
+
+<script>
+    // Asigură-te că nicio dată din formularele de stadii/soluții nu este setată în viitor.
+    // Un stadiu sau o soluție trebuie introdusă doar dacă ea chiar s-a întâmplat.
+    document.addEventListener("DOMContentLoaded", function() {
+        // Obținem data curentă în format YYYY-MM-DD
+        const today = new Date().toISOString().split('T')[0];
+        
+        const dataIncepereStadiu = document.getElementById('id_data_incepere');
+        if (dataIncepereStadiu) {
+            dataIncepereStadiu.setAttribute('max', today); // Previne selectarea unei date din viitor
+        }
+
+        const dataSolutie = document.getElementById('id_data_solutiei');
+        if (dataSolutie) {
+            dataSolutie.setAttribute('max', today);
+        }
+    });
+</script>
 {% endblock %}

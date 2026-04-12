@@ -1078,6 +1078,7 @@ document.getElementById('input-ocr-scan').addEventListener('change', function(e)
         // Verificăm dacă suntem pe o pagină care are aceste câmpuri
         if (durataInput && dataInceputInput && dataSfarsitInput) {
             
+            // --- LOGICA DE AUTOCOMPLETARE ŞI CALCUL AUTOMAT A DATEI DE SFARSIT ---
             function calculeazaDataSfarsit() {
                 const durata = parseInt(durataInput.value);
                 const dataInceputVal = dataInceputInput.value;
@@ -1104,14 +1105,41 @@ document.getElementById('input-ocr-scan').addEventListener('change', function(e)
                     setTimeout(() => {
                         dataSfarsitInput.classList.remove('bg-success', 'bg-opacity-10', 'text-success');
                     }, 500);
+
+                    valideazaCronologia(); // După autocompletare, verificăm că e totul ok
                 }
             }
 
-            // Ascultăm evenimentele de tastare/schimbare pe ambele câmpuri
+            // --- LOGICA DE VALIDARE - DATA SFÂRŞIT NU POATE FI ANTERIOARĂ DATEI DE ÎNCEPUT ---
+            function valideazaCronologia() {
+                if (dataInceputInput.value && dataSfarsitInput.value) {
+                    const dInceput = new Date(dataInceputInput.value);
+                    const dSfarsit = new Date(dataSfarsitInput.value);
+
+                    if (dSfarsit < dInceput) {
+                        dataSfarsitInput.setCustomValidity("Data de sfârșit nu poate fi înaintea datei de început!");
+                    } else {
+                        dataSfarsitInput.setCustomValidity(""); // E corect, resetăm eroarea
+                    }
+                }
+            }
+
             durataInput.addEventListener('input', calculeazaDataSfarsit);
             dataInceputInput.addEventListener('change', calculeazaDataSfarsit);
+            dataSfarsitInput.addEventListener('change', valideazaCronologia); // Validăm dacă pune data manual
         }
     });
 </script>
+
+{% if form_parte.errors %}
+<script>
+    // Dacă Django detectează erori pe backend pentru acest formular,
+    // forțăm deschiderea modalului imediat ce pagina s-a reîncărcat.
+    document.addEventListener("DOMContentLoaded", function() {
+        var myModal = new bootstrap.Modal(document.getElementById('adaugaParteModal'));
+        myModal.show();
+    });
+</script>
+{% endif %}
 
 {% endblock %}

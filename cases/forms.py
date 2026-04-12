@@ -3,6 +3,7 @@ from .models import Dosar, ParteImplicata, Infractiune, MasuraPreventiva, Stadiu
 from django.contrib.auth import get_user_model #  modelul de utilizator
 from django.core.exceptions import ValidationError
 from django.db.models import Q
+from django.utils import timezone
 
 User = get_user_model() # Preluăm modelul de utilizator pentru a face filtrarile
 
@@ -92,7 +93,12 @@ class CreareDosarForm(forms.ModelForm):
         }
         
         widgets = {
-            'numar_unic': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 123/P/2026'}),
+            'numar_unic': forms.TextInput(attrs={
+                'class': 'form-control', 
+                'placeholder': 'Ex: 123/P/2026',
+                'pattern': '^\s*[0-9]+/[Pp]/(199[0-9]|20[0-9]{2}|2100)\s*$',  # VALIDARE FRONTEND HTML5 Regex
+                'title': 'Format obligatoriu: Cifre / litera P / An format din 4 cifre (ex: 12/P/2024)'
+            }),
             'data_inregistrarii': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'infractiune_cercetata': forms.Textarea(attrs={'rows': 3}),
             'ofiter_caz': forms.Select(attrs={'class': 'form-select'}),
@@ -115,7 +121,15 @@ class CreareDosarForm(forms.ModelForm):
         if 'grefier_caz' in self.fields:
             self.fields['grefier_caz'].queryset = User.objects.filter(rol='GREFIER')
             self.fields['grefier_caz'].label_from_instance = lambda obj: obj.get_full_name() or obj.username
+        
+        # Validare frontend pentru data înregistrării - nu poate fi în viitor
+        today = timezone.now().date().isoformat() # ex: '2026-04-12'
 
+        # Adăugăm atributul 'max' pe input-ul de dată
+        if 'data_inregistrarii' in self.fields:
+            self.fields['data_inregistrarii'].widget.attrs['max'] = today
+
+    # VALIDARE BACKEND pentru număr unic
     def clean_numar_unic(self):
         numar = self.cleaned_data.get('numar_unic')
 
@@ -161,12 +175,40 @@ class ParteImplicataForm(forms.ModelForm):
         widgets = {
             'nume_complet': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nume și Prenume', 'id': 'input-nume'}),
             'calitate_procesuala': forms.Select(attrs={'class': 'form-select'}),
-            'cnp': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Cod Numeric Personal', 'id': 'input-cnp'}),
+            'cnp': forms.TextInput(attrs={
+                'class': 'form-control', 
+                'placeholder': 'Cod Numeric Personal', 
+                'id': 'input-cnp',
+                'pattern': '^[1-9][0-9]{12}$', # VALIDARE HTML5 Regex pentru exact 13 cifre, prima cifră nu poate fi 0
+                'title': 'CNP-ul trebuie să fie format din exact 13 cifre.'
+            }),
             'serie_ci': forms.TextInput(attrs={'class': 'form-control', 'id': 'input-serie'}),
             'numar_ci': forms.TextInput(attrs={'class': 'form-control', 'id': 'input-numar'}),
             'adresa': forms.TextInput(attrs={'class': 'form-control', 'id': 'input-adresa'}),
             'mentiuni': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Date de contact, antecedente etc.'}),
         }
+
+    # VALIDARE BACKEND pentru CNP (în plus față de validarea frontend) - 13 cifre, prima cifră nu poate fi 0
+    def clean_cnp(self):
+        cnp = self.cleaned_data.get('cnp')
+
+        if cnp:
+            # Eliminăm posibilele spații introduse accidental
+            cnp = cnp.strip()
+
+            # Verificăm să conțină doar cifre
+            if not cnp.isdigit():
+                raise forms.ValidationError("CNP-ul trebuie să conțină exclusiv cifre.")
+            
+            # Verificăm lungimea de exact 13 caractere
+            if len(cnp) != 13:
+                raise forms.ValidationError(f"CNP-ul trebuie să aibă exact 13 cifre. Ați introdus {len(cnp)}.")
+            
+            # Verificăm să nu înceapă cu 0
+            if cnp.startswith('0'):
+                raise forms.ValidationError("CNP-ul este invalid (nu poate începe cu cifra 0).")
+
+        return cnp
 
 class InfractiuneForm(forms.ModelForm):
     class Meta:
@@ -189,6 +231,16 @@ class InfractiuneForm(forms.ModelForm):
             'data_comiterii': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
         }
 
+    # VALIDARE FRONTEND: Data comiterii nu poate fi în viitor
+    def __init__(self, *args, **kwargs):
+        super(InfractiuneForm, self).__init__(*args, **kwargs)
+        
+        today = timezone.now().date().isoformat()
+        
+        # Prevenim selectarea unei date din viitor pentru comiterea faptei
+        if 'data_comiterii' in self.fields:
+            self.fields['data_comiterii'].widget.attrs['max'] = today
+
 class MasuraPreventivaForm(forms.ModelForm):
     class Meta:
         model = MasuraPreventiva
@@ -197,6 +249,22 @@ class MasuraPreventivaForm(forms.ModelForm):
             'data_inceput': forms.DateInput(attrs={'type': 'date'}),
             'data_sfarsit': forms.DateInput(attrs={'type': 'date'}),
         }
+
+    # VALIDARE BACKEND pentru cronologia măsurii preventive (data_sfarsit >= data_inceput)
+    def clean(self):
+        # Apelează metoda clean originală pentru a obține toate datele
+        cleaned_data = super().clean()
+        
+        data_inceput = cleaned_data.get('data_inceput')
+        data_sfarsit = cleaned_data.get('data_sfarsit')
+
+        # Dacă ambele date au fost completate de utilizator
+        if data_inceput and data_sfarsit:
+            if data_sfarsit < data_inceput:
+                # Adăugăm eroarea specific pe câmpul 'data_sfarsit'
+                self.add_error('data_sfarsit', "Data de expirare nu poate fi anterioară datei de început a măsurii.")
+                
+        return cleaned_data
 
     def __init__(self, *args, **kwargs):
         # Extragem ID-ul dosarului trimis din views.py
@@ -223,6 +291,7 @@ class StadiuCercetareForm(forms.ModelForm):
             'data_incepere': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
         }
 
+    # VALIDARE BACKEND PENTRU CRONOLOGIE ȘI SUCCESIUNE LOGICĂ A STADIILOR
     def clean(self):
         cleaned_data = super().clean()
         tip_stadiu = cleaned_data.get('tip_stadiu')
