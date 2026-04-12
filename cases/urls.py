@@ -76,4 +76,9 @@ urlpatterns = [
 
     # Ruta pentru semnarea digitală a actelor
     path('act/<int:pk_act>/semneaza/', views.semneaza_act, name='semneaza_act'),
+
+    # Rute pentru Calendar
+    path('calendar/', views.calendar_view, name='calendar'), # Pagina HTML
+    path('api/calendar-events/', views.api_calendar_events, name='api_calendar_events'), # Datele JSON pentru API-un api_calendar_events din views.py
+    path('calendar/adauga/', views.adaugare_termen_calendar, name='adaugare_termen_calendar'),
 ]

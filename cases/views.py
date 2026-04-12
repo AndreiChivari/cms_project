@@ -22,6 +22,7 @@ import openpyxl
 from openpyxl.styles import Font, Alignment
 from django.contrib import messages
 import json
+from django.utils.dateparse import parse_datetime, parse_date
 # Importuri pentru ocr
 import pytesseract
 from PIL import Image
@@ -80,7 +81,7 @@ def dashboard(request):
         dosarele_mele_lista = Dosar.objects.prefetch_related(
             'infractiuni', 
             'stadii_cercetare__solutii'
-        ).all().order_by('-data_inregistrarii')[:5]
+        ).all().order_by('-data_inregistrarii')[:7]
     else:
         # Condiția pentru a găsi dosarele unde userul este implicat
         conditie_mea = Q(ofiter_caz=utilizator) | Q(procuror_caz=utilizator) | Q(grefier_caz=utilizator)
@@ -101,7 +102,7 @@ def dashboard(request):
         dosarele_mele_lista = Dosar.objects.prefetch_related(
             'infractiuni', 
             'stadii_cercetare__solutii'
-        ).filter(conditie_mea).order_by('-data_inregistrarii')[:5]
+        ).filter(conditie_mea).order_by('-data_inregistrarii')[:7]
 
     # 3. INDICATOR DE OPERATIVITATE / ÎNCĂRCĂTURĂ
     # Calculăm câți utilizatori activi au dosare pentru a afla media
@@ -171,7 +172,7 @@ def dashboard(request):
     timeline_alerte = sorted(timeline_alerte, key=lambda x: x['zile_ramase'])
     
     # Păstrăm doar primele 10 urgențe ca să nu încărcăm vizual prea mult dashboard-ul
-    timeline_alerte = timeline_alerte[:10]
+    timeline_alerte = timeline_alerte[:5]
 
 # ==========================================
     # 4.5. DATE PENTRU GRAFICUL CU BARE (Ultimele 6 luni)
@@ -1679,3 +1680,184 @@ def semneaza_act(request, pk_act):
             )
             
     return redirect('cases:detalii_dosar', pk=dosar.pk)
+
+@login_required
+def api_calendar_events(request):
+    """
+    Endpoint pentru FullCalendar.js
+    Primește request-uri GET cu parametrii ?start=... & end=... 
+    și returnează evenimentele (Termene + Măsuri) combinate.
+    """
+    # FullCalendar trimite automat aceste date în format ISO (ex: "2026-05-01T00:00:00")
+    start_str = request.GET.get('start')
+    end_str = request.GET.get('end')
+    
+    events = []
+
+    # --- FILTRAREA DOSARELOR DUPĂ UTILIZATOR ---
+    if request.user.is_superuser or getattr(request.user, 'rol', '') == 'ADMIN':
+        dosarele_mele = Dosar.objects.all()
+    else:
+        dosarele_mele = Dosar.objects.filter(
+            Q(ofiter_caz=request.user) | 
+            Q(procuror_caz=request.user) | 
+            Q(grefier_caz=request.user)
+        )
+
+    # Dicționarul de culori (Separation of Concerns, cum am discutat)
+    CULORI_TERMENE = {
+        'PRESCRIPTIE_GEN': '#dc3545', # Roșu (critic)
+        'PRESCRIPTIE_SPEC': '#dc3545',
+        'INSTANTA': '#ffc107',        # Galben
+        'PROROGARE': '#fd7e14',       # Portocaliu
+        'AUDIERE': '#0d6efd',         # Albastru
+        'ALTUL': '#6c757d',           # Gri
+    }
+
+    # ==========================================
+    # 1. PRELUĂM TERMENELE MANUALE
+    # ==========================================
+    # Filtrăm doar termenele din intervalul cerut ca să nu blocăm baza de date
+    termene = TermenProcedural.objects.filter(dosar__in=dosarele_mele)
+    if start_str and end_str:
+        # Convertim string-ul din JS într-o dată pe care Django o înțelege
+        start_date = parse_datetime(start_str).date() if 'T' in start_str else parse_date(start_str)
+        end_date = parse_datetime(end_str).date() if 'T' in end_str else parse_date(end_str)
+        termene = termene.filter(data_limita__range=[start_date, end_date])
+
+    for termen in termene:
+        # Stabilim titlul vizibil
+        titlu_afisat = termen.titlu or f"{termen.get_tip_termen_display()} ({termen.dosar.numar_unic})"
+        
+        # Stabilim formatul de timp (dacă are oră, FullCalendar îl va arăta diferit de cele "All-Day")
+        if termen.ora:
+            start_format = f"{termen.data_limita.isoformat()}T{termen.ora.isoformat()}"
+            all_day = False
+        else:
+            start_format = termen.data_limita.isoformat()
+            all_day = True
+            
+        events.append({
+            'id': f"termen_{termen.id}",
+            'title': titlu_afisat,
+            'start': start_format,
+            'allDay': all_day,
+            'color': CULORI_TERMENE.get(termen.tip_termen, '#6c757d'),
+            # Adăugăm date extra pentru modalul de detalii la care vom lucra la frontend
+            'extendedProps': {
+                'tip': 'termen',
+                'dosar_id': termen.dosar.id,
+                'dosar_numar': termen.dosar.numar_unic,
+                'dosar_url': reverse('cases:detalii_dosar', args=[termen.dosar.id]), # NOU
+                'detalii': termen.detalii or "Nu există detalii suplimentare."
+            }
+        })
+
+    # ==========================================
+    # 2. PRELUĂM MĂSURILE PREVENTIVE (AUTOMATE)
+    # ==========================================
+    masuri = MasuraPreventiva.objects.filter(dosar__in=dosarele_mele)
+    if start_str and end_str:
+        # Corectat: data_sfarsit
+        masuri = masuri.filter(data_sfarsit__range=[start_date, end_date])
+
+    for masura in masuri:
+        # Ne asigurăm că există o dată de sfârșit înainte să o formatăm
+        if masura.data_sfarsit:
+            events.append({
+                'id': f"masura_{masura.id}",
+                'title': f"Expirare {masura.get_tip_masura_display()} ({masura.dosar.numar_unic})",
+                'start': masura.data_sfarsit.isoformat(), # Corectat: data_sfarsit
+                'allDay': True,
+                'color': '#842029', 
+                'extendedProps': {
+                    'tip': 'masura',
+                    'dosar_id': masura.dosar.id,
+                    'dosar_numar': masura.dosar.numar_unic,
+                    'dosar_url': reverse('cases:detalii_dosar', args=[masura.dosar.id]), # NOU
+                    # Corectat: folosim atributul 'parte'
+                    'detalii': f"Măsură față de: {masura.parte}" 
+                }
+            })
+
+    # Returnăm lista combinată sub formă de JSON
+    return JsonResponse(events, safe=False)
+
+@login_required
+def calendar_view(request):
+    """
+    Randează pagina principală a calendarului și calculează
+    evenimentele pentru Sidebar-ul "Termene apropiate (14 zile)".
+    """
+    azi = date.today()
+    peste_14_zile = azi + timedelta(days=14)
+
+    # --- FILTRAREA DOSARELOR ---
+    if request.user.is_superuser or getattr(request.user, 'rol', '') == 'ADMIN':
+        dosarele_mele = Dosar.objects.all()
+    else:
+        dosarele_mele = Dosar.objects.filter(
+            Q(ofiter_caz=request.user) | 
+            Q(procuror_caz=request.user) | 
+            Q(grefier_caz=request.user)
+        )
+
+    # Luăm termenele și măsurile din următoarele 14 zile
+    termene_urmeaza = TermenProcedural.objects.filter(
+        dosar__in=dosarele_mele, 
+        data_limita__range=[azi, peste_14_zile]
+    )
+    masuri_urmeaza = MasuraPreventiva.objects.filter(
+        dosar__in=dosarele_mele, 
+        data_sfarsit__range=[azi, peste_14_zile]
+    )
+
+    # 1. Trimitem userul către formular
+    form = TermenProceduralForm(user=request.user)
+
+    # Le punem într-o listă comună pentru a le putea sorta
+    urgente = []
+    for t in termene_urmeaza:
+        urgente.append({
+            'titlu': t.titlu or t.get_tip_termen_display(),
+            'data': t.data_limita,
+            'dosar': t.dosar,
+            'tip': 'Termen',
+            'zile_ramase': (t.data_limita - azi).days # NOU: Calculăm câte zile au rămas până la termen
+        })
+        
+    for m in masuri_urmeaza:
+        urgente.append({
+            'titlu': f"Expirare {m.get_tip_masura_display()}",
+            'data': m.data_sfarsit,
+            'dosar': m.dosar,
+            'tip': 'Măsură',
+            'critica': True, # Pentru a o colora cu roșu în UI
+            'zile_ramase': (m.data_sfarsit - azi).days # NOU: Calculăm câte zile au rămas până la expirare
+        })
+
+    # Sortăm lista cronologic (cele mai apropiate primele)
+    urgente.sort(key=lambda x: x['data'])
+
+    # form = TermenProceduralForm()
+    
+    context = {
+        'urgente_sidebar': urgente,
+        'form': form  # <--- Adăugăm formularul în context
+    }
+    return render(request, 'cases/calendar.html', context)
+
+@login_required
+def adaugare_termen_calendar(request):
+    """Procesează formularul de adăugare termen din modalul Calendarului"""
+    if request.method == 'POST':
+        # form = TermenProceduralForm(request.POST)
+        form = TermenProceduralForm(request.POST, user=request.user)
+        if form.is_valid():
+            termen = form.save()
+            messages.success(request, f'Termenul "{termen.titlu}" a fost adăugat cu succes!')
+        else:
+            messages.error(request, 'Eroare la adăugarea termenului.')
+            
+    # Indiferent ce se întâmplă, îl întoarcem înapoi pe pagina calendarului
+    return redirect('cases:calendar')

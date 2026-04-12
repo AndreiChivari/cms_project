@@ -2,6 +2,7 @@ from django import forms
 from .models import Dosar, ParteImplicata, Infractiune, MasuraPreventiva, StadiuCercetare, SolutieDosar, TermenProcedural
 from django.contrib.auth import get_user_model #  modelul de utilizator
 from django.core.exceptions import ValidationError
+from django.db.models import Q
 
 User = get_user_model() # Preluăm modelul de utilizator pentru a face filtrarile
 
@@ -325,9 +326,36 @@ class SolutieDosarForm(forms.ModelForm):
 class TermenProceduralForm(forms.ModelForm):
     class Meta:
         model = TermenProcedural
-        fields = ['tip_termen', 'data_limita', 'detalii']
+        fields = ['dosar', 'titlu', 'tip_termen', 'data_limita', 'ora', 'detalii']
         widgets = {
-            'tip_termen': forms.Select(attrs={'class': 'form-select border-start-0 bg-light'}),
-            'data_limita': forms.DateInput(attrs={'type': 'date', 'class': 'form-control border-start-0 bg-light'}),
-            'detalii': forms.Textarea(attrs={'class': 'form-control bg-light', 'rows': 3, 'placeholder': 'Detalii suplimentare...'}),
+            'dosar': forms.Select(attrs={'class': 'form-select'}),
+            'titlu': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Audiere Popescu Ion (opțional)'}),
+            'tip_termen': forms.Select(attrs={'class': 'form-select'}),
+            'data_limita': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'ora': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
+            'detalii': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Detalii suplimentare...'}),
         }
+
+    # def __init__(self, *args, **kwargs):
+    #     # Opțional: Dacă vrei să îi trimiți utilizatorul curent pentru a filtra dosarele
+    #     # user = kwargs.pop('user', None)
+    #     super(TermenProceduralForm, self).__init__(*args, **kwargs)
+    #     # Dacă vrei să arăți doar dosarele active, poți filtra aici:
+    #     # self.fields['dosar'].queryset = Dosar.objects.filter(stadiu='ACTIV')
+
+    def __init__(self, *args, **kwargs):
+        # Extragem utilizatorul trimis din view (dacă există)
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        
+        if user:
+            # Filtrăm dropdown-ul pe baza echipei
+            if user.is_superuser or getattr(user, 'rol', '') == 'ADMIN':
+                self.fields['dosar'].queryset = Dosar.objects.all()
+            else:
+                self.fields['dosar'].queryset = Dosar.objects.filter(
+                    Q(ofiter_caz=user) | Q(procuror_caz=user) | Q(grefier_caz=user)
+                )
+            
+            # Afișăm doar numărul dosarului, curat și scurt
+            self.fields['dosar'].label_from_instance = lambda d: d.numar_unic
