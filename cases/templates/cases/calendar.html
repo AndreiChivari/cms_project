@@ -356,11 +356,11 @@
                         {% for item in urgente_sidebar %}
                             {% with zile=item.data|timeuntil %}
                             <a href="{% url 'cases:detalii_dosar' item.dosar.id %}"
-                            class="list-group-item list-group-item-action px-3 py-2 termen-item {% if item.critica %}critica{% elif item.urgenta %}urgenta{% endif %}"
+                            class="list-group-item list-group-item-action px-3 py-2 termen-item {% if item.critica %}critica{% elif item.urgenta %}urgenta{% endif %} {% if item.indeplinit %}opacity-50{% endif %}"
                             style="font-size: 0.82rem;">
                                 <div class="d-flex justify-content-between align-items-start gap-2">
                                     <div class="flex-grow-1 min-width-0">
-                                        <div class="fw-bold text-dark text-truncate mb-1">
+                                        <div class="fw-bold text-dark text-truncate mb-1 {% if item.indeplinit %}text-decoration-line-through{% endif %}">
                                             {{ item.titlu }}
                                         </div>
                                         <div class="text-muted d-flex align-items-center gap-1">
@@ -435,15 +435,23 @@
             </div>
             <div class="d-flex align-items-center gap-1">
                 <span style="width:12px;height:12px;border-radius:3px;background:#fd7e14;"></span>
-                <span class="text-muted small fw-medium">Instanță / Prorogare</span>
+                <span class="text-muted small fw-medium">Instanţă</span>
+            </div>
+            <div class="d-flex align-items-center gap-1">
+                <span style="width:12px;height:12px;border-radius:3px;background:#ffc107f1;"></span>
+                <span class="text-muted small fw-medium">Notă de dispoziţii</span>
             </div>
             <div class="d-flex align-items-center gap-1">
                 <span style="width:12px;height:12px;border-radius:3px;background:#0d6efd;"></span>
                 <span class="text-muted small fw-medium">Audiere</span>
             </div>
             <div class="d-flex align-items-center gap-1">
-                <span style="width:12px;height:12px;border-radius:3px;background:#6c757d;"></span>
+                <span style="width:12px;height:12px;border-radius:3px;background:#9235A3;"></span>
                 <span class="text-muted small fw-medium">Alt termen</span>
+            </div>
+            <div class="d-flex align-items-center gap-1">
+                <span style="width:12px;height:12px;border-radius:3px;background:#198754;"></span>
+                <span class="text-muted small fw-medium">Termen finalizat</span>
             </div>
         </div>
 
@@ -487,12 +495,16 @@
                 </div>
             </div>
 
-            <div class="modal-footer bg-light border-top border-secondary border-opacity-10 px-4 py-3">
-                <button type="button" class="btn btn-light border border-secondary border-opacity-25 fw-medium"
-                        data-bs-dismiss="modal">Închide</button>
-                <a href="#" id="modalLinkBtn" class="btn btn-primary fw-medium px-4 shadow-sm">
-                    <i class="bi bi-folder2-open me-1"></i> Deschide dosarul
-                </a>
+            <div class="modal-footer bg-light border-top border-secondary border-opacity-10 px-4 py-3 d-flex justify-content-between align-items-center">
+                <div id="containerBifaIndeplinit">
+                    </div>
+                
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-light border border-secondary border-opacity-25 fw-medium" data-bs-dismiss="modal">Închide</button>
+                    <a href="#" id="modalLinkBtn" class="btn btn-primary fw-medium px-4 shadow-sm">
+                        <i class="bi bi-folder2-open me-1"></i> Deschide dosarul
+                    </a>
+                </div>
             </div>
 
         </div>
@@ -503,7 +515,7 @@
 {# MODAL — Adăugare termen nou                                                 #}
 {# ═══════════════════════════════════════════════════════════════════════════ #}
 <div class="modal fade" id="adaugareTermenModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 shadow-lg rounded-3 overflow-hidden">
 
             <div class="modal-header bg-primary py-3 px-4">
@@ -565,7 +577,7 @@
                 <div class="modal-footer bg-light border-top border-secondary border-opacity-10 px-4 py-3 d-flex justify-content-between align-items-center">
                     <span class="text-muted small">
                         <i class="bi bi-info-circle me-1"></i>
-                        Termenele marcate cu <span class="text-danger">*</span> sunt obligatorii.
+                        Câmpurile marcate cu <span class="text-danger">*</span> sunt obligatorii.
                     </span>
                     <div class="d-flex gap-2">
                         <button type="button" class="btn btn-light border border-secondary border-opacity-25 fw-medium"
@@ -599,7 +611,7 @@ document.addEventListener('DOMContentLoaded', function () {
         'PRESCRIPTIE_GEN':  '#dc3545',
         'PRESCRIPTIE_SPEC': '#dc3545',
         'INSTANTA':     '#fd7e14',
-        'PROROGARE':    '#fd7e14',
+        // 'PROROGARE':    '#fd7e14',
         'AUDIERE':      '#0d6efd',
         'ALTUL':        '#6c757d',
     };
@@ -638,39 +650,78 @@ document.addEventListener('DOMContentLoaded', function () {
             // Poți adăuga un spinner dacă vrei
         },
 
+        // Randează iconița de bifă direct în pastila din calendar
+        eventContent: function(arg) {
+            let isDone = arg.event.extendedProps.indeplinit;
+            let iconHtml = isDone ? '<i class="bi bi-check-circle-fill me-1" style="font-size: 1.2em;"></i>' : '';
+            return { html: `<div class="fc-event-title">${iconHtml}${arg.event.title}</div>` };
+        },
+
         // ── Click pe eveniment → deschide modal cu detalii ─────────────────
         eventClick: function(info) {
             info.jsEvent.preventDefault();
-
-            var ev    = info.event;
+            var ev = info.event;
             var props = ev.extendedProps;
 
-            // Titlu și culoare header
+            // 1. Populăm datele text
             document.getElementById('modalTitle').textContent = ev.title;
             var culoare = CULORI_MODAL[props.tip] || ev.backgroundColor || '#1c437a';
             document.getElementById('evenimentModalHeader').style.backgroundColor = culoare;
 
-            // Dată formatată
             var optiuni = { day: '2-digit', month: 'long', year: 'numeric' };
             if (!ev.allDay) {
-                optiuni.hour   = '2-digit';
+                optiuni.hour = '2-digit';
                 optiuni.minute = '2-digit';
             }
-            document.getElementById('modalDate').textContent =
-                ev.start.toLocaleDateString('ro-RO', optiuni);
-
-            // Dosar
+            document.getElementById('modalDate').textContent = ev.start.toLocaleDateString('ro-RO', optiuni);
             document.getElementById('modalDosar').textContent = props.dosar_numar || '—';
+            document.getElementById('modalDetails').textContent = props.detalii || 'Nu există detalii suplimentare.';
+            document.getElementById('modalLinkBtn').href = props.dosar_url || '#';
 
-            // Detalii
-            document.getElementById('modalDetails').textContent =
-                props.detalii || 'Nu există detalii suplimentare.';
+            // 2. LOGICA PENTRU BUTONUL DE BIFĂ (Fără niciun if restrictiv!)
+            var containerBifa = document.getElementById('containerBifaIndeplinit');
+            containerBifa.innerHTML = ''; // Curățăm butonul vechi la fiecare deschidere
+            
+            var btnCheck = document.createElement('button');
+            btnCheck.type = 'button';
+            
+            if (props.indeplinit) {
+                btnCheck.className = 'btn btn-outline-secondary fw-medium shadow-sm';
+                btnCheck.innerHTML = '<i class="bi bi-arrow-counterclockwise me-1"></i> Redeschide';
+            } else {
+                btnCheck.className = 'btn btn-success fw-medium shadow-sm';
+                btnCheck.innerHTML = '<i class="bi bi-check2-circle"></i> Finalizează';
+            }
+            
+            btnCheck.onclick = function() {
+                btnCheck.disabled = true;
+                btnCheck.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Se salvează...';
+                
+                // Alegem URL-ul dinamic
+                var urlPost = (props.tip === 'masura') 
+                    ? `/cases/calendar/masura/${props.item_id}/toggle/` 
+                    : `/cases/calendar/termen/${props.item_id}/toggle/`;
+                
+                fetch(urlPost, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        bootstrap.Modal.getInstance(document.getElementById('evenimentModal')).hide();
+                        location.reload(); 
+                    }
+                });
+            };
+            
+            // Adăugăm butonul în modal
+            containerBifa.appendChild(btnCheck);
 
-            // Link dosar — folosim URL-ul trimis din Python
-            var linkBtn = document.getElementById('modalLinkBtn');
-            linkBtn.href = props.dosar_url || '#';
-
-            // Afișăm modalul
+            // 3. Afișăm modalul
             new bootstrap.Modal(document.getElementById('evenimentModal')).show();
         },
 

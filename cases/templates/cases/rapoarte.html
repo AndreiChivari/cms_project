@@ -58,6 +58,21 @@
                         </div>
                         <div class="row mb-3">
                             <div class="col-6">
+                                <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">Grefier</label>
+                                <select name="grefier" class="form-select form-select-sm border-secondary border-opacity-25">
+                                    <option value="">-- Toți --</option>
+                                    {% for g in lista_grefieri %}
+                                    <option value="{{ g.id }}" {% if request.GET.grefier == g.id|stringformat:"s" %}selected{% endif %}>{{ g.get_full_name|default:g.username }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">Articol (Ex: 228)</label>
+                                <input type="text" name="articol" class="form-control form-control-sm border-secondary border-opacity-25" value="{{ request.GET.articol }}" placeholder="Caută articol...">
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-6">
                                 <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">Act normativ</label>
                                 <select name="act_normativ" class="form-select form-select-sm border-secondary border-opacity-25">
                                     <option value="">-- Toate --</option>
@@ -67,8 +82,13 @@
                                 </select>
                             </div>
                             <div class="col-6">
-                                <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">Articol (Ex: 228)</label>
-                                <input type="text" name="articol" class="form-control form-control-sm border-secondary border-opacity-25" value="{{ request.GET.articol }}" placeholder="Caută articol...">
+                                <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">Măsură preventivă</label>
+                                <select name="masura_preventiva" class="form-select form-select-sm border-secondary border-opacity-25">
+                                    <option value="">-- Toate --</option>
+                                    {% for cod, nume in masuri_preventive_choices %}
+                                    <option value="{{ cod }}" {% if request.GET.masura_preventiva == cod %}selected{% endif %}>{{ nume }}</option>
+                                    {% endfor %}
+                                </select>
                             </div>
                         </div>
                         <div class="row mb-2">
@@ -113,6 +133,8 @@
                                 <div class="form-check mb-2"><input class="form-check-input border-secondary border-opacity-50" type="checkbox" name="col_incadrare" {% if coloane.col_incadrare %}checked{% endif %}> <label class="form-check-label text-dark">Încadrare juridică (art/lege)</label></div>
                                 <div class="form-check mb-2"><input class="form-check-input border-secondary border-opacity-50" type="checkbox" name="col_ofiter" {% if coloane.col_ofiter %}checked{% endif %}> <label class="form-check-label text-dark">Nume poliţist</label></div>
                                 <div class="form-check mb-2"><input class="form-check-input border-secondary border-opacity-50" type="checkbox" name="col_procuror" {% if coloane.col_procuror %}checked{% endif %}> <label class="form-check-label text-dark">Nume procuror</label></div>
+                                <div class="form-check mb-2"><input class="form-check-input border-secondary border-opacity-50" type="checkbox" name="col_grefier" {% if coloane.col_grefier %}checked{% endif %}> <label class="form-check-label text-dark">Nume grefier</label></div>
+                                <div class="form-check mb-2"><input class="form-check-input border-secondary border-opacity-50" type="checkbox" name="col_termene" {% if coloane.col_termene %}checked{% endif %}> <label class="form-check-label text-dark">Termene procedurale</label></div>
                             </div>
                             <div class="col-sm-6">
                                 <div class="form-check mb-2"><input class="form-check-input border-secondary border-opacity-50" type="checkbox" name="col_stadiu_curent" {% if coloane.col_stadiu_curent %}checked{% endif %}> <label class="form-check-label text-dark">Stadiu curent</label></div>
@@ -121,6 +143,8 @@
                                 <div class="form-check mb-2"><input class="form-check-input border-secondary border-opacity-50" type="checkbox" name="col_data_solutie" {% if coloane.col_data_solutie %}checked{% endif %}> <label class="form-check-label text-dark">Data soluției</label></div>
                                 <div class="form-check mb-2"><input class="form-check-input border-secondary border-opacity-50" type="checkbox" name="col_parti" {% if coloane.col_parti %}checked{% endif %}> <label class="form-check-label text-dark">Părți în cauză</label></div>
                                 <div class="form-check mb-2"><input class="form-check-input border-secondary border-opacity-50" type="checkbox" name="col_masuri" {% if coloane.col_masuri %}checked{% endif %}> <label class="form-check-label text-dark">Măsuri preventive active</label></div>
+                                <div class="form-check mb-2"><input class="form-check-input border-secondary border-opacity-50" type="checkbox" name="col_loc_savarsirii" {% if coloane.col_loc_savarsirii %}checked{% endif %}> <label class="form-check-label text-dark">Locul săvârșirii</label></div>
+                                <div class="form-check mb-2"><input class="form-check-input border-secondary border-opacity-50" type="checkbox" name="col_data_savarsirii" {% if coloane.col_data_savarsirii %}checked{% endif %}> <label class="form-check-label text-dark">Data săvârșirii</label></div>
                             </div>
                         </div>
                     </div>
@@ -156,6 +180,10 @@
                             {% if coloane.col_data_solutie %}<th class="py-3 px-3 fw-bold border-0 bg-primary bg-gradient  text-white" style="font-size: 0.75rem; text-transform: uppercase;">Data soluției</th>{% endif %}
                             {% if coloane.col_parti %}<th class="py-3 px-3 fw-bold border-0 bg-primary bg-gradient  text-white" style="font-size: 0.75rem; text-transform: uppercase;">Părți în cauză</th>{% endif %}
                             {% if coloane.col_masuri %}<th class="py-3 px-3 fw-bold border-0 bg-primary bg-gradient  text-white" style="font-size: 0.75rem; text-transform: uppercase;">Măsuri prev.</th>{% endif %}
+                            {% if coloane.col_grefier %}<th class="py-3 px-3 fw-bold border-0 bg-primary bg-gradient text-white" style="font-size: 0.75rem; text-transform: uppercase;">Grefier</th>{% endif %}
+                            {% if coloane.col_termene %}<th class="py-3 px-3 fw-bold border-0 bg-primary bg-gradient text-white" style="font-size: 0.75rem; text-transform: uppercase;">Termene</th>{% endif %}
+                            {% if coloane.col_loc_savarsirii %}<th class="py-3 px-3 fw-bold border-0 bg-primary bg-gradient text-white" style="font-size: 0.75rem; text-transform: uppercase;">Locul săvârșirii</th>{% endif %}
+                            {% if coloane.col_data_savarsirii %}<th class="py-3 px-3 fw-bold border-0 bg-primary bg-gradient text-white" style="font-size: 0.75rem; text-transform: uppercase;">Data săvârșirii</th>{% endif %}
                         </tr>
                     </thead>
                     <tbody>
@@ -222,6 +250,49 @@
                                 <td class="px-3 py-2">
                                     {% for masura in dosar.masuri_preventive.all %}
                                         <div style="font-size: 0.8rem;" class="text-danger fw-medium">⚠ {{ masura.get_tip_masura_display }} <span class="text-muted fw-normal">(exp. {{ masura.data_sfarsit|date:"d.m.Y" }})</span></div>
+                                    {% empty %}
+                                        <span class="text-muted">-</span>
+                                    {% endfor %}
+                                </td>
+                            {% endif %}
+
+                            {% if coloane.col_grefier %}
+                                <td class="px-3 py-2 text-dark">{{ dosar.grefier_caz.get_full_name|default:"-" }}</td>
+                            {% endif %}
+
+                            {% if coloane.col_termene %}
+                                <td class="px-3 py-2">
+                                    {% for termen in dosar.termene_procedurale.all %}
+                                        <div style="font-size: 0.8rem;" class="text-dark">
+                                            <span class="text-muted">{{ termen.get_tip_termen_display }}:</span>
+                                            {{ termen.data_limita|date:"d.m.Y" }}
+                                            {% if termen.ora %}<span class="text-muted"> {{ termen.ora|time:"H:i" }}</span>{% endif %}
+                                            {% if termen.indeplinit %}<span class="badge bg-success bg-opacity-10 text-success ms-1" style="font-size: 0.7rem;">✓</span>{% endif %}
+                                        </div>
+                                    {% empty %}
+                                        <span class="text-muted">-</span>
+                                    {% endfor %}
+                                </td>
+                            {% endif %}
+
+                            {% if coloane.col_loc_savarsirii %}
+                                <td class="px-3 py-2">
+                                    {% for inf in dosar.infractiuni.all %}
+                                        {% if inf.adresa_comiterii %}
+                                            <div class="text-dark" style="font-size: 0.8rem;">• {{ inf.adresa_comiterii }}</div>
+                                        {% endif %}
+                                    {% empty %}
+                                        <span class="text-muted">-</span>
+                                    {% endfor %}
+                                </td>
+                            {% endif %}
+
+                            {% if coloane.col_data_savarsirii %}
+                                <td class="px-3 py-2">
+                                    {% for inf in dosar.infractiuni.all %}
+                                        {% if inf.data_comiterii %}
+                                            <div class="text-dark" style="font-size: 0.8rem;">• {{ inf.data_comiterii|date:"d.m.Y" }}</div>
+                                        {% endif %}
                                     {% empty %}
                                         <span class="text-muted">-</span>
                                     {% endfor %}

@@ -20,7 +20,7 @@
 <script src="{% static 'leaflet/leaflet.markercluster.js' %}"></script>
 
 <div class="container-fluid mb-4">
-    <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom border-secondary border-opacity-25 mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom border-secondary border-opacity-25 mt-2">
         <div>
             <h3 class="mb-1 fw-bold text-dark d-flex align-items-center gap-2">
                 <i class="bi bi-geo-alt-fill text-danger"></i> Analiza geografică a infracționalității
@@ -69,12 +69,12 @@
         </div>
     </div>
 
-    <div class="row mb-4">
+    <div class="row mb-3">
         <div class="col-md-4">
             <div class="card border-0 shadow-sm border-start border-primary border-4 h-100 bg-white">
                 <div class="card-body p-3">
                     <p class="text-muted small text-uppercase fw-bold mb-1">Total Fapte Filtrate</p>
-                    <h2 class="display-6 fw-bold text-dark mb-0" id="stat-total">0</h2>
+                    <h2 class="display-6 fw-bold text-dark mb-0 mt-2" id="stat-total">0</h2>
                 </div>
             </div>
         </div>
@@ -144,36 +144,63 @@
             "📍 Puncte specifice (Pini Grupate)": piniLayer
         }, {collapsed: false}).addTo(map);
 
-        // 2. Populăm Dropdown-urile dinamic
-        function populeazaDropdowns() {
-            const selectAct = document.getElementById('filtru-act');
-            const selectIncadrare = document.getElementById('filtru-incadrare');
-            const selectOras = document.getElementById('filtru-oras'); 
-            
-            // Extragem liste unice
+    // Înlocuiește funcția populeazaDropdowns cu aceasta:
+    function populeazaDropdowns(dateSursa) {
+        const selectAct = document.getElementById('filtru-act');
+        const selectIncadrare = document.getElementById('filtru-incadrare');
+        const selectOras = document.getElementById('filtru-oras');
+
+        // Salvăm valorile selectate curent (pentru a le păstra unde e posibil)
+        const actCurent = selectAct.value;
+        const incadrareCurenta = selectIncadrare.value;
+        const orasCurent = selectOras.value;
+
+        // Determinăm ce date filtrăm pentru fiecare dropdown
+        const dateFiltrateActiv = actCurent !== 'TOATE'
+            ? dateInitiale.filter(p => p.act_normativ === actCurent)
+            : dateInitiale;
+
+        const dateFiltrateIncadrare = (actCurent !== 'TOATE' && incadrareCurenta !== 'TOATE')
+            ? dateFiltrateActiv.filter(p => p.incadrare === incadrareCurenta)
+            : dateFiltrateActiv;
+
+        // --- Reconstruim dropdown Act (doar la prima inițializare) ---
+        if (selectAct.options.length <= 1) {
             const acteUnice = [...new Set(dateInitiale.map(p => p.act_normativ))].sort();
-            const incadrariUnice = [...new Set(dateInitiale.map(p => p.incadrare))].sort();
-            // Extragem orașele, excluzând pe cele "NECUNOSCUT" pentru a păstra filtrul curat
-            const oraseUnice = [...new Set(dateInitiale.map(p => p.oras_extras))].filter(o => o !== "NECUNOSCUT").sort();
-            
             acteUnice.forEach(act => {
                 let opt = document.createElement('option');
                 opt.value = act; opt.innerHTML = act;
                 selectAct.appendChild(opt);
             });
-
-            incadrariUnice.forEach(inc => {
-                let opt = document.createElement('option');
-                opt.value = inc; opt.innerHTML = inc;
-                selectIncadrare.appendChild(opt);
-            });
-
-            oraseUnice.forEach(oras => {
-                let opt = document.createElement('option');
-                opt.value = oras; opt.innerHTML = oras;
-                selectOras.appendChild(opt);
-            });
         }
+
+        // --- Reconstruim dropdown Încadrare (filtrat după actul selectat) ---
+        const incadrariUnice = [...new Set(dateFiltrateActiv.map(p => p.incadrare))].sort();
+        selectIncadrare.innerHTML = '<option value="TOATE">Toate încadrările</option>';
+        incadrariUnice.forEach(inc => {
+            let opt = document.createElement('option');
+            opt.value = inc; opt.innerHTML = inc;
+            selectIncadrare.appendChild(opt);
+        });
+        // Reaplică selecția anterioară dacă mai există în lista nouă
+        if (incadrariUnice.includes(incadrareCurenta)) {
+            selectIncadrare.value = incadrareCurenta;
+        }
+
+        // --- Reconstruim dropdown Oraș (filtrat după act + încadrare) ---
+        const oraseUnice = [...new Set(dateFiltrateIncadrare.map(p => p.oras_extras))]
+            .filter(o => o !== "NECUNOSCUT").sort();
+        selectOras.innerHTML = '<option value="TOATE">Toate localitățile</option>';
+        oraseUnice.forEach(oras => {
+            let opt = document.createElement('option');
+            opt.value = oras; opt.innerHTML = oras;
+            selectOras.appendChild(opt);
+        });
+        // Reaplică selecția anterioară dacă mai există în lista nouă
+        if (oraseUnice.includes(orasCurent)) {
+            selectOras.value = orasCurent;
+        }
+    }
 
         // 3. Funcția de actualizare a hărții și a statisticilor
         function proceseazaDate(dateFiltrate) {
@@ -239,46 +266,40 @@
         }
 
         // 4. Funcția care aplică filtrele selectate
-        function aplicaFiltre() {
-            const actSelectat = document.getElementById('filtru-act').value;
-            const incadrareSelectata = document.getElementById('filtru-incadrare').value;
-            const orasSelectat = document.getElementById('filtru-oras').value; 
-            
-            // NOU: Citirea datelor din interval
-            const dataStart = document.getElementById('filtru-data-start').value;
-            const dataStop = document.getElementById('filtru-data-stop').value;
+    // Înlocuiește funcția aplicaFiltre cu aceasta:
+    function aplicaFiltre() {
+        // Actualizăm dropdown-urile dependente
+        populeazaDropdowns();
 
-            const dateFiltrate = dateInitiale.filter(punct => {
-                if (actSelectat !== 'TOATE' && punct.act_normativ !== actSelectat) return false;
-                if (incadrareSelectata !== 'TOATE' && punct.incadrare !== incadrareSelectata) return false;
-                if (orasSelectat !== 'TOATE' && punct.oras_extras !== orasSelectat) return false;
-                
-                // NOU: Filtrare precisă pe intervalul de date ales
-                if (dataStart || dataStop) {
-                    if (!punct.data) return false; // Excludem faptele fără dată dacă s-a cerut un filtru temporal
-                    
-                    const dataFaptei = new Date(punct.data);
-                    
-                    if (dataStart) {
-                        const start = new Date(dataStart);
-                        if (dataFaptei < start) return false;
-                    }
-                    
-                    if (dataStop) {
-                        const stop = new Date(dataStop);
-                        stop.setHours(23, 59, 59, 999); // Includem întreaga zi selectată
-                        if (dataFaptei > stop) return false;
-                    }
+        const actSelectat = document.getElementById('filtru-act').value;
+        const incadrareSelectata = document.getElementById('filtru-incadrare').value;
+        const orasSelectat = document.getElementById('filtru-oras').value;
+        const dataStart = document.getElementById('filtru-data-start').value;
+        const dataStop = document.getElementById('filtru-data-stop').value;
+
+        const dateFiltrate = dateInitiale.filter(punct => {
+            if (actSelectat !== 'TOATE' && punct.act_normativ !== actSelectat) return false;
+            if (incadrareSelectata !== 'TOATE' && punct.incadrare !== incadrareSelectata) return false;
+            if (orasSelectat !== 'TOATE' && punct.oras_extras !== orasSelectat) return false;
+
+            if (dataStart || dataStop) {
+                if (!punct.data) return false;
+                const dataFaptei = new Date(punct.data);
+                if (dataStart && dataFaptei < new Date(dataStart)) return false;
+                if (dataStop) {
+                    const stop = new Date(dataStop);
+                    stop.setHours(23, 59, 59, 999);
+                    if (dataFaptei > stop) return false;
                 }
-                
-                return true;
-            });
+            }
+            return true;
+        });
 
-            proceseazaDate(dateFiltrate);
-        }
+        proceseazaDate(dateFiltrate);
+    }
 
         // --- INIȚIALIZARE ȘI EVENIMENTE ---
-        populeazaDropdowns();
+        populeazaDropdowns(dateInitiale);  // primul apel inițializează tot
         proceseazaDate(dateInitiale);
 
         document.getElementById('filtru-act').addEventListener('change', aplicaFiltre);
@@ -308,7 +329,7 @@
     .marker-cluster-small { background-color: rgba(13, 110, 253, 0.6); }
     .marker-cluster-small div { background-color: rgba(13, 110, 253, 0.9); color: white; font-weight: bold; }
     .marker-cluster-medium { background-color: rgba(255, 193, 7, 0.6); }
-    .marker-cluster-medium div { background-color: rgba(255, 193, 7, 0.9); color: dark; font-weight: bold; }
+    .marker-cluster-medium div { background-color: rgba(255, 193, 7, 0.9); color: #212529; font-weight: bold; }
     .marker-cluster-large { background-color: rgba(220, 53, 69, 0.6); }
     .marker-cluster-large div { background-color: rgba(220, 53, 69, 0.9); color: white; font-weight: bold; }
 </style>

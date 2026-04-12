@@ -1,4 +1,5 @@
 import os
+from wsgiref import headers
 from django.conf import settings
 from django.shortcuts import render, get_object_or_404, redirect
 from urllib3 import request
@@ -23,6 +24,7 @@ from openpyxl.styles import Font, Alignment
 from django.contrib import messages
 import json
 from django.utils.dateparse import parse_datetime, parse_date
+from django.views.decorators.http import require_POST
 # Importuri pentru ocr
 import pytesseract
 from PIL import Image
@@ -238,8 +240,32 @@ def dashboard(request):
 def adaugare_dosar(request):
     if request.method == 'POST':
         form = CreareDosarForm(request.POST)
+        form_infractiune = InfractiuneForm(request.POST, prefix='inf')
+        
+        # Verificăm dacă s-a completat cel puțin un câmp din secțiunea infracțiune
+        are_date_infractiune = any([
+            request.POST.get('inf-act_normativ'),
+            request.POST.get('inf-articol'),
+            request.POST.get('inf-incadrare_juridica'),
+            request.POST.get('inf-adresa_comiterii'),
+            request.POST.get('inf-data_comiterii'),
+        ])
+        
         if form.is_valid():
+            # Dacă s-au completat date pentru infracțiune, validăm și acel form
+            if are_date_infractiune and not form_infractiune.is_valid():
+                # Dosarul nu e salvat încă — returnăm cu erori
+                context = {'form': form, 'form_infractiune': form_infractiune}
+                return render(request, 'cases/adaugare_dosar.html', context)
+            
             dosar = form.save()
+
+            # Salvăm infracțiunea dacă există date valide
+            if are_date_infractiune and form_infractiune.is_valid():
+                infractiune = form_infractiune.save(commit=False)
+                infractiune.dosar = dosar
+                infractiune.save()
+
 
             # Creăm istoricul inițial
             if dosar.ofiter_caz:
@@ -263,11 +289,11 @@ def adaugare_dosar(request):
             return redirect('cases:detalii_dosar', pk=dosar.pk)
     else:
         form = CreareDosarForm()
+        form_infractiune = InfractiuneForm(prefix='inf')
         
-    context = {'form': form}
+    context = {'form': form, 'form_infractiune': form_infractiune}
     return render(request, 'cases/adaugare_dosar.html', context)
 
-@login_required
 @login_required
 def lista_dosare(request):
     # 1. Luăm inputul utilizatorului
@@ -934,7 +960,8 @@ def generare_rapoarte(request):
         'stadii_cercetare__solutii',
         'parti_implicate',
         'masuri_preventive',
-        'infractiuni' 
+        'infractiuni',
+        'termene_procedurale', 
     ).all().distinct()
     
     # 1. FILTRE (Criteriile de căutare)
@@ -942,6 +969,8 @@ def generare_rapoarte(request):
     data_inreg_end = request.GET.get('data_inreg_end')
     procuror_id = request.GET.get('procuror')
     ofiter_id = request.GET.get('ofiter')
+    grefier_id = request.GET.get('grefier')
+    masura_preventiva = request.GET.get('masura_preventiva')
     act_normativ = request.GET.get('act_normativ')
     articol = request.GET.get('articol')
     stadiu = request.GET.get('stadiu')
@@ -956,6 +985,10 @@ def generare_rapoarte(request):
         dosare = dosare.filter(procuror_caz_id=procuror_id)
     if ofiter_id:
         dosare = dosare.filter(ofiter_caz_id=ofiter_id)
+    if grefier_id:
+        dosare = dosare.filter(grefier_caz_id=grefier_id)
+    if masura_preventiva:
+        dosare = dosare.filter(masuri_preventive__tip_masura=masura_preventiva)
     if act_normativ:
         dosare = dosare.filter(infractiuni__act_normativ=act_normativ)
     if articol:
@@ -975,9 +1008,13 @@ def generare_rapoarte(request):
         'col_numar': is_checked('col_numar', True),
         'col_data_inreg': is_checked('col_data_inreg', True),
         'col_situatie_fapt': is_checked('col_situatie_fapt', True), 
-        'col_incadrare': is_checked('col_incadrare', True),  
+        'col_incadrare': is_checked('col_incadrare', True),
+        'col_loc_savarsirii': is_checked('col_loc_savarsirii', False),
+        'col_data_savarsirii': is_checked('col_data_savarsirii', False),  
         'col_ofiter': is_checked('col_ofiter', True),
         'col_procuror': is_checked('col_procuror', True),
+        'col_grefier': is_checked('col_grefier', False),
+        'col_termene': is_checked('col_termene', False),
         'col_stadiu_curent': is_checked('col_stadiu_curent', True),
         'col_data_stadiu': is_checked('col_data_stadiu', False),
         'col_solutie_finala': is_checked('col_solutie_finala', False),
@@ -1003,8 +1040,12 @@ def generare_rapoarte(request):
         if coloane['col_data_inreg']: headers.append("Data înreg.")
         if coloane['col_situatie_fapt']: headers.append("Situatie fapt")
         if coloane['col_incadrare']: headers.append("Încadrare juridică")
+        if coloane['col_loc_savarsirii']: headers.append("Locul săvârșirii")
+        if coloane['col_data_savarsirii']: headers.append("Data săvârșirii")
         if coloane['col_ofiter']: headers.append("Poliţist")
         if coloane['col_procuror']: headers.append("Procuror")
+        if coloane['col_grefier']: headers.append("Grefier")
+        if coloane['col_termene']: headers.append("Termene procedurale")
         if coloane['col_stadiu_curent']: headers.append("Stadiu curent")
         if coloane['col_data_stadiu']: headers.append("Data stadiu")
         if coloane['col_solutie_finala']: headers.append("Solutie finală")
@@ -1046,11 +1087,28 @@ def generare_rapoarte(request):
                 
                 incadrari = " | ".join(lista_incadrari)
                 row.append(curata_text(incadrari))
-                
+            if coloane['col_loc_savarsirii']:
+                locuri = " | ".join([
+                    inf.adresa_comiterii for inf in dosar.infractiuni.all() if inf.adresa_comiterii
+                ])
+                row.append(curata_text(locuri) if locuri else "-")
+            if coloane['col_data_savarsirii']:
+                date_savarsirii = " | ".join([
+                    inf.data_comiterii.strftime("%d.%m.%Y") for inf in dosar.infractiuni.all() if inf.data_comiterii
+                ])
+                row.append(curata_text(date_savarsirii) if date_savarsirii else "-")    
             if coloane['col_ofiter']: 
                 row.append(curata_text(dosar.ofiter_caz.get_full_name() if dosar.ofiter_caz else "-"))
             if coloane['col_procuror']: 
                 row.append(curata_text(dosar.procuror_caz.get_full_name() if dosar.procuror_caz else "-"))
+            if coloane['col_grefier']:
+                row.append(curata_text(dosar.grefier_caz.get_full_name() if dosar.grefier_caz else "-"))
+            if coloane['col_termene']:
+                termene = " | ".join([
+                    f"{t.get_tip_termen_display()} - {t.data_limita.strftime('%d.%m.%Y')}{' ' + str(t.ora) if t.ora else ''}"
+                    for t in dosar.termene_procedurale.all()
+                ])
+                row.append(curata_text(termene) if termene else "-")
             if coloane['col_stadiu_curent']: 
                 row.append(curata_text(stadiu.get_tip_stadiu_display() if stadiu else "Neînceput"))
             if coloane['col_data_stadiu']: 
@@ -1101,8 +1159,8 @@ def generare_rapoarte(request):
         del query_params['page']
     query_string = query_params.urlencode()
 
-    # 2. Împărțim rezultatele (câte 20 de dosare pe pagină)
-    paginator = Paginator(dosare, 20) 
+    # 2. Împărțim rezultatele (câte 10 de dosare pe pagină)
+    paginator = Paginator(dosare, 10) 
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
@@ -1112,6 +1170,8 @@ def generare_rapoarte(request):
         'coloane': coloane,
         'lista_procurori': User.objects.filter(rol='PROCUROR'),
         'lista_ofiteri': User.objects.filter(rol='POLITIST'),
+        'lista_grefieri': User.objects.filter(rol='GREFIER'),
+        'masuri_preventive_choices': MasuraPreventiva.TipMasura.choices,
         'acte_normative': Infractiune._meta.get_field('act_normativ').choices,
         'stadii_choices': StadiuCercetare._meta.get_field('tip_stadiu').choices,
         'solutii_choices': SolutieDosar._meta.get_field('tip_solutie').choices,
@@ -1707,11 +1767,12 @@ def api_calendar_events(request):
     # Dicționarul de culori (Separation of Concerns, cum am discutat)
     CULORI_TERMENE = {
         'PRESCRIPTIE_GEN': '#dc3545', # Roșu (critic)
-        'PRESCRIPTIE_SPEC': '#dc3545',
-        'INSTANTA': '#ffc107',        # Galben
-        'PROROGARE': '#fd7e14',       # Portocaliu
+        'NOTA': "#ffc107f1",
+        'INSTANTA': '#fd7e14',       # Portocaliu
+        # '#ffc107',        # Galben
+        # 'PROROGARE': '#fd7e14',       # Portocaliu
         'AUDIERE': '#0d6efd',         # Albastru
-        'ALTUL': '#6c757d',           # Gri
+        'ALTUL': "#9235A3",           # Gri
     }
 
     # ==========================================
@@ -1727,7 +1788,11 @@ def api_calendar_events(request):
 
     for termen in termene:
         # Stabilim titlul vizibil
+
         titlu_afisat = termen.titlu or f"{termen.get_tip_termen_display()} ({termen.dosar.numar_unic})"
+
+        # Dacă e îndeplinit îl facem VERDE (#198754), altfel culoarea normală
+        culoare_finala = '#198754' if termen.indeplinit else CULORI_TERMENE.get(termen.tip_termen, '#6c757d')
         
         # Stabilim formatul de timp (dacă are oră, FullCalendar îl va arăta diferit de cele "All-Day")
         if termen.ora:
@@ -1742,11 +1807,13 @@ def api_calendar_events(request):
             'title': titlu_afisat,
             'start': start_format,
             'allDay': all_day,
-            'color': CULORI_TERMENE.get(termen.tip_termen, '#6c757d'),
+            'color': culoare_finala,
             # Adăugăm date extra pentru modalul de detalii la care vom lucra la frontend
             'extendedProps': {
                 'tip': 'termen',
+                'item_id': termen.id,
                 'dosar_id': termen.dosar.id,
+                'indeplinit': termen.indeplinit,
                 'dosar_numar': termen.dosar.numar_unic,
                 'dosar_url': reverse('cases:detalii_dosar', args=[termen.dosar.id]), # NOU
                 'detalii': termen.detalii or "Nu există detalii suplimentare."
@@ -1764,14 +1831,19 @@ def api_calendar_events(request):
     for masura in masuri:
         # Ne asigurăm că există o dată de sfârșit înainte să o formatăm
         if masura.data_sfarsit:
+            # Culoare: Verde dacă e gata, altfel Grena
+            culoare_masura = '#198754' if masura.indeplinit else '#842029'
+
             events.append({
                 'id': f"masura_{masura.id}",
                 'title': f"Expirare {masura.get_tip_masura_display()} ({masura.dosar.numar_unic})",
                 'start': masura.data_sfarsit.isoformat(), # Corectat: data_sfarsit
                 'allDay': True,
-                'color': '#842029', 
+                'color': culoare_masura,
                 'extendedProps': {
                     'tip': 'masura',
+                    'item_id': masura.id,         # NOU: ID-ul pentru a ști ce bifăm
+                    'indeplinit': masura.indeplinit, # NOU: Starea
                     'dosar_id': masura.dosar.id,
                     'dosar_numar': masura.dosar.numar_unic,
                     'dosar_url': reverse('cases:detalii_dosar', args=[masura.dosar.id]), # NOU
@@ -1823,6 +1895,7 @@ def calendar_view(request):
             'data': t.data_limita,
             'dosar': t.dosar,
             'tip': 'Termen',
+            'indeplinit': t.indeplinit,
             'zile_ramase': (t.data_limita - azi).days # NOU: Calculăm câte zile au rămas până la termen
         })
         
@@ -1861,3 +1934,32 @@ def adaugare_termen_calendar(request):
             
     # Indiferent ce se întâmplă, îl întoarcem înapoi pe pagina calendarului
     return redirect('cases:calendar')
+
+# Funcţie care schimbă starea unui termen (îndeplinit/neîndeplinit) prin AJAX
+@login_required
+@require_POST
+def toggle_termen_indeplinit(request, pk):
+    """Schimbă starea termenului (Îndeplinit/Neîndeplinit) prin AJAX"""
+    termen = get_object_or_404(TermenProcedural, pk=pk)
+    
+    # Securitate: Verificăm dacă user-ul face parte din dosar
+    echipa_ids = [termen.dosar.ofiter_caz_id, termen.dosar.procuror_caz_id, termen.dosar.grefier_caz_id]
+    if request.user.id in echipa_ids or request.user.is_superuser or getattr(request.user, 'rol', '') == 'ADMIN':
+        termen.indeplinit = not termen.indeplinit
+        termen.save()
+        return JsonResponse({'status': 'success', 'indeplinit': termen.indeplinit})
+    
+    return JsonResponse({'status': 'error', 'message': 'Nu aveți permisiunea.'}, status=403)
+
+# Funcţie care schimbă starea unei măsuri preventive (îndeplinit/neîndeplinit) prin AJAX
+@login_required
+@require_POST
+def toggle_masura_indeplinita(request, pk):
+    masura = get_object_or_404(MasuraPreventiva, pk=pk)
+    # Verificăm permisiunile
+    echipa_ids = [masura.dosar.ofiter_caz_id, masura.dosar.procuror_caz_id, masura.dosar.grefier_caz_id]
+    if request.user.id in echipa_ids or request.user.is_superuser or getattr(request.user, 'rol', '') == 'ADMIN':
+        masura.indeplinit = not masura.indeplinit
+        masura.save()
+        return JsonResponse({'status': 'success', 'indeplinit': masura.indeplinit})
+    return JsonResponse({'status': 'error', 'message': 'Nu aveți permisiunea.'}, status=403)

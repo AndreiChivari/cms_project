@@ -266,6 +266,7 @@ class MasuraPreventiva(models.Model):
     durata_zile = models.PositiveIntegerField(help_text="Numărul de zile (ex: 30)")
     data_inceput = models.DateField()
     data_sfarsit = models.DateField()
+    indeplinit = models.BooleanField(default=False, verbose_name="Îndeplinit")
 
     class Meta:
         verbose_name = "Măsură Preventivă"
@@ -385,10 +386,9 @@ class Notificare(models.Model):
 
 class TermenProcedural(models.Model):
     TIP_TERMEN_CHOICES = [
-        ('PRESCRIPTIE_GEN', 'Prescripție Generală'),
-        ('PRESCRIPTIE_SPEC', 'Prescripție Specială'),
-        ('INSTANTA', 'Termen Instanță (Contestație durată)'),
-        ('PROROGARE', 'Termen Prorogare / Declinare'),
+        ('PRESCRIPTIE_GEN', 'Prescripție'),
+        ('NOTA', 'Notă de dispoiţii'),
+        ('INSTANTA', 'Termen instanță (Contestație durată proces)'),
         ('AUDIERE', 'Audiere'),
         ('ALTUL', 'Alt tip de termen procedural'),
     ]
@@ -421,6 +421,11 @@ class TermenProcedural(models.Model):
         null=True,
         verbose_name="Oră (Opțional)",
         help_text="Lăsați gol pentru evenimente care durează toată ziua (ex: Prescripție)"
+    )
+    indeplinit = models.BooleanField(
+        default=False,
+        verbose_name="Îndeplinit",
+        help_text="Bifați dacă activitatea a fost realizată"
     )
     detalii = models.TextField(
         blank=True, 
