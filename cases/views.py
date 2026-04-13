@@ -107,15 +107,41 @@ def dashboard(request):
         ).filter(conditie_mea).order_by('-data_inregistrarii')[:7]
 
     # 3. INDICATOR DE OPERATIVITATE / ÎNCĂRCĂTURĂ
-    # Calculăm câți utilizatori activi au dosare pentru a afla media
-    utilizatori_activi = User.objects.filter(
-        Q(dosare_instrumentate__isnull=False) | 
-        Q(dosare_supravegheate__isnull=False) | 
-        Q(dosare_gestionate__isnull=False)
-    ).distinct().count()
-    
-    media_sistem = total_dosare / utilizatori_activi if utilizatori_activi > 0 else 0
-    diferenta_medie = dosare_mele - media_sistem
+    rol_curent = getattr(utilizator, 'rol', '')
+
+    if utilizator.is_superuser or rol_curent == 'ADMIN':
+        # Adminii nu au o încărcătură de lucru propriu-zisă
+        media_sistem = 0
+        diferenta_medie = 0
+    else:
+        # A. Câți utilizatori ACTIVI există care au EXACT ACEEAȘI funcție cu utilizatorul curent?
+        colegi_activi = User.objects.filter(rol=rol_curent).filter(
+            Q(dosare_instrumentate__isnull=False) | 
+            Q(dosare_supravegheate__isnull=False) | 
+            Q(dosare_gestionate__isnull=False)
+        ).distinct().count()
+
+        # B. Câte dosare au fost efectiv alocate pentru această categorie profesională?
+        # (Nu folosim mereu `total_dosare` pentru că poate există dosare abia create 
+        # care încă nu au primit un ofițer sau un procuror)
+        total_dosare_pe_rol = 0
+        rol_upper = rol_curent.upper()
+        
+        if 'PROCUROR' in rol_upper:
+            total_dosare_pe_rol = Dosar.objects.filter(procuror_caz__isnull=False).count()
+        elif 'OFI' in rol_upper or 'POLI' in rol_upper: # Acoperă Ofițer / Polițist
+            total_dosare_pe_rol = Dosar.objects.filter(ofiter_caz__isnull=False).count()
+        elif 'GREFIER' in rol_upper:
+            total_dosare_pe_rol = Dosar.objects.filter(grefier_caz__isnull=False).count()
+        else:
+            # Fallback de siguranță
+            total_dosare_pe_rol = total_dosare
+
+        # C. Calculul matematic corect pe categorie (ex: Total Dosare cu Grefieri / Total Grefieri Activi)
+        media_sistem = total_dosare_pe_rol / colegi_activi if colegi_activi > 0 else 0
+        
+        # D. Diferența față de media departamentului său
+        diferenta_medie = dosare_mele - media_sistem
     
     # 4. AGREGARE ALERTE (TIMELINE INTELIGENT)
     ZILE_IN_AVANS = 30  # Cu câte zile înainte apare alerta

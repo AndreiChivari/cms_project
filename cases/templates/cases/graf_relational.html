@@ -1,9 +1,10 @@
 {% extends 'base.html' %}
 
-{% block title %}Analiză Relațională - Conexiuni{% endblock %}
+{% block title %}Analiză relațională - Conexiuni{% endblock %}
 
 {% block content %}
-<script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+{% load static %} <script src="{% static 'js/vis-network.min.js' %}"></script>
+<!-- <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script> -->
 
 <style>
     /* Stilul pânzei (canvas-ului) pe care se desenează graful */
@@ -44,6 +45,31 @@
             <button class="btn btn-success shadow-sm fw-bold" id="btn-export">
                 <i class="bi bi-camera-fill me-1"></i> Descarcă grafic (PNG)
             </button>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex flex-wrap align-items-center gap-4 bg-white p-3 rounded-3 shadow-sm border border-secondary border-opacity-10">
+                <span class="fw-bold text-primary small text-uppercase">
+                    <i class="bi bi-funnel-fill"></i> Filtrează Rețeaua:
+                </span>
+                
+                <div class="form-check form-switch">
+                    <input class="form-check-input filtru-graf" type="checkbox" id="filtru-suspecti" checked>
+                    <label class="form-check-label small fw-bold text-dark" for="filtru-suspecti">Făptuitori / Suspecți / Inculpați</label>
+                </div>
+                
+                <div class="form-check form-switch">
+                    <input class="form-check-input filtru-graf" type="checkbox" id="filtru-victime" checked>
+                    <label class="form-check-label small fw-medium text-muted" for="filtru-victime">Victime / Părți</label>
+                </div>
+                
+                <div class="form-check form-switch">
+                    <input class="form-check-input filtru-graf" type="checkbox" id="filtru-martori" checked>
+                    <label class="form-check-label small fw-medium text-muted" for="filtru-martori">Martori</label>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -112,6 +138,7 @@
 <script>
 document.addEventListener("DOMContentLoaded", function() {
     // 1. Variabile Globale
+    let activeSearchSet = null; // Ține minte rețeaua izolată de motorul de căutare
     let network = null;
     let nodesData = new vis.DataSet();
     let edgesData = new vis.DataSet();
@@ -166,6 +193,58 @@ document.addEventListener("DOMContentLoaded", function() {
             };
 
             network = new vis.Network(container, data_vis, options);
+
+            // =========================================
+            // FUNCȚIA CENTRALĂ DE FILTRARE
+            // =========================================
+            function aplicaFiltre() {
+                const showSuspecti = document.getElementById('filtru-suspecti').checked;
+                const showVictime = document.getElementById('filtru-victime').checked;
+                const showMartori = document.getElementById('filtru-martori').checked;
+
+                let updates = [];
+                
+                for (let nodeId in allNodes) {
+                    let node = allNodes[nodeId];
+                    
+                    // 1. Regula de Căutare (Dacă avem o căutare activă și nodul NU e în ea, îl ascundem mereu)
+                    if (activeSearchSet !== null && !activeSearchSet.has(nodeId)) {
+                        updates.push({ id: nodeId, hidden: true });
+                        continue;
+                    }
+                    
+                    // 2. Regula Bifelor (Se aplică doar nodurilor care au supraviețuit căutării)
+                    if (node.group === 'dosar') {
+                        // Dosarele rămân mereu vizibile (ele sunt legăturile)
+                        updates.push({ id: nodeId, hidden: false, font: { color: 'rgba(255, 255, 255, 1)' } });
+                    } 
+                    else if (node.group === 'persoana') {
+                        let calitati = (node.calitati_js || "").toLowerCase();
+                        
+                        // Stabilim calitățile persoanei pentru a decide dacă o afișăm sau nu
+                        let isSuspect = calitati.includes("suspect") || calitati.includes("inculpat") || calitati.includes("făptuitor") || calitati.includes("faptuitor");
+                        let isVictima = calitati.includes("victim") || calitati.includes("vătăm") || calitati.includes("civil");
+                        let isMartor = calitati.includes("martor");
+                        
+                        let shouldShow = false;
+                        
+                        if (showSuspecti && isSuspect) shouldShow = true;
+                        if (showVictime && isVictima) shouldShow = true;
+                        if (showMartori && isMartor) shouldShow = true;
+                        
+                        // Dacă persoana are o altă calitate rară (ex. denunțător) o lăsăm vizibilă ca să nu o pierdem
+                        if (!isSuspect && !isVictima && !isMartor) shouldShow = true; 
+
+                        updates.push({ id: nodeId, hidden: !shouldShow, font: { color: 'rgba(0, 0, 0, 1)' } });
+                    }
+                }
+                nodesData.update(updates);
+            }
+
+            // Atașăm evenimentul pe checkbox-uri ca să filtreze instant la click
+            document.querySelectorAll('.filtru-graf').forEach(cb => {
+                cb.addEventListener('change', aplicaFiltre);
+            });
 
             // =========================================
             // EVENIMENT: Click pe Nod (Panoul Lateral)
@@ -270,19 +349,9 @@ document.addEventListener("DOMContentLoaded", function() {
 
                 // 4. Actualizăm pânza: ASCUNDEM tot ce nu e relevant
                 let updates = [];
-                for (let nodeId in allNodes) {
-                    let node = allNodes[nodeId];
-                    let baseColor = (node.group === 'dosar') ? 'rgba(255, 255, 255, 1)' : 'rgba(0, 0, 0, 1)';
-
-                    if (allRelevantIds.has(nodeId)) {
-                        // E relevant: Îl AFIȘĂM (hidden: false)
-                        updates.push({ id: nodeId, hidden: false, font: { color: baseColor } });
-                    } else {
-                        // Irelevant: Îl ASCUNDEM COMPLET
-                        updates.push({ id: nodeId, hidden: true });
-                    }
-                }
-                nodesData.update(updates);
+                // 4. Salvăm starea căutării și aplicăm filtrele
+                activeSearchSet = allRelevantIds;
+                aplicaFiltre();
                 
                 // 5. Facem zoom exact pe grupul infracțional izolat
                 // Folosim Array.from() pentru a converti Set-ul în listă, altfel vis.js nu știe să facă zoom
@@ -300,13 +369,14 @@ document.addEventListener("DOMContentLoaded", function() {
                 document.getElementById('input-cautare').value = '';
                 
                 let updates = [];
-                for (let nodeId in allNodes) {
-                    let node = allNodes[nodeId];
-                    let textColor = (node.group === 'dosar') ? 'rgba(255, 255, 255, 1)' : 'rgba(0, 0, 0, 1)';
-                    // Repunem toate elementele pe ecran (hidden: false)
-                    updates.push({ id: nodeId, hidden: false, color: { opacity: 1 }, font: { color: textColor } });
-                }
-                nodesData.update(updates);
+                activeSearchSet = null; // Anulăm starea de căutare
+                    
+                // Resetăm bifele să fie toate active
+                document.getElementById('filtru-suspecti').checked = true;
+                document.getElementById('filtru-victime').checked = true;
+                document.getElementById('filtru-martori').checked = true;
+                
+                aplicaFiltre(); // Recalculăm pânza
                 
                 network.unselectAll();
                 network.fit({ animation: { duration: 1000, easingFunction: "easeInOutQuad" }});
