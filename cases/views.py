@@ -34,10 +34,10 @@ import re
 # Importuri pentru criptare CNP
 import hmac
 import hashlib
-# Import pentru generare şi salvare documente Word
+# Importuri pentru generare şi salvare documente Word
 from docxtpl import DocxTemplate
 from django.core.files.base import ContentFile
-# --- IMPORTURI NOI PENTRU SEMNĂTURĂ ---
+# Importuri pentru semnătura digitală PDF
 from pyhanko.sign import signers
 from pyhanko.pdf_utils.reader import PdfFileReader
 from pyhanko.pdf_utils.incremental_writer import IncrementalPdfFileWriter
@@ -48,7 +48,7 @@ from asn1crypto import pem
 from asn1crypto import x509 as asn1_x509
 from asn1crypto import pem
 from asn1crypto import x509 as asn1_x509
-from asn1crypto import keys as asn1_keys  # <-- Importul nou
+from asn1crypto import keys as asn1_keys
 from pyhanko.sign.fields import SigFieldSpec, append_signature_field
 from pyhanko.stamp import text
 import logging
@@ -100,7 +100,7 @@ def dashboard(request):
         # Dosare personale ÎN LUCRU
         dosare_in_lucru = dosare_mele - dosare_solutionate
         
-        # Ultimele 5 dosare pentru tabel
+        # Ultimele 7 dosare pentru tabel
         dosarele_mele_lista = Dosar.objects.prefetch_related(
             'infractiuni', 
             'stadii_cercetare__solutii'
@@ -110,8 +110,7 @@ def dashboard(request):
     rol_curent = getattr(utilizator, 'rol', '')
 
     if utilizator.is_superuser or rol_curent == 'ADMIN':
-        # Adminii nu au o încărcătură de lucru propriu-zisă
-        media_sistem = 0
+        # Setăm media și diferența la 0 pentru admini
         diferenta_medie = 0
     else:
         # A. Câți utilizatori ACTIVI există care au EXACT ACEEAȘI funcție cu utilizatorul curent?
@@ -453,7 +452,7 @@ def lista_dosare(request):
 def detalii_dosar(request, pk):
     dosar = get_object_or_404(Dosar, pk=pk)
     
-    # Calculăm o singură dată dacă are drepturi, pentru a trimite către HTML
+    # Verificăm dacă utilizatorul are drepturi de editare asupra acestui dosar pentru a afişa/ascunde acţiuni/butoane în template
     poate_edita = dosar.are_drepturi_editare(request.user)
     
     form_document = DocumentForm()
