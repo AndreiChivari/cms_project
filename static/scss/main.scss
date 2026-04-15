@@ -1,12 +1,21 @@
+/*
 // ==========================================================
 // main.scss — temă Bootstrap + ajustări UI pentru aplicație juridică
 // ==========================================================
+
+// *** SECTIUNE DE TEST
+$legal-navy: #1e293b;
+$legal-gold: #bf953f;
+$legal-red-sober: #9b2226; // Un roșu spre vișiniu, mai serios pentru dosare
+
+
 
 // ----------------------------------------------------------
 // 1) Variabile Bootstrap suprascrise înainte de import
 // ----------------------------------------------------------
 // Paletă cromatică sobră, potrivită unui produs instituțional.
-$primary: #1c437a;       // Albastru principal (brand / acțiuni primare)
+// $primary: #1c437a;       // Albastru principal (brand / acțiuni primare)
+$primary: #2d3748  ;
 $secondary: #4a5568;     // Gri închis (acțiuni secundare / texte utilitare)
 $success: #2f855a;       // Verde echilibrat (confirmări / reușite)
 $danger: #c53030;        // Roșu moderat (erori / acțiuni destructive)
@@ -164,3 +173,796 @@ $border-radius: 0.2rem;  // Colțuri ușor mai ferme (look profesional)
         }
     }
 }
+
+
+
+// *** SECTIUNE DE TEST: Stiluri experimentale pentru elemente specifice aplicației juridice
+// ----------------------------------------------------------
+// Navbar: nav-link activ cu fundal, colțuri rotunjite și bordură jos
+// ----------------------------------------------------------
+.navbar .nav-link {
+    border-radius: 1.2rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    position: relative;
+    
+    &.active {
+        background-color: rgba(255, 255, 255, 0.12);
+        opacity: 1 !important;
+        font-weight: 600;
+        
+        // Bordura de jos colorată — accent vizual distinct
+        &::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 2px;
+            background-color: #f79620; // portocaliu-auriu — contrast bun pe albastru închis
+            border-radius: 2px 2px 0 0;
+        }
+    }
+    
+    &:hover:not(.active) {
+        background-color: rgba(255, 255, 255, 0.07);
+        opacity: 1 !important;
+    }
+}
+*/
+
+// ==========================================================
+// main.scss — temă Bootstrap + ajustări UI pentru aplicație juridică
+// ==========================================================
+
+// ============================================================
+// 1) VARIABILE GLOBALE
+// ============================================================
+// $primary-dark:   #1e293b;   // Slate 800 — fundal navbar
+$primary-dark:   #143c7c;   // Slate 800 — fundal navbar
+$accent:         #0dcaf0;   // Cyan electric — element activ / accent
+$accent-muted:   rgba(13, 202, 240, 0.12); // Fundal subtil accent
+$secondary:      #4a5568;   // Gri-închis — texte utilitare
+$success:        #10b981;   // Verde smarald
+$danger:         #e63946;   // Roșu modern
+$warning:        #fbbf24;   // Amber — linkul Admin
+$body-bg:        #f0f4f8;   // Fundal paginii, ușor albăstrui
+$border-radius:  0.4rem;
+
+// ============================================================
+// 2) BOOTSTRAP OVERRIDES (înainte de import)
+// ============================================================
+$primary:        $primary-dark;
+$enable-shadows: false;
+
+@import "bootstrap/bootstrap";
+
+// ============================================================
+// 3) UTILITARE GENERALE
+// ============================================================
+.transition-base { transition: all 0.2s ease-in-out; }
+.hover-opacity-100:hover  { opacity: 1 !important; }
+.last-child-no-border:last-child { border-bottom: none !important; }
+
+// ============================================================
+// 4) NAVBAR
+// ============================================================
+.navbar {
+    height: 72px;
+    padding: 0;
+    background-color: #1e293b !important;
+    // Linie accent cyan în partea de jos
+    border-bottom: none !important;
+    box-shadow:
+        0 1px 0 rgba($accent, 0.2),        // linia cyan
+        0 4px 20px rgba(0, 0, 0, 0.25);    // umbra de adâncime
+
+    &::after {
+        content: '';
+        position: absolute;
+        bottom: 0; left: 0; right: 0;
+        height: 2px;
+        background: linear-gradient(
+            90deg,
+            $accent 0%,
+            rgba($accent, 0.15) 55%,
+            transparent 100%
+        );
+        pointer-events: none;
+    }
+}
+
+// Container fluid (px consistent pe toate breakpointurile)
+.navbar .container-fluid,
+.navbar .container-xl {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+}
+
+// ---- Logo ----
+.navbar-logo {
+    height: 44px;
+    width: auto;
+    object-fit: contain;
+}
+
+// Separator vertical (între logo și linkuri)
+.navbar-divider {
+    display: none;
+    width: 1px;
+    height: 32px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 0 1.25rem 0 0.5rem;
+    flex-shrink: 0;
+
+    @include media-breakpoint-up(xl) { display: block; }
+}
+
+// ---- Nav links ----
+.navbar .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.45rem 0.85rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.58);
+    position: relative;
+    white-space: nowrap;
+    transition: color 0.18s ease, background-color 0.18s ease;
+
+    i { font-size: 0.95rem; }
+
+    // Hover
+    &:hover:not(.active):not(.nav-link-admin) {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.07);
+    }
+
+    // Activ — pagina curentă
+    &.active {
+        color: $accent !important;
+        background: rgba($accent, 0.1);
+        font-weight: 600;
+
+        &::after {
+            content: '';
+            position: absolute;
+            bottom: -18px;       // sub navbar (border-bottom navbar are 2px)
+            left: 12%;
+            width: 76%;
+            height: 2px;
+            background: $accent;
+            border-radius: 2px 2px 0 0;
+            box-shadow: 0 0 10px rgba($accent, 0.55);
+        }
+    }
+
+    // Link Admin (galben-amber)
+    &.nav-link-admin {
+        color: $warning;
+        opacity: 0.8;
+        &:hover {
+            color: lighten($warning, 15%);
+            background: rgba($warning, 0.08);
+            opacity: 1;
+        }
+    }
+}
+
+// ---- Separator vertical înainte de Admin ----
+.navbar-separator {
+    display: none;
+    @include media-breakpoint-up(xl) {
+        display: block;
+        width: 1px;
+        height: 22px;
+        background: rgba(255, 255, 255, 0.1);
+        margin: 0 0.5rem;
+        flex-shrink: 0;
+    }
+}
+
+// ============================================================
+// 5) BUTONUL DE NOTIFICĂRI
+// ============================================================
+.navbar-notif-btn {
+    position: relative;
+    width: 36px; height: 36px;
+    border-radius: 0.5rem;
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+    transition: all 0.18s ease;
+
+    &:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    i { font-size: 1.05rem; }
+
+    // Punct roșu (înlocuiește badge-ul voluminos)
+    .notif-dot {
+        position: absolute;
+        top: 7px; right: 7px;
+        width: 8px; height: 8px;
+        background: $danger;
+        border-radius: 50%;
+        border: 1.5px solid $primary-dark;
+    }
+}
+
+// Dropdown notificări
+.dropdown-menu.notificari-dropdown {
+    width: 320px;
+    max-height: 400px;
+    border: 1px solid rgba(0,0,0,0.08) !important;
+    border-radius: 0.75rem !important;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12) !important;
+    overflow: hidden;
+    padding: 0;
+
+    .notif-header {
+        padding: 0.85rem 1rem;
+        border-bottom: 1px solid #e2e8f0;
+        background: #f8fafc;
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: $primary-dark;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        display: flex; align-items: center; gap: 6px;
+    }
+
+    .notif-scroll { overflow-y: auto; max-height: 320px; }
+
+    .notif-item {
+        display: flex; align-items: flex-start;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #f1f5f9;
+        background: #fff;
+        gap: 10px;
+        transition: background 0.15s;
+
+        &:hover { background: #f8fafc; }
+
+        .notif-dot-new {
+            width: 7px; height: 7px;
+            background: $accent;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-top: 5px;
+        }
+
+        .notif-text {
+            flex: 1;
+            font-size: 0.82rem;
+            color: #334155;
+            line-height: 1.45;
+        }
+
+        .notif-time {
+            font-size: 0.7rem;
+            color: #94a3b8;
+            white-space: nowrap;
+        }
+
+        .notif-close-btn {
+            background: none; border: none;
+            color: #94a3b8; padding: 0;
+            font-size: 0.85rem; line-height: 1;
+            cursor: pointer;
+            flex-shrink: 0;
+            &:hover { color: $danger; }
+        }
+    }
+}
+
+// ============================================================
+// 6) DROPDOWN UTILIZATOR
+// ============================================================
+.navbar-user-btn {
+    display: flex; align-items: center; gap: 9px;
+    padding: 4px 10px 4px 4px;
+    border-radius: 0.625rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+    color: #fff;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.18s ease;
+    flex-shrink: 0;
+
+    &:hover, &.show {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba($accent, 0.3);
+        color: #fff;
+    }
+
+    &::after { display: none; } // elimină caret-ul Bootstrap
+
+    .user-avatar {
+        width: 32px; height: 32px;
+        border-radius: 0.4rem;          // pătrat cu colțuri, mai modern decât cerc
+        background: $accent;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: $primary-dark;
+        flex-shrink: 0;
+        letter-spacing: 0;
+    }
+
+    .user-details {
+        display: none;
+        @include media-breakpoint-up(md) { display: block; }
+
+        .user-name {
+            font-size: 0.82rem;
+            font-weight: 600;
+            line-height: 1.25;
+            color: #fff;
+            max-width: 130px;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .user-role {
+            font-size: 0.68rem;
+            color: rgba(255,255,255,0.38);
+            line-height: 1;
+        }
+    }
+
+    .user-chevron {
+        color: rgba(255,255,255,0.3);
+        font-size: 0.7rem;
+        transition: transform 0.2s ease;
+    }
+    &.show .user-chevron { transform: rotate(180deg); }
+}
+
+// Dropdown meniu
+.navbar-user-dropdown {
+    border: 1px solid rgba(0,0,0,0.08) !important;
+    border-radius: 0.75rem !important;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.1) !important;
+    padding: 0.4rem 0;
+    min-width: 200px;
+    margin-top: 6px !important;
+
+    .user-dropdown-header {
+        padding: 0.6rem 1rem 0.5rem;
+        border-bottom: 1px solid #f1f5f9;
+        margin-bottom: 0.3rem;
+        .label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.6px; color: #94a3b8; }
+        .value { font-size: 0.82rem; font-weight: 700; color: $primary-dark; }
+    }
+
+    .dropdown-item {
+        font-size: 0.82rem;
+        padding: 0.45rem 1rem;
+        display: flex; align-items: center; gap: 8px;
+        color: #334155;
+        border-radius: 0;
+        transition: background 0.15s;
+
+        i { font-size: 0.85rem; color: #94a3b8; }
+
+        &:hover { background: #f8fafc; color: $primary-dark; i { color: $primary-dark; } }
+        &.text-danger { color: $danger; i { color: $danger; } }
+        &.text-danger:hover { background: rgba($danger, 0.06); }
+    }
+
+    .dropdown-divider { border-color: #f1f5f9; margin: 0.25rem 0; }
+}
+
+// ============================================================
+// 7) TABELE DOSARE
+// ============================================================
+.card-section {
+    .table {
+        --bs-table-hover-bg: #{rgba($accent, 0.12)};
+
+        thead {
+            background-color: $primary-dark !important;
+
+            th {
+                color: rgba(255,255,255,0.75) !important;
+                font-weight: 600;
+                letter-spacing: 0.06em;
+                text-transform: uppercase;
+                font-size: 0.75rem;
+                border-bottom: none !important;
+                border-top: none !important;
+                padding: 0.8rem 1rem;
+                vertical-align: middle;
+            }
+        }
+
+        tbody {
+            tr:hover td {
+                background-color: rgba($accent, 0.07) !important;
+            }
+            td {
+                vertical-align: middle;
+                border-bottom: 1px solid #e2e8f0 !important;
+                background-color: transparent !important;
+            }
+        }
+    }
+}
+
+// ============================================================
+// 8) CARD-URI SECȚIUNI (pagini detalii dosar)
+// ============================================================
+.card-section {
+    border: 1px solid #e2e8f0;
+    border-top: 3px solid $primary-dark;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    margin-bottom: 2.5rem;
+    overflow: hidden;
+
+    .card-header {
+        background: $primary-dark;
+        border-bottom: none;
+        padding: 0.9rem 1.25rem;
+
+        h5, h6 {
+            color: #fff;
+            font-weight: 700;
+            margin: 0;
+            display: flex; align-items: center;
+            font-size: 0.9rem;
+            letter-spacing: 0.2px;
+
+            i { color: $accent !important; margin-right: 0.5rem; }
+        }
+    }
+
+    .card-body {
+        background: #fff;
+        padding: 1.5rem;
+    }
+}
+
+// ============================================================
+// 9) FORMULARE DJANGO
+// ============================================================
+.modal-body,
+.django-form-wrapper {
+    p { margin-bottom: 1.25rem; }
+
+    input:not([type="checkbox"]):not([type="radio"]),
+    select,
+    textarea {
+        display: block !important;
+        width: 100% !important;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.9rem;
+        color: $primary-dark;
+        background-color: #f8fafc;
+        border: 1px solid #cbd5e1;
+        border-radius: $border-radius;
+        transition: border-color 0.18s, box-shadow 0.18s;
+
+        &:focus {
+            border-color: $accent;
+            background-color: #fff;
+            outline: 0;
+            box-shadow: 0 0 0 3px rgba($accent, 0.2);
+        }
+    }
+
+    label {
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.55px;
+        color: $secondary;
+        margin-bottom: 0.35rem;
+    }
+
+    .helptext {
+        display: block;
+        font-size: 0.72rem;
+        color: #94a3b8;
+        margin-top: 0.3rem;
+    }
+}
+
+// ============================================================
+// CARD-SECTION — Stilizare unificată pentru paginile de detalii
+// ============================================================
+// Variabile locale (ar trebui să fie deja definite în main.scss)
+// $primary-dark: #1e293b;
+// $accent: #0dcaf0;
+
+// ---- Paleta de accente pentru cele 7 secțiuni ----
+// Fiecare secțiune primește o nuanță ușor diferită pe border-left.
+// Toate headerele au același fundal — diferă doar dungulița.
+$cs-accent-blue:   #2a6cb0;   // secțiuni principale (date dosar, termene)
+$cs-accent-cyan:   #0891b2;   // documente / acte
+$cs-accent-teal:   #0f766e;   // persoane, martori, suspecți
+$cs-accent-violet: #5b4fbe;   // alte secțiuni (ex: expertieze, interceptări)
+$cs-accent-slate:  #475569;   // neutru (ex: observații)
+
+// ============================================================
+.card-section {
+    background: #ffffff;
+    border: 1px solid #dde3ec;
+    border-radius: 0.6rem;
+    margin-bottom: 2rem;
+    overflow: hidden;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.06);
+
+    // ---- Header ----
+    .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.8rem 1.1rem;
+        background: #f4f7fb;
+        // background: #5a9ff8;
+        border-bottom: 1px solid #dde3ec;
+        border-left: 3px solid $cs-accent-blue; // override per-secțiune inline
+        // Fără border-radius sus — overflow:hidden pe părinte face treaba
+
+        h5, h6 {
+            margin: 0;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #1e3a5f;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+
+            i {
+                font-size: 0.9rem;
+                color: $cs-accent-blue; // suprascris cu !important per secțiune dacă e nevoie
+            }
+        }
+
+        // Butonul "Adaugă" din header
+        .btn-cs-add {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 5px 13px;
+            border-radius: 6px;
+            background: transparent;
+            border: 1px solid $cs-accent-blue;
+            color: $cs-accent-blue;
+            transition: background 0.15s, color 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+
+            &:hover {
+                background: $cs-accent-blue;
+                color: #fff;
+            }
+        }
+    }
+
+    // ---- Card body (pentru secțiunile fără tabel) ----
+    .card-body {
+        background: #ffffff;
+        padding: 1.25rem 1.1rem;
+    }
+
+    // ============================================================
+    // TABEL interior
+    // ============================================================
+    .table {
+        font-size: 0.82rem;
+        margin-bottom: 0;
+        border-collapse: collapse;
+        width: 100%;
+
+        // Thead — nuanță albăstrie deschisă, distinctă de rânduri
+        thead {
+            background: #e8edf5 !important;
+            // background: #3580f8 !important;
+
+            th {
+                padding: 9px 16px;
+                font-size: 0.69rem;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.55px;
+                color: #3d5a80 !important;
+                border-bottom: 1px solid #c8d4e3 !important;
+                border-top: none !important;
+                white-space: nowrap;
+                vertical-align: middle;
+            }
+        }
+
+        // Tbody — rânduri alternante ultra-subtile
+        tbody {
+            tr {
+                border-bottom: 0.5px solid #e8edf5;
+
+                &:last-child { border-bottom: none; }
+
+                // Zebra ultra-light
+                &:nth-child(odd) td  { background: #fafbfd; }
+                &:nth-child(even) td { background: #ffffff; }
+
+                // Hover — albăstrui subtil
+                &:hover td { background: #eef4fb !important; }
+
+                // Stări semantice (suprascriu zebra)
+                &.row-danger td { background: #fff5f5 !important; }
+                &.row-warn   td { background: #fffbeb !important; }
+                &.row-done   td { background: #f8fafc !important; opacity: 0.75; }
+
+                td {
+                    padding: 9px 16px;
+                    vertical-align: middle;
+                    color: #334155;
+                }
+            }
+        }
+    }
+
+    // ============================================================
+    // Badge-uri tip act / tip termen (în celule td)
+    // ============================================================
+    .badge-cs {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        white-space: nowrap;
+        border: 1px solid transparent;
+
+        &.badge-cs-blue   { background: #dbeafe; color: #1e40af; border-color: #bfdbfe; }
+        &.badge-cs-gray   { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
+        &.badge-cs-green  { background: #d1fae5; color: #065f46; border-color: #a7f3d0; }
+        &.badge-cs-amber  { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+        &.badge-cs-red    { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+        &.badge-cs-violet { background: #ede9fe; color: #4c1d95; border-color: #c4b5fd; }
+    }
+
+    // ============================================================
+    // Indicatori „timp rămas"
+    // ============================================================
+    .chip-expiry {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.78rem;
+        font-weight: 600;
+
+        &.ok     { color: #0f766e; }
+        &.warn   { color: #b45309; }
+        &.danger { color: #b91c1c; }
+    }
+
+    // ============================================================
+    // Butoane acțiuni (pencil / trash / download) din celule
+    // ============================================================
+    .btn-cs-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        color: #64748b;
+        font-size: 0.8rem;
+        text-decoration: none;
+        transition: all 0.15s;
+        vertical-align: middle;
+
+        &:hover         { border-color: #94a3b8; color: #1e293b; background: #f8fafc; }
+        &.btn-cs-danger:hover  { border-color: #fca5a5; color: #dc2626; background: #fff5f5; }
+        &.btn-cs-success       { color: #059669; }
+        &.btn-cs-success:hover { border-color: #6ee7b7; background: #f0fdf4; }
+    }
+
+    .btn-cs-actions {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        justify-content: flex-end;
+    }
+}
+
+// ============================================================
+// Separator label între grupuri de carduri (ex: „Documente")
+// ============================================================
+.cs-group-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #94a3b8;
+    margin: 2rem 0 1rem;
+
+    &::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: #e2e8f0;
+    }
+}
+
+/* ==========================================================================
+   TABELE GLOBALE (.table-cs)
+   Se folosește pe elementul <table> alături de clasa standard .table Bootstrap
+   ========================================================================== */
+
+.table-cs {
+    // Setăm dimensiunea generală a fontului pentru tot tabelul
+    font-size: 0.9rem;
+    margin-bottom: 0;
+    
+    // Stilizarea Header-ului (Capul de tabel)
+    thead {
+        background-color: #f8f9fa; // Echivalentul bg-light
+        
+        th {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: #6c757d; // Echivalentul text-muted
+            padding: 1rem;
+            vertical-align: middle;
+            border-bottom: 2px solid rgba(0, 0, 0, 0.05);
+            border-top: none;
+            letter-spacing: 0.3px; // Un pic de spațiu pentru lizibilitate
+        }
+    }
+
+    // Stilizarea rândurilor și celulelor
+    tbody {
+        tr {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+            transition: background-color 0.2s ease-in-out;
+
+            // Efectul de hover pe tot rândul (înlocuiește table-hover)
+            &:hover {
+                background-color: rgba(13, 110, 253, 0.03); // Un albastru foarte subtil
+            }
+            
+            // Eliminăm bordura la ultimul rând pentru a nu se dubla cu cea a cardului
+            &:last-child {
+                border-bottom: none;
+            }
+        }
+
+        td {
+            padding: 0.85rem 1rem;
+            vertical-align: middle;
+            color: #334155; // Un gri închis elegant (Slate 700 din Tailwind)
+        }
+    }
+}
+
+// ============================================================
+// Variante accent per secțiune (aplicate cu style="" pe .card-header)
+// Sau poți crea clase utilitare:
+// ============================================================
+.cs-accent-blue   .card-header { border-left-color: $cs-accent-blue;   }
+.cs-accent-cyan   .card-header { border-left-color: $cs-accent-cyan;   i { color: $cs-accent-cyan !important; } }
+.cs-accent-teal   .card-header { border-left-color: $cs-accent-teal;   i { color: $cs-accent-teal !important; } }
+.cs-accent-violet .card-header { border-left-color: $cs-accent-violet; i { color: $cs-accent-violet !important; } }
+.cs-accent-slate  .card-header { border-left-color: $cs-accent-slate;  i { color: $cs-accent-slate !important; } }

@@ -31,474 +31,515 @@
     </div>
 </div>
 
-<!-- CARD SUMAR -->
-<div class="card border border-secondary border-opacity-25 shadow-sm mb-4 rounded-3">
-    <div class="card-body p-4">
-        <div class="row mb-4">
-            <div class="col-md-3">
-                <p class="mb-1 text-muted text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Data înregistrării</p>
-                <h5 class="mb-0 text-dark fw-bold" style="font-size: 1.1rem;">{{ dosar.data_inregistrarii|date:"d M Y" }}</h5>
-            </div>
-            <div class="col-md-3 mt-3 mt-md-0">
-                <p class="mb-1 text-muted text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Organ de cercetare</p>
-                <h6 class="mb-0 fw-medium text-dark" style="font-size: 1rem;">
-                    {% if dosar.ofiter_caz %}{{ dosar.ofiter_caz.get_full_name|default:dosar.ofiter_caz.username }}{% else %}<span class="text-muted fw-normal">-</span>{% endif %}
-                </h6>
-            </div>
-            <div class="col-md-3 mt-3 mt-md-0">
-                <p class="mb-1 text-muted text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Procuror</p>
-                <h6 class="mb-0 fw-medium text-dark" style="font-size: 1rem;">
-                    {% if dosar.procuror_caz %}{{ dosar.procuror_caz.get_full_name|default:dosar.procuror_caz.username }}{% else %}<span class="text-muted fw-normal">-</span>{% endif %}
-                </h6>
-            </div>
-            <div class="col-md-3 mt-3 mt-md-0">
-                <p class="mb-1 text-muted text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Grefier</p>
-                <h6 class="mb-0 fw-medium text-dark" style="font-size: 1rem;">
-                    {% if dosar.grefier_caz %}{{ dosar.grefier_caz.get_full_name|default:dosar.grefier_caz.username }}{% else %}<span class="text-muted fw-normal">-</span>{% endif %}
-                </h6>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-12">
-                <p class="mb-2 text-muted text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Stare de fapt / rezumat</p>
-                <div class="p-3 bg-secondary bg-opacity-10 border border-secondary border-opacity-10 rounded text-dark" style="white-space: pre-wrap; font-size: 0.95rem; line-height: 1.5;">{{ dosar.infractiune_cercetata }}</div>
+<div class="row gx-4">
+    
+    <div class="col-lg-2 d-none d-lg-block">
+        <div class="sticky-top" style="top: 2rem; z-index: 1020;">
+            <div class="card border-0 shadow-sm rounded-3">
+                <div class="card-header bg-light py-3 border-bottom border-secondary border-opacity-10">
+                    <h6 class="mb-0 fw-bold text-dark text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">
+                        <i class="bi bi-list-nested me-1"></i> Cuprins Dosar
+                    </h6>
+                </div>
+                <div class="list-group list-group-flush rounded-3">
+                    <a href="#sec-sumar" class="list-group-item list-group-item-action py-3 text-muted fw-medium d-flex align-items-center gap-2" style="font-size: 0.9rem;">
+                        <i class="bi bi-info-square text-primary"></i> Sumar Dosar
+                    </a>
+                    <a href="#sec-urmarire" class="list-group-item list-group-item-action py-3 text-muted fw-medium d-flex align-items-center gap-2" style="font-size: 0.9rem;">
+                        <i class="bi bi-diagram-3-fill text-primary"></i> Urmărire penală
+                    </a>
+                    <a href="#sec-fapte" class="list-group-item list-group-item-action py-3 text-muted fw-medium d-flex align-items-center gap-2" style="font-size: 0.9rem;">
+                        <i class="bi bi-file-earmark-ruled-fill text-primary"></i> Fapte și persoane
+                    </a>
+                    <a href="#sec-masuri" class="list-group-item list-group-item-action py-3 text-muted fw-medium d-flex align-items-center gap-2" style="font-size: 0.9rem;">
+                        <i class="bi bi-exclamation-triangle-fill text-primary"></i> Măsuri și termene
+                    </a>
+                    <a href="#sec-documente" class="list-group-item list-group-item-action py-3 text-muted fw-medium d-flex align-items-center gap-2" style="font-size: 0.9rem;">
+                        <i class="bi bi-folder-fill text-primary"></i> Documente atașate
+                    </a>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- SEPARATOR -->
-<p class="text-muted text-uppercase fw-bold mb-2 mt-4" style="font-size: 0.7rem; letter-spacing: 1px;">
-    <i class="bi bi-diagram-3-fill me-1"></i> Urmărire penală
-</p>
+    <div class="col-lg-10">
+        
+        <div id="sec-sumar" class="card border border-secondary border-opacity-25 shadow-sm mb-4 rounded-3 scroll-mt-4">
+            <div class="card-body p-4">
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <p class="mb-1 text-muted text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Data înregistrării</p>
+                        <h5 class="mb-0 text-dark fw-bold" style="font-size: 1.1rem;">{{ dosar.data_inregistrarii|date:"d M Y" }}</h5>
+                    </div>
+                    <div class="col-md-3 mt-3 mt-md-0">
+                        <p class="mb-1 text-muted text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Organ de cercetare</p>
+                        <h6 class="mb-0 fw-medium text-dark" style="font-size: 1rem;">
+                            {% if dosar.ofiter_caz %}{{ dosar.ofiter_caz.get_full_name|default:dosar.ofiter_caz.username }}{% else %}<span class="text-muted fw-normal">-</span>{% endif %}
+                        </h6>
+                    </div>
+                    <div class="col-md-3 mt-3 mt-md-0">
+                        <p class="mb-1 text-muted text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Procuror</p>
+                        <h6 class="mb-0 fw-medium text-dark" style="font-size: 1rem;">
+                            {% if dosar.procuror_caz %}{{ dosar.procuror_caz.get_full_name|default:dosar.procuror_caz.username }}{% else %}<span class="text-muted fw-normal">-</span>{% endif %}
+                        </h6>
+                    </div>
+                    <div class="col-md-3 mt-3 mt-md-0">
+                        <p class="mb-1 text-muted text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Grefier</p>
+                        <h6 class="mb-0 fw-medium text-dark" style="font-size: 1rem;">
+                            {% if dosar.grefier_caz %}{{ dosar.grefier_caz.get_full_name|default:dosar.grefier_caz.username }}{% else %}<span class="text-muted fw-normal">-</span>{% endif %}
+                        </h6>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <p class="mb-2 text-muted text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Stare de fapt / rezumat</p>
+                        <div class="p-3 bg-secondary bg-opacity-10 border border-secondary border-opacity-10 rounded text-dark" style="white-space: pre-wrap; font-size: 0.95rem; line-height: 1.5;">{{ dosar.infractiune_cercetata }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-<!-- CARD: STADII -->
-<div class="card border-0 border-top border-primary border-3 shadow-sm mb-4 rounded-3 overflow-hidden">
-    <div class="card-header bg-white py-3 border-bottom border-secondary border-opacity-10 d-flex justify-content-between align-items-center">
-        <h6 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2" style="font-size: 0.95rem;">
-            <i class="bi bi-clock-history text-primary"></i> Istoric stadii urmărire și soluții
-        </h6>
-        {% if poate_edita %}
-            <a href="{% url 'cases:gestionare_stadii' dosar.pk %}" class="btn btn-sm btn-outline-primary fw-medium">
-                <i class="bi bi-gear-fill me-1"></i> Gestionează
-            </a>
-        {% endif %}
-    </div>
-    <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem; --bs-table-hover-bg: rgba(13, 110, 253, 0.03);">
-            <thead class="table-light text-muted">
-                <tr style="border-bottom: 2px solid rgba(108, 117, 125, 0.15);">
-                    <th class="py-2 px-4 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase; width: 20%;">Stadiu urmărire</th>
-                    <th class="py-2 px-3 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase; width: 12%;">Data începerii</th>
-                    <th class="py-2 px-3 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase; width: 12%;">Data soluției</th>
-                    <th class="py-2 px-3 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase; width: 42%;">Soluție dispusă / propusă</th>
-                    <th class="py-2 px-4 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase; width: 14%;">Stabilită de</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% with stadiu=dosar.stadiu_curent %}
-                    {% if stadiu %}
-                        {% with solutie=dosar.solutie_curenta %}
-                        <tr style="border-bottom: 1px solid rgba(108, 117, 125, 0.1);">
-                            <td class="px-4 py-2"><span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">{{ stadiu.get_tip_stadiu_display }}</span></td>
-                            <td class="px-3 py-2 fw-medium text-dark">{{ stadiu.data_incepere|date:"d.m.Y" }}</td>
-                            <td class="px-3 py-2">{{ solutie.data_solutiei|date:"d.m.Y"|default:"-" }}</td>
-                            <td class="px-3 py-2">
-                                {% if solutie %}
-                                    <span class="fw-medium text-dark">{{ solutie.get_tip_solutie_display }}</span>
-                                    {% if solutie.este_finala %}<span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 ms-1">FINALĂ</span>{% endif %}
+        <p id="sec-urmarire" class="cs-group-label scroll-mt-4">
+            <i class="bi bi-diagram-3-fill"></i> Urmărire penală
+        </p>
+
+        <div class="card-section cs-accent-blue">
+            <div class="card-header">
+                <h6><i class="bi bi-clock-history"></i> Istoric stadii urmărire și soluții</h6>
+                {% if poate_edita %}
+                    <a href="{% url 'cases:gestionare_stadii' dosar.pk %}" class="btn-cs-add" style="text-decoration: none;">
+                        <i class="bi bi-gear-fill"></i> Gestionează
+                    </a>
+                {% endif %}
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Stadiu urmărire</th>
+                            <th>Data începerii</th>
+                            <th>Data soluției</th>
+                            <th>Soluție dispusă / propusă</th>
+                            <th>Stabilită de</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% with stadiu=dosar.stadiu_curent %}
+                            {% if stadiu %}
+                                {% with solutie=dosar.solutie_curenta %}
+                                <tr>
+                                    <td><span class="badge-cs badge-cs-blue">{{ stadiu.get_tip_stadiu_display }}</span></td>
+                                    <td><strong class="text-dark">{{ stadiu.data_incepere|date:"d.m.Y" }}</strong></td>
+                                    <td>{{ solutie.data_solutiei|date:"d.m.Y"|default:"-" }}</td>
+                                    <td>
+                                        {% if solutie %}
+                                            <span class="fw-semibold text-dark">{{ solutie.get_tip_solutie_display }}</span>
+                                            {% if solutie.este_finala %}<span class="badge-cs badge-cs-gray ms-1" style="font-size:0.7rem;">FINALĂ</span>{% endif %}
+                                        {% else %}
+                                            <span class="text-muted fst-italic">În lucru...</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ solutie.get_stabilita_de_display|default:"-" }}</td>
+                                </tr>
+                                {% endwith %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-5 text-muted bg-white border-0">
+                                        <i class="bi bi-clock-history d-block fs-3 mb-2 opacity-40"></i>
+                                        Nu a fost înregistrat încă niciun stadiu procesual.
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        {% endwith %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card-section cs-accent-cyan">
+            <div class="card-header">
+                <h6><i class="bi bi-people-fill"></i> Istoric personal desemnat</h6>
+            </div>
+            <div class="p-3 bg-light">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="card h-100 border-0 shadow-sm rounded-3">
+                            <div class="card-header bg-white py-2 text-center fw-medium text-muted border-bottom" style="font-size: 0.85rem;">
+                                <i class="bi bi-shield-fill-check"></i> Organ de cercetare
+                            </div>
+                            <div class="card-body p-2" style="max-height: 180px; overflow-y: auto;">
+                                {% for istoric in dosar.istoric_desemnari.all %}
+                                    {% if istoric.rol == 'Ofițer' %}
+                                        <div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom border-light" style="font-size: 0.85rem;">
+                                            <div class="flex-grow-1 text-truncate pe-2">
+                                                {% if not istoric.data_finalizare %}
+                                                    <i class="bi bi-circle-fill text-success" style="font-size: 0.5rem;"></i>
+                                                {% else %}
+                                                    <i class="bi bi-circle text-muted" style="font-size: 0.5rem;"></i>
+                                                {% endif %}
+                                                <span class="{% if not istoric.data_finalizare %}text-dark fw-medium{% else %}text-muted{% endif %} ms-1">
+                                                    {{ istoric.utilizator.get_full_name|default:istoric.utilizator.username }}
+                                                </span>
+                                            </div>
+                                            <div class="text-end text-nowrap d-flex align-items-center">
+                                                <span class="text-muted small me-2">{{ istoric.data_desemnare|date:"d.m.y" }} - {% if istoric.data_finalizare %}{{ istoric.data_finalizare|date:"d.m.y" }}{% else %}<span class="text-success fw-medium">Prezent</span>{% endif %}</span>
+                                                {% if poate_edita %}
+                                                    <a href="{% url 'cases:stergere_istoric_echipa' istoric.pk %}" class="text-danger text-opacity-50 text-decoration-none px-1" onclick="return confirm('Ștergi acest organ din istoric?');" style="font-size: 1.1rem;">&times;</a>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card h-100 border-0 shadow-sm rounded-3">
+                            <div class="card-header bg-white py-2 text-center fw-medium text-muted border-bottom" style="font-size: 0.85rem;">
+                                <i class="bi bi-bank"></i> Procuror
+                            </div>
+                            <div class="card-body p-2" style="max-height: 180px; overflow-y: auto;">
+                                {% for istoric in dosar.istoric_desemnari.all %}
+                                    {% if istoric.rol == 'Procuror' %}
+                                        <div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom border-light" style="font-size: 0.85rem;">
+                                            <div class="flex-grow-1 text-truncate pe-2">
+                                                {% if not istoric.data_finalizare %}
+                                                    <i class="bi bi-circle-fill text-success" style="font-size: 0.5rem;"></i>
+                                                {% else %}
+                                                    <i class="bi bi-circle text-muted" style="font-size: 0.5rem;"></i>
+                                                {% endif %}
+                                                <span class="{% if not istoric.data_finalizare %}text-dark fw-medium{% else %}text-muted{% endif %} ms-1">
+                                                    {{ istoric.utilizator.get_full_name|default:istoric.utilizator.username }}
+                                                </span>
+                                            </div>
+                                            <div class="text-end text-nowrap d-flex align-items-center">
+                                                <span class="text-muted small me-2">{{ istoric.data_desemnare|date:"d.m.y" }} - {% if istoric.data_finalizare %}{{ istoric.data_finalizare|date:"d.m.y" }}{% else %}<span class="text-success fw-medium">Prezent</span>{% endif %}</span>
+                                                {% if poate_edita %}
+                                                    <a href="{% url 'cases:stergere_istoric_echipa' istoric.pk %}" class="text-danger text-opacity-50 text-decoration-none px-1" onclick="return confirm('Ștergi acest procuror din istoric?');" style="font-size: 1.1rem;">&times;</a>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card h-100 border-0 shadow-sm rounded-3">
+                            <div class="card-header bg-white py-2 text-center fw-medium text-muted border-bottom" style="font-size: 0.85rem;">
+                                <i class="bi bi-pen-fill"></i> Grefier
+                            </div>
+                            <div class="card-body p-2" style="max-height: 180px; overflow-y: auto;">
+                                {% for istoric in dosar.istoric_desemnari.all %}
+                                    {% if istoric.rol == 'Grefier' %}
+                                        <div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom border-light" style="font-size: 0.85rem;">
+                                            <div class="flex-grow-1 text-truncate pe-2">
+                                                {% if not istoric.data_finalizare %}
+                                                    <i class="bi bi-circle-fill text-success" style="font-size: 0.5rem;"></i>
+                                                {% else %}
+                                                    <i class="bi bi-circle text-muted" style="font-size: 0.5rem;"></i>
+                                                {% endif %}
+                                                <span class="{% if not istoric.data_finalizare %}text-dark fw-medium{% else %}text-muted{% endif %} ms-1">
+                                                    {{ istoric.utilizator.get_full_name|default:istoric.utilizator.username }}
+                                                </span>
+                                            </div>
+                                            <div class="text-end text-nowrap d-flex align-items-center">
+                                                <span class="text-muted small me-2">{{ istoric.data_desemnare|date:"d.m.y" }} - {% if istoric.data_finalizare %}{{ istoric.data_finalizare|date:"d.m.y" }}{% else %}<span class="text-success fw-medium">Prezent</span>{% endif %}</span>
+                                                {% if poate_edita %}
+                                                    <a href="{% url 'cases:stergere_istoric_echipa' istoric.pk %}" class="text-danger text-opacity-50 text-decoration-none px-1" onclick="return confirm('Ștergi acest grefier din istoric?');" style="font-size: 1.1rem;">&times;</a>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <p id="sec-fapte" class="cs-group-label scroll-mt-4">
+            <i class="bi bi-file-earmark-ruled-fill"></i> Fapte și persoane implicate
+        </p>
+
+        <div class="card-section cs-accent-blue">
+            <div class="card-header">
+                <h6><i class="bi bi-file-earmark-ruled-fill"></i> Încadrări juridice</h6>
+                {% if poate_edita %}
+                <button type="button" class="btn-cs-add" data-bs-toggle="modal" data-bs-target="#adaugaInfractiuneModal">
+                    <i class="bi bi-plus-lg"></i> Adaugă încadrare
+                </button>
+                {% endif %}
+            </div>
+
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Act normativ</th>
+                            <th>Articol</th>
+                            <th>Încadrare juridică</th>
+                            <th>Data faptei</th>
+                            {% if poate_edita %}<th class="text-end">Acțiuni</th>{% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for infractiune in dosar.infractiuni.all %}
+                        <tr>
+                            <td><span class="badge-cs badge-cs-gray">{{ infractiune.get_act_normativ_display }}</span></td>
+                            <td><strong class="text-dark">{{ infractiune.articol|default:"-" }}</strong></td>
+                            <td>{{ infractiune.incadrare_juridica|default:"În curs de stabilire" }}</td>
+                            <td>{{ infractiune.data_comiterii|date:"d M Y"|default:"Necunoscută" }}</td>
+                            {% if poate_edita %}
+                            <td>
+                                <div class="btn-cs-actions">
+                                    <a href="{% url 'cases:editare_infractiune' infractiune.pk %}" class="btn-cs-icon" title="Editează"><i class="bi bi-pencil"></i></a>
+                                    <a href="{% url 'cases:stergere_infractiune' infractiune.pk %}" class="btn-cs-icon btn-cs-danger" title="Șterge"><i class="bi bi-trash"></i></a>
+                                </div>
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5 text-muted bg-white border-0">
+                                <i class="bi bi-journal-x d-block fs-3 mb-2 opacity-40"></i>
+                                Nu a fost adăugată nicio încadrare juridică specifică.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card-section cs-accent-cyan">
+            <div class="card-header">
+                <h6><i class="bi bi-person-lines-fill"></i> Părți în cauză</h6>
+                {% if poate_edita %}
+                    <button type="button" class="btn-cs-add" data-bs-toggle="modal" data-bs-target="#adaugaParteModal">
+                        <i class="bi bi-plus-lg"></i> Adaugă persoană
+                    </button>
+                {% endif %}
+            </div>
+
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Nume complet</th>
+                            <th>Calitate procesuală</th>
+                            <th>CNP</th>
+                            <th>Mențiuni</th>
+                            {% if poate_edita %}<th class="text-end">Acțiuni</th>{% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for parte in dosar.parti_implicate.all %}
+                        <tr>
+                            <td><strong class="text-dark">{{ parte.nume_complet }}</strong></td>
+                            <td>
+                                {% with calitate=parte.calitate_procesuala %}
+                                    {% if calitate == 'SUSPECT' or calitate == 'INCULPAT' %}
+                                        <span class="badge-cs badge-cs-red">{{ parte.get_calitate_procesuala_display }}</span>
+                                    {% else %}
+                                        <span class="badge-cs badge-cs-gray">{{ parte.get_calitate_procesuala_display }}</span>
+                                    {% endif %}
+                                {% endwith %}
+                            </td>
+                            <td>{{ parte.cnp|default:"-" }}</td>
+                            <td class="text-muted" style="font-size:0.8rem;">{{ parte.mentiuni|default:"-" }}</td>
+                            {% if poate_edita %}
+                            <td>
+                                <div class="btn-cs-actions">
+                                    <a href="{% url 'cases:editare_parte' parte.pk %}" class="btn-cs-icon" title="Editează"><i class="bi bi-pencil"></i></a>
+                                    <a href="{% url 'cases:stergere_parte' parte.pk %}" class="btn-cs-icon btn-cs-danger" title="Șterge"><i class="bi bi-trash"></i></a>
+                                </div>
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5 text-muted bg-white border-0">
+                                <i class="bi bi-people d-block fs-3 mb-2 opacity-40"></i>
+                                Nicio persoană înregistrată în acest dosar.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <p id="sec-masuri" class="cs-group-label scroll-mt-4">
+            <i class="bi bi-exclamation-triangle-fill"></i> Măsuri și termene
+        </p>
+
+        <div class="card-section cs-accent-violet">
+            <div class="card-header">
+                <h6><i class="bi bi-hourglass-split"></i> Măsuri preventive</h6>
+                {% if poate_edita %}
+                <button type="button" class="btn-cs-add" data-bs-toggle="modal" data-bs-target="#adaugaMasuraModal">
+                    <i class="bi bi-plus-lg"></i> Adaugă măsură
+                </button>
+                {% endif %}
+            </div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Inculpat</th>
+                            <th>Măsura dispusă</th>
+                            <th>Durata (zile)</th>
+                            <th>Perioada</th>
+                            {% if poate_edita %}<th class="text-end">Acțiuni</th>{% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for masura in dosar.masuri_preventive.all %}
+                        <tr class="{% if masura.zile_ramase <= 3 and masura.zile_ramase >= 0 %}row-danger{% elif masura.zile_ramase <= 10 and masura.zile_ramase > 3 %}row-warn{% endif %}">
+                            <td><strong class="text-dark">{{ masura.parte.nume_complet }}</strong></td>
+                            <td><span class="badge-cs badge-cs-red">{{ masura.get_tip_masura_display }}</span></td>
+                            <td>{{ masura.durata_zile }} zile</td>
+                            <td>{{ masura.data_inceput|date:"d.m.Y" }} &rarr; <strong class="text-dark">{{ masura.data_sfarsit|date:"d.m.Y" }}</strong></td>
+                            {% if poate_edita %}
+                            <td>
+                                <div class="btn-cs-actions">
+                                    <a href="{% url 'cases:editare_masura' masura.pk %}" class="btn-cs-icon" title="Editează"><i class="bi bi-pencil"></i></a>
+                                    <a href="{% url 'cases:stergere_masura' masura.pk %}" class="btn-cs-icon btn-cs-danger" title="Șterge"><i class="bi bi-trash"></i></a>
+                                </div>
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5" class="text-center py-5 text-muted bg-white border-0"><i class="bi bi-shield-x d-block fs-3 mb-2 opacity-40"></i> Nu există măsuri preventive.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card-section cs-accent-blue">
+            <div class="card-header">
+                <h6><i class="bi bi-calendar-event"></i> Termene procedurale și alerte</h6>
+                {% if poate_edita %}
+                <button type="button" class="btn-cs-add" data-bs-toggle="modal" data-bs-target="#adaugaTermenModal">
+                    <i class="bi bi-plus-lg"></i> Adaugă termen
+                </button>
+                {% endif %}
+            </div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Tip termen</th>
+                            <th>Data limită</th>
+                            <th>Timp rămas</th>
+                            <th>Detalii</th>
+                            {% if poate_edita %}<th class="text-end">Acțiuni</th>{% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for termen in dosar.termene_procedurale.all %}
+                        <tr class="{% if termen.zile_ramase < 0 %}row-danger{% elif termen.zile_ramase <= 3 %}row-danger{% elif termen.zile_ramase <= 30 %}row-warn{% endif %}">
+                            <td><span class="badge-cs badge-cs-blue">{{ termen.get_tip_termen_display }}</span></td>
+                            <td><strong class="text-dark">{{ termen.data_limita|date:"d.m.Y" }}</strong></td>
+                            <td>
+                                {% if termen.zile_ramase < 0 %}
+                                    <span class="chip-expiry danger"><i class="bi bi-exclamation-triangle-fill"></i> Expirat</span>
+                                {% elif termen.zile_ramase <= 3 %}
+                                    <span class="chip-expiry danger"><i class="bi bi-exclamation-triangle-fill"></i> {{ termen.zile_ramase }} zile</span>
+                                {% elif termen.zile_ramase <= 30 %}
+                                    <span class="chip-expiry warn"><i class="bi bi-clock-fill"></i> {{ termen.zile_ramase }} zile</span>
                                 {% else %}
-                                    <span class="text-muted fst-italic">În lucru...</span>
+                                    <span class="chip-expiry ok"><i class="bi bi-check-circle-fill"></i> {{ termen.zile_ramase }} zile</span>
                                 {% endif %}
                             </td>
-                            <td class="px-4 py-2 text-dark">{{ solutie.get_stabilita_de_display|default:"-" }}</td>
+                            <td class="text-muted" style="font-size:0.8rem;">{{ termen.detalii|default:"-"|truncatechars:45 }}</td>
+                            {% if poate_edita %}
+                            <td>
+                                <div class="btn-cs-actions">
+                                    <a href="{% url 'cases:editare_termen' termen.pk %}" class="btn-cs-icon"><i class="bi bi-pencil"></i></a>
+                                    <a href="{% url 'cases:stergere_termen' termen.pk %}" class="btn-cs-icon btn-cs-danger"><i class="bi bi-trash"></i></a>
+                                </div>
+                            </td>
+                            {% endif %}
                         </tr>
-                        {% endwith %}
-                    {% else %}
-                        <tr><td colspan="5" class="text-center py-4 text-muted bg-white">Nu a fost înregistrat încă niciun stadiu procesual.</td></tr>
-                    {% endif %}
-                {% endwith %}
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<!-- CARD: ISTORIC ECHIPĂ -->
-<div class="card border-0 border-top border-primary border-3 shadow-sm mb-4 rounded-3 overflow-hidden">
-    <div class="card-header bg-white py-3 border-bottom border-secondary border-opacity-10">
-        <h6 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2" style="font-size: 0.95rem;">
-            <i class="bi bi-people-fill text-primary"></i> Istoric personal desemnat
-        </h6>
-    </div>
-    <div class="card-body p-3 bg-light bg-opacity-50">
-        <div class="row g-3">
-            <div class="col-md-4">
-                <div class="card h-100 border border-secondary border-opacity-25 shadow-none rounded-3">
-                    <div class="card-header bg-white py-2 text-center fw-bold text-muted border-bottom border-secondary border-opacity-10" style="font-size: 0.85rem;">
-                        <i class="bi bi-shield-fill-check me-1 text-primary"></i> Organ de cercetare
-                    </div>
-                    <div class="card-body p-2" style="max-height: 180px; overflow-y: auto;">
-                        {% for istoric in dosar.istoric_desemnari.all %}
-                            {% if istoric.rol == 'Ofițer' %}
-                                <div class="d-flex align-items-center justify-content-between mb-1 pb-1 {% if not forloop.last %}border-bottom border-secondary border-opacity-10{% endif %}" style="font-size: 0.82rem;">
-                                    <div class="flex-grow-1 text-truncate pe-2">
-                                        {% if not istoric.data_finalizare %}<i class="bi bi-circle-fill text-success" style="font-size: 0.4rem; vertical-align: middle;"></i>
-                                        {% else %}<i class="bi bi-circle text-muted" style="font-size: 0.4rem; vertical-align: middle;"></i>{% endif %}
-                                        <span class="{% if not istoric.data_finalizare %}text-dark fw-bold{% else %}text-muted{% endif %}">{{ istoric.utilizator.get_full_name|default:istoric.utilizator.username }}</span>
-                                    </div>
-                                    <div class="text-end text-nowrap d-flex align-items-center">
-                                        <span class="text-muted small me-2">{{ istoric.data_desemnare|date:"d.m.y" }} - {% if istoric.data_finalizare %}{{ istoric.data_finalizare|date:"d.m.y" }}{% else %}<span class="text-success fw-bold">Prezent</span>{% endif %}</span>
-                                        {% if poate_edita %}<a href="{% url 'cases:stergere_istoric_echipa' istoric.pk %}" class="text-danger text-opacity-50 text-decoration-none px-1" onclick="return confirm('Ștergi acest organ de cercetare din istoric?');" style="font-size: 1.1rem; line-height: 1;">&times;</a>{% endif %}
-                                    </div>
-                                </div>
-                            {% endif %}
+                        {% empty %}
+                        <tr><td colspan="5" class="text-center py-5 text-muted bg-white border-0"><i class="bi bi-calendar-x d-block fs-3 mb-2 opacity-40"></i> Nu există termene setate.</td></tr>
                         {% endfor %}
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card h-100 border border-secondary border-opacity-25 shadow-none rounded-3">
-                    <div class="card-header bg-white py-2 text-center fw-bold text-muted border-bottom border-secondary border-opacity-10" style="font-size: 0.85rem;">
-                        <i class="bi bi-bank me-1 text-primary"></i> Procuror
-                    </div>
-                    <div class="card-body p-2" style="max-height: 180px; overflow-y: auto;">
-                        {% for istoric in dosar.istoric_desemnari.all %}
-                            {% if istoric.rol == 'Procuror' %}
-                                <div class="d-flex align-items-center justify-content-between mb-1 pb-1 {% if not forloop.last %}border-bottom border-secondary border-opacity-10{% endif %}" style="font-size: 0.82rem;">
-                                    <div class="flex-grow-1 text-truncate pe-2">
-                                        {% if not istoric.data_finalizare %}<i class="bi bi-circle-fill text-success" style="font-size: 0.4rem; vertical-align: middle;"></i>
-                                        {% else %}<i class="bi bi-circle text-muted" style="font-size: 0.4rem; vertical-align: middle;"></i>{% endif %}
-                                        <span class="{% if not istoric.data_finalizare %}text-dark fw-bold{% else %}text-muted{% endif %}">{{ istoric.utilizator.get_full_name|default:istoric.utilizator.username }}</span>
-                                    </div>
-                                    <div class="text-end text-nowrap d-flex align-items-center">
-                                        <span class="text-muted small me-2">{{ istoric.data_desemnare|date:"d.m.y" }} - {% if istoric.data_finalizare %}{{ istoric.data_finalizare|date:"d.m.y" }}{% else %}<span class="text-success fw-bold">Prezent</span>{% endif %}</span>
-                                        {% if poate_edita %}<a href="{% url 'cases:stergere_istoric_echipa' istoric.pk %}" class="text-danger text-opacity-50 text-decoration-none px-1" onclick="return confirm('Ștergi acest procuror din istoric?');" style="font-size: 1.1rem; line-height: 1;">&times;</a>{% endif %}
-                                    </div>
-                                </div>
-                            {% endif %}
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card h-100 border border-secondary border-opacity-25 shadow-none rounded-3">
-                    <div class="card-header bg-white py-2 text-center fw-bold text-muted border-bottom border-secondary border-opacity-10" style="font-size: 0.85rem;">
-                        <i class="bi bi-pen-fill me-1 text-primary"></i> Grefier
-                    </div>
-                    <div class="card-body p-2" style="max-height: 180px; overflow-y: auto;">
-                        {% for istoric in dosar.istoric_desemnari.all %}
-                            {% if istoric.rol == 'Grefier' %}
-                                <div class="d-flex align-items-center justify-content-between mb-1 pb-1 {% if not forloop.last %}border-bottom border-secondary border-opacity-10{% endif %}" style="font-size: 0.82rem;">
-                                    <div class="flex-grow-1 text-truncate pe-2">
-                                        {% if not istoric.data_finalizare %}<i class="bi bi-circle-fill text-success" style="font-size: 0.4rem; vertical-align: middle;"></i>
-                                        {% else %}<i class="bi bi-circle text-muted" style="font-size: 0.4rem; vertical-align: middle;"></i>{% endif %}
-                                        <span class="{% if not istoric.data_finalizare %}text-dark fw-bold{% else %}text-muted{% endif %}">{{ istoric.utilizator.get_full_name|default:istoric.utilizator.username }}</span>
-                                    </div>
-                                    <div class="text-end text-nowrap d-flex align-items-center">
-                                        <span class="text-muted small me-2">{{ istoric.data_desemnare|date:"d.m.y" }} - {% if istoric.data_finalizare %}{{ istoric.data_finalizare|date:"d.m.y" }}{% else %}<span class="text-success fw-bold">Prezent</span>{% endif %}</span>
-                                        {% if poate_edita %}<a href="{% url 'cases:stergere_istoric_echipa' istoric.pk %}" class="text-danger text-opacity-50 text-decoration-none px-1" onclick="return confirm('Ștergi acest grefier din istoric?');" style="font-size: 1.1rem; line-height: 1;">&times;</a>{% endif %}
-                                    </div>
-                                </div>
-                            {% endif %}
-                        {% endfor %}
-                    </div>
-                </div>
+                    </tbody>
+                </table>
             </div>
         </div>
-    </div>
-</div>
 
-<!-- SEPARATOR -->
-<p class="text-muted text-uppercase fw-bold mb-2 mt-4" style="font-size: 0.7rem; letter-spacing: 1px;">
-    <i class="bi bi-file-earmark-ruled-fill me-1"></i> Fapte și persoane implicate
-</p>
+        <p id="sec-documente" class="cs-group-label scroll-mt-4">
+            <i class="bi bi-folder-fill"></i> Documente
+        </p>
 
-<!-- CARD: ÎNCADRĂRI JURIDICE -->
-<div class="card border-0 border-top border-primary border-3 shadow-sm mb-4 rounded-3 overflow-hidden">
-    <div class="card-header bg-white py-3 border-bottom border-secondary border-opacity-10 d-flex justify-content-between align-items-center">
-        <h6 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2" style="font-size: 0.95rem;">
-            <i class="bi bi-file-earmark-ruled-fill text-primary"></i> Încadrări juridice
-        </h6>
-        {% if poate_edita %}
-        <button type="button" class="btn btn-sm btn-outline-primary fw-medium" data-bs-toggle="modal" data-bs-target="#adaugaInfractiuneModal">
-            <i class="bi bi-plus-lg me-1"></i> Adaugă încadrare
-        </button>
-        {% endif %}
-    </div>
-    <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem; --bs-table-hover-bg: rgba(13, 110, 253, 0.03);">
-            <thead class="table-light text-muted">
-                <tr style="border-bottom: 2px solid rgba(108, 117, 125, 0.15);">
-                    <th class="py-2 px-4 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase;">Act normativ</th>
-                    <th class="py-2 px-3 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase;">Articol</th>
-                    <th class="py-2 px-3 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase;">Încadrare juridică</th>
-                    <th class="py-2 px-3 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase;">Data faptei</th>
-                    {% if poate_edita %}<th class="py-2 px-4 fw-medium border-0 text-end" style="font-size: 0.8rem; text-transform: uppercase;">Acțiuni</th>{% endif %}
-                </tr>
-            </thead>
-            <tbody>
-                {% for infractiune in dosar.infractiuni.all %}
-                <tr style="border-bottom: 1px solid rgba(108, 117, 125, 0.1);">
-                    <td class="px-4 py-2"><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">{{ infractiune.get_act_normativ_display }}</span></td>
-                    <td class="px-3 py-2 text-dark fw-medium">{{ infractiune.articol|default:"-" }}</td>
-                    <td class="px-3 py-2 text-dark">{{ infractiune.incadrare_juridica|default:"În curs de stabilire" }}</td>
-                    <td class="px-3 py-2">{{ infractiune.data_comiterii|date:"d M Y"|default:"Necunoscută" }}</td>
-                    {% if poate_edita %}
-                    <td class="px-4 py-2 text-end">
-                        <div class="btn-group">
-                            <a href="{% url 'cases:editare_infractiune' infractiune.pk %}" class="btn btn-sm btn-light border border-secondary border-opacity-25 text-primary" title="Editează"><i class="bi bi-pencil"></i></a>
-                            <a href="{% url 'cases:stergere_infractiune' infractiune.pk %}" class="btn btn-sm btn-light border border-secondary border-opacity-25 text-danger" title="Șterge"><i class="bi bi-trash"></i></a>
-                        </div>
-                    </td>
-                    {% endif %}
-                </tr>
-                {% empty %}
-                <tr><td colspan="5" class="text-center py-4 text-muted bg-white">Nu a fost adăugată nicio încadrare juridică specifică.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<!-- CARD: PĂRȚI ÎN CAUZĂ -->
-<div class="card border-0 border-top border-primary border-3 shadow-sm mb-4 rounded-3 overflow-hidden">
-    <div class="card-header bg-white py-3 border-bottom border-secondary border-opacity-10 d-flex justify-content-between align-items-center">
-        <h6 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2" style="font-size: 0.95rem;">
-            <i class="bi bi-person-lines-fill text-primary"></i> Părți în cauză
-        </h6>
-        {% if poate_edita %}
-            <button type="button" class="btn btn-sm btn-outline-primary fw-medium" data-bs-toggle="modal" data-bs-target="#adaugaParteModal">
-                <i class="bi bi-plus-lg me-1"></i> Adaugă persoană
-            </button>
-        {% endif %}
-    </div>
-    <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem; --bs-table-hover-bg: rgba(13, 110, 253, 0.03);">
-            <thead class="table-light text-muted">
-                <tr style="border-bottom: 2px solid rgba(108, 117, 125, 0.15);">
-                    <th class="py-2 px-4 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase;">Nume complet</th>
-                    <th class="py-2 px-3 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase;">Calitate procesuală</th>
-                    <th class="py-2 px-3 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase;">CNP</th>
-                    <th class="py-2 px-3 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase;">Mențiuni</th>
-                    {% if poate_edita %}<th class="py-2 px-4 fw-medium border-0 text-end" style="font-size: 0.8rem; text-transform: uppercase;">Acţiuni</th>{% endif %}
-                </tr>
-            </thead>
-            <tbody class="border-top-0">
-                {% for parte in dosar.parti_implicate.all %}
-                <tr style="border-bottom: 1px solid rgba(108, 117, 125, 0.1);">
-                    <td class="px-4 py-2 text-dark fw-medium">{{ parte.nume_complet }}</td>
-                    <td class="px-3 py-2">
-                        {% with calitate=parte.calitate_procesuala %}
-                            {% if calitate == 'SUSPECT' or calitate == 'INCULPAT' %}
-                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">{{ parte.get_calitate_procesuala_display }}</span>
-                            {% elif calitate == 'VICTIMA' or calitate == 'PARTE_VATAMATA' %}
-                                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">{{ parte.get_calitate_procesuala_display }}</span>
-                            {% elif calitate == 'MARTOR' %}
-                                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">{{ parte.get_calitate_procesuala_display }}</span>
-                            {% else %}
-                                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">{{ parte.get_calitate_procesuala_display }}</span>
-                            {% endif %}
-                        {% endwith %}
-                    </td>
-                    <td class="px-3 py-2">{{ parte.cnp|default:"-" }}</td>
-                    <td class="px-3 py-2 text-muted">{{ parte.mentiuni|default:"-" }}</td>
-                    {% if poate_edita %}
-                    <td class="px-4 py-2 text-end">
-                        <div class="btn-group">
-                            <a href="{% url 'cases:editare_parte' parte.pk %}" class="btn btn-sm btn-light border border-secondary border-opacity-25 text-primary" title="Editează"><i class="bi bi-pencil"></i></a>
-                            <a href="{% url 'cases:stergere_parte' parte.pk %}" class="btn btn-sm btn-light border border-secondary border-opacity-25 text-danger" title="Șterge"><i class="bi bi-trash"></i></a>
-                        </div>
-                    </td>
-                    {% endif %}
-                </tr>
-                {% empty %}
-                <tr><td colspan="5" class="text-center py-4 text-muted bg-white">Nicio persoană înregistrată în acest dosar.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<!-- SEPARATOR -->
-<p class="text-muted text-uppercase fw-bold mb-2 mt-4" style="font-size: 0.7rem; letter-spacing: 1px;">
-    <i class="bi bi-exclamation-triangle-fill me-1"></i> Măsuri și termene
-</p>
-
-<!-- CARD: MĂSURI PREVENTIVE -->
-<div class="card border-0 border-top border-danger border-3 shadow-sm mb-4 rounded-3 overflow-hidden">
-    <div class="card-header bg-white py-3 border-bottom border-secondary border-opacity-10 d-flex justify-content-between align-items-center">
-        <h6 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2" style="font-size: 0.95rem;">
-            <i class="bi bi-hourglass-split text-danger"></i> Măsuri preventive
-        </h6>
-        {% if poate_edita %}
-        <button type="button" class="btn btn-sm btn-outline-danger fw-medium" data-bs-toggle="modal" data-bs-target="#adaugaMasuraModal">
-            <i class="bi bi-plus-lg me-1"></i> Adaugă măsură
-        </button>
-        {% endif %}
-    </div>
-    <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem; --bs-table-hover-bg: rgba(220, 53, 69, 0.03);">
-            <thead class="table-light text-muted">
-                <tr style="border-bottom: 2px solid rgba(220, 53, 69, 0.2);">
-                    <th class="py-2 px-4 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase;">Inculpat</th>
-                    <th class="py-2 px-3 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase;">Măsura dispusă</th>
-                    <th class="py-2 px-3 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase;">Durata (zile)</th>
-                    <th class="py-2 px-3 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase;">Perioada</th>
-                    {% if poate_edita %}<th class="py-2 px-4 fw-medium border-0 text-end" style="font-size: 0.8rem; text-transform: uppercase;">Acţiuni</th>{% endif %}
-                </tr>
-            </thead>
-            <tbody>
-                {% for masura in dosar.masuri_preventive.all %}
-                <tr style="border-bottom: 1px solid rgba(108, 117, 125, 0.1);" class="{% if masura.zile_ramase <= 3 and masura.zile_ramase >= 0 %}bg-danger bg-opacity-10{% elif masura.zile_ramase <= 10 and masura.zile_ramase > 3 %}bg-warning bg-opacity-10{% endif %}">
-                    <td class="px-4 py-2 text-dark fw-medium">{{ masura.parte.nume_complet }}</td>
-                    <td class="px-3 py-2"><span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">{{ masura.get_tip_masura_display }}</span></td>
-                    <td class="px-3 py-2">{{ masura.durata_zile }} zile</td>
-                    <td class="px-3 py-2">{{ masura.data_inceput|date:"d.m.Y" }} &rarr; <strong class="text-dark">{{ masura.data_sfarsit|date:"d.m.Y" }}</strong></td>
-                    {% if poate_edita %}
-                    <td class="px-4 py-2 text-end">
-                        <div class="btn-group">
-                            <a href="{% url 'cases:editare_masura' masura.pk %}" class="btn btn-sm btn-light border border-secondary border-opacity-25 text-primary bg-white" title="Editează"><i class="bi bi-pencil"></i></a>
-                            <a href="{% url 'cases:stergere_masura' masura.pk %}" class="btn btn-sm btn-light border border-secondary border-opacity-25 text-danger bg-white" title="Șterge"><i class="bi bi-trash"></i></a>
-                        </div>
-                    </td>
-                    {% endif %}
-                </tr>
-                {% empty %}
-                <tr><td colspan="5" class="text-center py-4 text-muted bg-white">Nu există măsuri preventive dispuse în această cauză.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<!-- CARD: TERMENE PROCEDURALE -->
-<div class="card border-0 border-top border-primary border-3 shadow-sm mb-4 rounded-3 overflow-hidden">
-    <div class="card-header bg-white py-3 border-bottom border-secondary border-opacity-10 d-flex justify-content-between align-items-center">
-        <h6 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2" style="font-size: 0.95rem;">
-            <i class="bi bi-calendar-event text-primary"></i> Termene procedurale și alerte
-        </h6>
-        {% if poate_edita %}
-        <button type="button" class="btn btn-sm btn-outline-primary fw-medium" data-bs-toggle="modal" data-bs-target="#adaugaTermenModal">
-            <i class="bi bi-plus-lg me-1"></i> Adaugă termen
-        </button>
-        {% endif %}
-    </div>
-    <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem; --bs-table-hover-bg: rgba(13, 110, 253, 0.03);">
-            <thead class="table-light text-muted">
-                <tr style="border-bottom: 2px solid rgba(108, 117, 125, 0.15);">
-                    <th class="py-2 px-4 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase;">Tip Termen</th>
-                    <th class="py-2 px-3 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase;">Data Limită</th>
-                    <th class="py-2 px-3 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase;">Timp Rămas</th>
-                    <th class="py-2 px-3 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase;">Detalii</th>
-                    {% if poate_edita %}<th class="py-2 px-4 fw-medium border-0 text-end" style="font-size: 0.8rem; text-transform: uppercase;">Acţiuni</th>{% endif %}
-                </tr>
-            </thead>
-            <tbody>
-                {% for termen in dosar.termene_procedurale.all %}
-                <tr style="border-bottom: 1px solid rgba(108, 117, 125, 0.1);" class="{% if termen.zile_ramase <= 3 and termen.zile_ramase >= 0 %}bg-danger bg-opacity-10{% elif termen.zile_ramase <= 30 and termen.zile_ramase > 3 %}bg-warning bg-opacity-10{% elif termen.zile_ramase < 0 %}bg-secondary bg-opacity-10{% endif %}">
-                    <td class="px-4 py-2"><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">{{ termen.get_tip_termen_display }}</span></td>
-                    <td class="px-3 py-2"><strong class="text-dark">{{ termen.data_limita|date:"d.m.Y" }}</strong></td>
-                    <td class="px-3 py-2">
-                        {% if termen.zile_ramase < 0 %}
-                            <span class="text-danger fw-bold"><i class="bi bi-exclamation-triangle"></i> Expirat</span>
-                        {% else %}
-                            <span class="text-dark">{{ termen.zile_ramase }} zile</span>
-                        {% endif %}
-                    </td>
-                    <td class="px-3 py-2 text-muted small">{{ termen.detalii|default:"-"|truncatechars:40 }}</td>
-                    {% if poate_edita %}
-                    <td class="px-4 py-2 text-end">
-                        <div class="btn-group">
-                            <a href="{% url 'cases:editare_termen' termen.pk %}" class="btn btn-sm btn-light border border-secondary border-opacity-25 text-primary bg-white" title="Editează"><i class="bi bi-pencil"></i></a>
-                            <a href="{% url 'cases:stergere_termen' termen.pk %}" class="btn btn-sm btn-light border border-secondary border-opacity-25 text-danger bg-white" title="Șterge"><i class="bi bi-trash"></i></a>
-                        </div>
-                    </td>
-                    {% endif %}
-                </tr>
-                {% empty %}
-                <tr><td colspan="5" class="text-center py-4 text-muted bg-white">Nu există termene procedurale setate pentru această cauză.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<!-- SEPARATOR -->
-<p class="text-muted text-uppercase fw-bold mb-2 mt-4" style="font-size: 0.7rem; letter-spacing: 1px;">
-    <i class="bi bi-folder-fill me-1"></i> Documente
-</p>
-
-<!-- CARD: ACTE DE URMĂRIRE PENALĂ -->
-<div class="card border-0 border-top border-primary border-3 shadow-sm mb-5 rounded-3 overflow-hidden">
-    <div class="card-header bg-white py-3 border-bottom border-secondary border-opacity-10 d-flex justify-content-between align-items-center">
-        <h6 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2" style="font-size: 0.95rem;">
-            <i class="bi bi-folder-fill text-primary"></i> Acte de urmărire penală
-        </h6>
-        {% if poate_edita %}
-            <button type="button" class="btn btn-sm btn-outline-primary fw-medium" data-bs-toggle="modal" data-bs-target="#adaugaDocumentModal">
-                <i class="bi bi-plus-lg me-1"></i> Adaugă document
-            </button>
-        {% endif %}
-    </div>
-    <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem; --bs-table-hover-bg: rgba(13, 110, 253, 0.03);">
-            <thead class="table-light text-muted">
-                <tr style="border-bottom: 2px solid rgba(108, 117, 125, 0.15);">
-                    <th class="py-2 px-4 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase;">Tip act</th>
-                    <th class="py-2 px-3 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase;">Titlu document</th>
-                    <th class="py-2 px-3 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase;">Data documentului</th>
-                    <th class="py-2 px-3 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase;">Data înregistrării</th>
-                    <th class="py-2 px-3 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase;">Data încărcării</th>
-                    <th class="py-2 px-3 fw-medium border-0" style="font-size: 0.8rem; text-transform: uppercase;">Autor</th>
-                    {% if poate_edita %}<th class="py-2 px-4 fw-medium border-0 text-end" style="font-size: 0.8rem; text-transform: uppercase;">Acţiuni</th>{% endif %}
-                </tr>
-            </thead>
-            <tbody>
-                {% for act in dosar.documente.all %}
-                <tr style="border-bottom: 1px solid rgba(108, 117, 125, 0.1);">
-                    <td class="px-4 py-2"><span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">{{ act.get_tip_display }}</span></td>
-                    <td class="px-3 py-2 text-dark fw-medium">
-                        {{ act.titlu }}
-                        {% if act.este_semnat %}
-                            <i class="bi bi-patch-check-fill text-success ms-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Semnat digital de {{ act.semnat_de.get_full_name|default:act.semnat_de.username }} la {{ act.data_semnarii|date:'d.m.Y H:i' }}"></i>
-                        {% endif %}
-                    </td>
-                    <td class="px-3 py-2">{{ act.data_documentului|date:"d M Y" }}</td>
-                    <td class="px-3 py-2">{{ act.data_inregistrarii|date:"d M Y" }}</td>
-                    <td class="px-3 py-2 text-muted" style="font-size: 0.85rem;">{{ act.data_incarcarii|date:"d M Y, H:i" }}</td>
-                    <td class="px-3 py-2">{{ act.autor.get_full_name|default:"Sistem" }}</td>
-                    {% if poate_edita %}
-                    <td class="px-4 py-2 text-end">
-                        <div class="d-flex justify-content-end align-items-center gap-1">
-                            {% if act.fisier %}
-                                <a href="{{ act.fisier.url }}" download="{{ act.titlu }}_original" class="btn btn-sm btn-light border border-secondary border-opacity-25 text-primary" title="Descarcă draft-ul (nesemnat)"><i class="bi bi-file-earmark-text"></i></a>
-                            {% endif %}
-                            {% if act.este_semnat and act.fisier_semnat %}
-                                <a href="{{ act.fisier_semnat.url }}" download="{{ act.titlu }}_SEMNAT.pdf" class="btn btn-sm btn-light border border-success border-opacity-25 text-success" title="Descarcă documentul securizat"><i class="bi bi-shield-lock"></i></a>
-                            {% elif act.fisier and ".pdf" in act.fisier.name|lower and poate_edita %}
-                                <form method="POST" action="{% url 'cases:semneaza_act' act.pk %}" class="m-0 p-0 d-inline">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-sm btn-light border border-secondary border-opacity-25 text-success" title="Aplică semnătura digitală"><i class="bi bi-vector-pen"></i></button>
-                                </form>
-                            {% endif %}
+        <div class="card-section cs-accent-cyan">
+            <div class="card-header">
+                <h6><i class="bi bi-folder-fill"></i> Acte de urmărire penală</h6>
+                {% if poate_edita %}
+                <button type="button" class="btn-cs-add" data-bs-toggle="modal" data-bs-target="#adaugaDocumentModal">
+                    <i class="bi bi-plus-lg"></i> Adaugă document
+                </button>
+                {% endif %}
+            </div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Tip act</th>
+                            <th>Titlu document</th>
+                            <th>Data doc.</th>
+                            <th>Înregistrat la</th>
+                            <th>Încărcat la</th>
+                            <th>Autor</th>
+                            {% if poate_edita %}<th class="text-end">Acțiuni</th>{% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for act in dosar.documente.all %}
+                        <tr {% if act.este_semnat %}class="row-done"{% endif %}>
+                            <td><span class="badge-cs badge-cs-gray">{{ act.get_tip_display }}</span></td>
+                            <td>
+                                <span class="fw-semibold text-dark">{{ act.titlu }}</span>
+                                {% if act.este_semnat %}<i class="bi bi-patch-check-fill text-success ms-1"></i>{% endif %}
+                            </td>
+                            <td>{{ act.data_documentului|date:"d M Y" }}</td>
+                            <td>{{ act.data_inregistrarii|date:"d M Y" }}</td>
+                            <td class="text-muted" style="font-size:0.78rem;">{{ act.data_incarcarii|date:"d M Y, H:i" }}</td>
+                            <td><span class="fw-medium">{{ act.autor.get_full_name|default:"Sistem" }}</span></td>
                             {% if poate_edita %}
-                            <div class="btn-group ms-1">
-                                <a href="{% url 'cases:editare_document' act.pk %}" class="btn btn-sm btn-light border border-secondary border-opacity-25 text-primary" title="Editare"><i class="bi bi-pencil"></i></a>
-                                <a href="{% url 'cases:stergere_document' act.pk %}" class="btn btn-sm btn-light border border-secondary border-opacity-25 text-danger" title="Ștergere"><i class="bi bi-trash"></i></a>
-                            </div>
+                            <td>
+                                <div class="btn-cs-actions">
+                                    {% if act.fisier %}
+                                        <a href="{{ act.fisier.url }}" class="btn-cs-icon" title="Descarcă draft"><i class="bi bi-file-earmark-text"></i></a>
+                                    {% endif %}
+                                    {% if act.este_semnat and act.fisier_semnat %}
+                                        <a href="{{ act.fisier_semnat.url }}" class="btn-cs-icon btn-cs-success" title="Descarcă documentul semnat"><i class="bi bi-shield-lock"></i></a>
+                                    {% elif act.fisier and ".pdf" in act.fisier.name|lower %}
+                                        {% endif %}
+                                    <a href="{% url 'cases:editare_document' act.pk %}" class="btn-cs-icon"><i class="bi bi-pencil"></i></a>
+                                    <a href="{% url 'cases:stergere_document' act.pk %}" class="btn-cs-icon btn-cs-danger"><i class="bi bi-trash"></i></a>
+                                </div>
+                            </td>
                             {% endif %}
-                        </div>
-                    </td>
-                    {% endif %}
-                </tr>
-                {% empty %}
-                <tr><td colspan="7" class="text-center py-4 text-muted bg-white">Niciun document atașat acestui dosar.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="7" class="text-center py-5 text-muted bg-white border-0"><i class="bi bi-inbox d-block fs-3 mb-2 opacity-40"></i> Niciun document atașat.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+    <!-- </div> </div> <div class="modal fade" id="adaugaInfractiuneModal" tabindex="-1" aria-labelledby="infractiuneModalLabel" aria-hidden="true">
+    </div> -->
+
+
 
 
 <div class="modal fade" id="adaugaInfractiuneModal" tabindex="-1" aria-labelledby="infractiuneModalLabel" aria-hidden="true">
