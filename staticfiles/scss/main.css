@@ -9293,12 +9293,14 @@ textarea.form-control-lg {
 .last-child-no-border:last-child {
   border-bottom: none !important; }
 
-.modal-body p, .django-form-wrapper p {
+.modal-body p,
+.django-form-wrapper p {
   margin-bottom: 1.25rem; }
 
 .modal-body input:not([type="checkbox"]):not([type="radio"]),
 .modal-body select,
-.modal-body textarea, .django-form-wrapper input:not([type="checkbox"]):not([type="radio"]),
+.modal-body textarea,
+.django-form-wrapper input:not([type="checkbox"]):not([type="radio"]),
 .django-form-wrapper select,
 .django-form-wrapper textarea {
   display: block !important;
@@ -9313,14 +9315,16 @@ textarea.form-control-lg {
   transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out; }
   .modal-body input:not([type="checkbox"]):not([type="radio"]):focus,
   .modal-body select:focus,
-  .modal-body textarea:focus, .django-form-wrapper input:not([type="checkbox"]):not([type="radio"]):focus,
+  .modal-body textarea:focus,
+  .django-form-wrapper input:not([type="checkbox"]):not([type="radio"]):focus,
   .django-form-wrapper select:focus,
   .django-form-wrapper textarea:focus {
     border-color: #1c437a;
     outline: 0;
     box-shadow: 0 0 0 0.25rem rgba(28, 67, 122, 0.25); }
 
-.modal-body label, .django-form-wrapper label {
+.modal-body label,
+.django-form-wrapper label {
   display: block;
   width: 100%;
   font-size: 0.8rem;
@@ -9330,13 +9334,15 @@ textarea.form-control-lg {
   color: #6c757d;
   margin-bottom: 0.4rem; }
 
-.modal-body .helptext, .django-form-wrapper .helptext {
+.modal-body .helptext,
+.django-form-wrapper .helptext {
   display: block;
   font-size: 0.75rem;
   color: #6c757d;
   margin-top: 0.25rem; }
 
-.modal-body ul.errorlist, .django-form-wrapper ul.errorlist {
+.modal-body ul.errorlist,
+.django-form-wrapper ul.errorlist {
   list-style-type: none;
   padding: 0.75rem 1rem;
   margin-top: 0;
@@ -9348,11 +9354,14 @@ textarea.form-control-lg {
   font-size: 0.85rem;
   font-weight: 600;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); }
-  .modal-body ul.errorlist li, .django-form-wrapper ul.errorlist li {
+  .modal-body ul.errorlist li,
+  .django-form-wrapper ul.errorlist li {
     margin-bottom: 0.25rem; }
-    .modal-body ul.errorlist li:last-child, .django-form-wrapper ul.errorlist li:last-child {
+    .modal-body ul.errorlist li:last-child,
+    .django-form-wrapper ul.errorlist li:last-child {
       margin-bottom: 0; }
-    .modal-body ul.errorlist li::before, .django-form-wrapper ul.errorlist li::before {
+    .modal-body ul.errorlist li::before,
+    .django-form-wrapper ul.errorlist li::before {
       content: "⚠️ ";
       margin-right: 6px;
       font-size: 0.9rem; }
