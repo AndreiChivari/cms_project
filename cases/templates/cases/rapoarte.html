@@ -3,14 +3,14 @@
 {% block title %}Rapoarte avansate{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4 mb-5">
+<div class="container-fluid py-1">
     
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 pb-3 border-bottom border-secondary border-opacity-25">
         <div>
-            <h3 class="mb-1 fw-bold text-dark d-flex align-items-center gap-2">
+            <h3 class="mb-1 fw-bold text-dark d-flex align-items-center gap-2" style="font-size: 1.5rem;">
                 <i class="bi-file-earmark-bar-graph text-primary"></i> Generator rapoarte avansate
             </h3>
-            <p class="text-muted mb-0" style="font-size: 0.95rem;">
+            <p class="text-muted mb-0" style="font-size: 1rem;">
                 Filtrează, afișează și exportă datele complexe în format tabelar sau Excel.
             </p>
         </div>
@@ -153,8 +153,8 @@
                         <button type="submit" class="btn btn-primary btn-sm fw-medium shadow-sm px-3 d-flex align-items-center gap-1">
                             <i class="bi bi-arrow-clockwise me-1"></i> Aplică
                         </button>
-                        <button type="submit" name="export_excel" value="true" class="btn btn-success btn-sm fw-bold shadow-sm px-3 d-flex align-items-center gap-1">
-                            <i class="bi bi-file-earmark-excel-fill me-1"></i> Descarcă Excel
+                        <button type="submit" name="export_excel" value="true" class="btn btn-success text-white btn-sm fw-bold shadow-sm px-3 d-flex align-items-center gap-1">
+                            <i class="bi bi-file-earmark-excel-fill me-1"></i> Export Excel
                         </button>
                     </div>
                 </div>
@@ -162,199 +162,276 @@
         </div>
     </form>
 
-    <div class="card border-0 border-top border-secondary border-3 shadow-sm rounded-3 overflow-hidden">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover table-striped mb-0 align-middle" style="font-size: 0.85rem;">
-                    <thead class="align-middle">
-                        <tr>
-                            {% if coloane.col_numar %}<th class="py-3 px-3 fw-bold border-0 bg-primary bg-gradient text-white" style="font-size: 0.75rem; text-transform: uppercase;">Număr unic</th>{% endif %}
-                            {% if coloane.col_data_inreg %}<th class="py-3 px-3 fw-bold border-0 bg-primary bg-gradient  text-white" style="font-size: 0.75rem; text-transform: uppercase;">Data înreg.</th>{% endif %}
-                            {% if coloane.col_situatie_fapt %}<th class="py-3 px-3 fw-bold border-0 bg-primary bg-gradient  text-white" style="font-size: 0.75rem; text-transform: uppercase;">Situație de fapt (rezumat)</th>{% endif %}
-                            {% if coloane.col_incadrare %}<th class="py-3 px-3 fw-bold border-0 bg-primary bg-gradient  text-white" style="font-size: 0.75rem; text-transform: uppercase;">Încadrare (art/lege)</th>{% endif %}
-                            {% if coloane.col_ofiter %}<th class="py-3 px-3 fw-bold border-0 bg-primary bg-gradient  text-white" style="font-size: 0.75rem; text-transform: uppercase;">Poliţist</th>{% endif %}
-                            {% if coloane.col_procuror %}<th class="py-3 px-3 fw-bold border-0 bg-primary bg-gradient  text-white" style="font-size: 0.75rem; text-transform: uppercase;">Procuror</th>{% endif %}
-                            {% if coloane.col_stadiu_curent %}<th class="py-3 px-3 fw-bold border-0 bg-primary bg-gradient  text-white" style="font-size: 0.75rem; text-transform: uppercase;">Stadiu</th>{% endif %}
-                            {% if coloane.col_data_stadiu %}<th class="py-3 px-3 fw-bold border-0 bg-primary bg-gradient  text-white" style="font-size: 0.75rem; text-transform: uppercase;">Data stadiu</th>{% endif %}
-                            {% if coloane.col_solutie_finala %}<th class="py-3 px-3 fw-bold border-0 bg-primary bg-gradient  text-white" style="font-size: 0.75rem; text-transform: uppercase;">Soluție</th>{% endif %}
-                            {% if coloane.col_data_solutie %}<th class="py-3 px-3 fw-bold border-0 bg-primary bg-gradient  text-white" style="font-size: 0.75rem; text-transform: uppercase;">Data soluției</th>{% endif %}
-                            {% if coloane.col_parti %}<th class="py-3 px-3 fw-bold border-0 bg-primary bg-gradient  text-white" style="font-size: 0.75rem; text-transform: uppercase;">Părți în cauză</th>{% endif %}
-                            {% if coloane.col_masuri %}<th class="py-3 px-3 fw-bold border-0 bg-primary bg-gradient  text-white" style="font-size: 0.75rem; text-transform: uppercase;">Măsuri prev.</th>{% endif %}
-                            {% if coloane.col_grefier %}<th class="py-3 px-3 fw-bold border-0 bg-primary bg-gradient text-white" style="font-size: 0.75rem; text-transform: uppercase;">Grefier</th>{% endif %}
-                            {% if coloane.col_termene %}<th class="py-3 px-3 fw-bold border-0 bg-primary bg-gradient text-white" style="font-size: 0.75rem; text-transform: uppercase;">Termene</th>{% endif %}
-                            {% if coloane.col_loc_savarsirii %}<th class="py-3 px-3 fw-bold border-0 bg-primary bg-gradient text-white" style="font-size: 0.75rem; text-transform: uppercase;">Locul săvârșirii</th>{% endif %}
-                            {% if coloane.col_data_savarsirii %}<th class="py-3 px-3 fw-bold border-0 bg-primary bg-gradient text-white" style="font-size: 0.75rem; text-transform: uppercase;">Data săvârșirii</th>{% endif %}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for dosar in dosare %}
-                        <tr>
-                            {% if coloane.col_numar %}
-                                <td class="px-3 py-2"><a href="{% url 'cases:detalii_dosar' dosar.pk %}" class="fw-bold text-decoration-none text-primary">{{ dosar.numar_unic }}</a></td>
-                            {% endif %}
-                            
-                            {% if coloane.col_data_inreg %}<td class="px-3 py-2 text-dark">{{ dosar.data_inregistrarii|date:"d.m.Y" }}</td>{% endif %}
-                            
-                            {% if coloane.col_situatie_fapt %}
-                                <td class="px-3 py-2"><span class="text-truncate d-inline-block text-dark" style="max-width: 150px;" title="{{ dosar.infractiune_cercetata }}">{{ dosar.infractiune_cercetata }}</span></td>
-                            {% endif %}
-
-                            {% if coloane.col_incadrare %}
-                                <td class="px-3 py-2">
-                                    {% for infr in dosar.infractiuni.all %}
-                                        <div class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 mb-1 fw-normal text-wrap text-start">
-                                            {% if infr.articol and infr.articol != 'None' %}
-                                                art. {{ infr.articol }} - {{ infr.get_act_normativ_display }}
-                                            {% else %}
-                                                {{ infr.get_act_normativ_display }}
-                                            {% endif %}
-                                        </div>
-                                    {% empty %}
-                                        <span class="text-muted small">-</span>
-                                    {% endfor %}
-                                </td>
-                            {% endif %}
-                            
-                            {% if coloane.col_ofiter %}<td class="px-3 py-2 text-dark">{{ dosar.ofiter_caz.get_full_name|default:"-" }}</td>{% endif %}
-                            {% if coloane.col_procuror %}<td class="px-3 py-2 text-dark">{{ dosar.procuror_caz.get_full_name|default:"-" }}</td>{% endif %}
-                            
-                            {% with stadiu=dosar.stadii_cercetare.first %}
-                                {% if coloane.col_stadiu_curent %}
-                                    <td class="px-3 py-2"><span class="badge bg-secondary text-white fw-medium shadow-sm">{{ stadiu.get_tip_stadiu_display|default:"Neînceput" }}</span></td>
-                                {% endif %}
-                                {% if coloane.col_data_stadiu %}
-                                    <td class="px-3 py-2 text-muted">{{ stadiu.data_incepere|date:"d.m.Y"|default:"-" }}</td>
-                                {% endif %}
-                                
-                                {% with solutie=stadiu.solutii.first %}
-                                    {% if coloane.col_solutie_finala %}
-                                        <td class="px-3 py-2"><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">{{ solutie.get_tip_solutie_display|default:"-" }}</span></td>
-                                    {% endif %}
-                                    {% if coloane.col_data_solutie %}
-                                        <td class="px-3 py-2 text-muted">{{ solutie.data_solutiei|date:"d.m.Y"|default:"-" }}</td>
-                                    {% endif %}
-                                {% endwith %}
-                            {% endwith %}
-
-                            {% if coloane.col_parti %}
-                                <td class="px-3 py-2">
-                                    {% for parte in dosar.parti_implicate.all %}
-                                        <div class="text-dark" style="font-size: 0.8rem;">• {{ parte.nume_complet }} <span class="text-muted">({{ parte.get_calitate_procesuala_display }})</span></div>
-                                    {% empty %}
-                                        <span class="text-muted">-</span>
-                                    {% endfor %}
-                                </td>
-                            {% endif %}
-
-                            {% if coloane.col_masuri %}
-                                <td class="px-3 py-2">
-                                    {% for masura in dosar.masuri_preventive.all %}
-                                        <div style="font-size: 0.8rem;" class="text-danger fw-medium">⚠ {{ masura.get_tip_masura_display }} <span class="text-muted fw-normal">(exp. {{ masura.data_sfarsit|date:"d.m.Y" }})</span></div>
-                                    {% empty %}
-                                        <span class="text-muted">-</span>
-                                    {% endfor %}
-                                </td>
-                            {% endif %}
-
-                            {% if coloane.col_grefier %}
-                                <td class="px-3 py-2 text-dark">{{ dosar.grefier_caz.get_full_name|default:"-" }}</td>
-                            {% endif %}
-
-                            {% if coloane.col_termene %}
-                                <td class="px-3 py-2">
-                                    {% for termen in dosar.termene_procedurale.all %}
-                                        <div style="font-size: 0.8rem;" class="text-dark">
-                                            <span class="text-muted">{{ termen.get_tip_termen_display }}:</span>
-                                            {{ termen.data_limita|date:"d.m.Y" }}
-                                            {% if termen.ora %}<span class="text-muted"> {{ termen.ora|time:"H:i" }}</span>{% endif %}
-                                            {% if termen.indeplinit %}<span class="badge bg-success bg-opacity-10 text-success ms-1" style="font-size: 0.7rem;">✓</span>{% endif %}
-                                        </div>
-                                    {% empty %}
-                                        <span class="text-muted">-</span>
-                                    {% endfor %}
-                                </td>
-                            {% endif %}
-
-                            {% if coloane.col_loc_savarsirii %}
-                                <td class="px-3 py-2">
-                                    {% for inf in dosar.infractiuni.all %}
-                                        {% if inf.adresa_comiterii %}
-                                            <div class="text-dark" style="font-size: 0.8rem;">• {{ inf.adresa_comiterii }}</div>
-                                        {% endif %}
-                                    {% empty %}
-                                        <span class="text-muted">-</span>
-                                    {% endfor %}
-                                </td>
-                            {% endif %}
-
-                            {% if coloane.col_data_savarsirii %}
-                                <td class="px-3 py-2">
-                                    {% for inf in dosar.infractiuni.all %}
-                                        {% if inf.data_comiterii %}
-                                            <div class="text-dark" style="font-size: 0.8rem;">• {{ inf.data_comiterii|date:"d.m.Y" }}</div>
-                                        {% endif %}
-                                    {% empty %}
-                                        <span class="text-muted">-</span>
-                                    {% endfor %}
-                                </td>
-                            {% endif %}
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="12" class="text-center py-5 text-muted bg-white">
-                                <div class="fs-1 mb-2 opacity-50">📋</div>
-                                <p class="mb-0 fw-medium">Nu s-au găsit dosare pentru filtrele selectate.</p>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        <div class="card-footer bg-light border-top border-secondary border-opacity-10 py-2 px-3 text-muted" style="font-size: 0.85rem;">
+    <div class="card-section cs-accent-blue mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center bg-primary bg-gradient" style="background:#1e293b;">
+            <h6 class="text-white">
+                <i class="bi bi-file-earmark-bar-graph" style="color:#0dcaf0;"></i> Rezultate raport
+            </h6>
             {% if total_rezultate > 0 %}
-                Afișare rezultate <strong class="text-dark">{{ page_obj.start_index }}</strong> - <strong class="text-dark">{{ page_obj.end_index }}</strong> 
-                din totalul de <strong class="text-dark">{{ total_rezultate }}</strong> dosare.
-            {% else %}
-                <span class="text-muted">Nu a fost găsit niciun dosar conform filtrelor selectate.</span>
+            <span class="header-badge-dark">
+                {{ page_obj.start_index }}–{{ page_obj.end_index }} din {{ total_rezultate }} dosare
+            </span>
             {% endif %}
+        </div>
+
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead>
+                    <tr>
+                        {% if coloane.col_numar %}        <th>Număr unic</th>{% endif %}
+                        {% if coloane.col_data_inreg %}   <th>Data înreg.</th>{% endif %}
+                        {% if coloane.col_situatie_fapt %}<th>Situație de fapt</th>{% endif %}
+                        {% if coloane.col_incadrare %}    <th>Încadrare juridică</th>{% endif %}
+                        {% if coloane.col_ofiter %}       <th>Polițist</th>{% endif %}
+                        {% if coloane.col_procuror %}     <th>Procuror</th>{% endif %}
+                        {% if coloane.col_stadiu_curent %}<th>Stadiu</th>{% endif %}
+                        {% if coloane.col_data_stadiu %}  <th>Data stadiu</th>{% endif %}
+                        {% if coloane.col_solutie_finala %}<th>Soluție</th>{% endif %}
+                        {% if coloane.col_data_solutie %} <th>Data soluției</th>{% endif %}
+                        {% if coloane.col_parti %}        <th>Părți în cauză</th>{% endif %}
+                        {% if coloane.col_masuri %}       <th>Măsuri prev.</th>{% endif %}
+                        {% if coloane.col_grefier %}      <th>Grefier</th>{% endif %}
+                        {% if coloane.col_termene %}      <th>Termene</th>{% endif %}
+                        {% if coloane.col_loc_savarsirii %}<th>Locul săvârșirii</th>{% endif %}
+                        {% if coloane.col_data_savarsirii %}<th>Data săvârșirii</th>{% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for dosar in dosare %}
+                    <tr>
+                        {% if coloane.col_numar %}
+                        <td>
+                            <a href="{% url 'cases:detalii_dosar' dosar.pk %}"
+                            class="fw-bold text-decoration-none" style="color:#2a6cb0;">
+                                {{ dosar.numar_unic }}
+                            </a>
+                        </td>
+                        {% endif %}
+
+                        {% if coloane.col_data_inreg %}
+                        <td class="fw-medium text-dark">{{ dosar.data_inregistrarii|date:"d.m.Y" }}</td>
+                        {% endif %}
+
+                        {% if coloane.col_situatie_fapt %}
+                        <td>
+                            <span class="text-dark text-truncate d-inline-block"
+                                style="max-width:180px;"
+                                title="{{ dosar.infractiune_cercetata }}">
+                                {{ dosar.infractiune_cercetata|default:"—" }}
+                            </span>
+                        </td>
+                        {% endif %}
+
+                        {% if coloane.col_incadrare %}
+                        <td>
+                            {% for infr in dosar.infractiuni.all %}
+                                <span class="badge-cs badge-cs-gray d-inline-block mb-1">
+                                    {% if infr.articol and infr.articol != 'None' %}
+                                        art. {{ infr.articol }} — {{ infr.get_act_normativ_display }}
+                                    {% else %}
+                                        {{ infr.get_act_normativ_display }}
+                                    {% endif %}
+                                </span>
+                            {% empty %}
+                                <span class="text-muted">—</span>
+                            {% endfor %}
+                        </td>
+                        {% endif %}
+
+                        {% if coloane.col_ofiter %}
+                        <td class="text-dark">{{ dosar.ofiter_caz.get_full_name|default:"—" }}</td>
+                        {% endif %}
+
+                        {% if coloane.col_procuror %}
+                        <td class="text-dark">{{ dosar.procuror_caz.get_full_name|default:"—" }}</td>
+                        {% endif %}
+
+                        {% with stadiu=dosar.stadii_cercetare.first %}
+                            {% if coloane.col_stadiu_curent %}
+                            <td>
+                                <span class="badge-cs badge-cs-blue">
+                                    {{ stadiu.get_tip_stadiu_display|default:"Neînceput" }}
+                                </span>
+                            </td>
+                            {% endif %}
+
+                            {% if coloane.col_data_stadiu %}
+                            <td class="text-muted">{{ stadiu.data_incepere|date:"d.m.Y"|default:"—" }}</td>
+                            {% endif %}
+
+                            {% with solutie=stadiu.solutii.first %}
+                                {% if coloane.col_solutie_finala %}
+                                <td>
+                                    {% if solutie %}
+                                        <span class="badge-cs {% if solutie.este_finala %}badge-cs-red{% else %}badge-cs-green{% endif %}">
+                                            {{ solutie.get_tip_solutie_display }}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                                {% endif %}
+
+                                {% if coloane.col_data_solutie %}
+                                <td class="text-muted">{{ solutie.data_solutiei|date:"d.m.Y"|default:"—" }}</td>
+                                {% endif %}
+                            {% endwith %}
+                        {% endwith %}
+
+                        {% if coloane.col_parti %}
+                        <td>
+                            {% for parte in dosar.parti_implicate.all %}
+                                <div style="font-size:0.78rem;">
+                                    <span class="text-dark">{{ parte.nume_complet }}</span>
+                                    <span class="text-muted">({{ parte.get_calitate_procesuala_display }})</span>
+                                </div>
+                            {% empty %}
+                                <span class="text-muted">—</span>
+                            {% endfor %}
+                        </td>
+                        {% endif %}
+
+                        {% if coloane.col_masuri %}
+                        <td>
+                            {% for masura in dosar.masuri_preventive.all %}
+                                <div style="font-size:0.78rem;">
+                                    <span class="chip-expiry danger">
+                                        <i class="bi bi-exclamation-triangle-fill"></i>
+                                        {{ masura.get_tip_masura_display }}
+                                    </span>
+                                    <span class="text-muted d-block ms-3">
+                                        exp. {{ masura.data_sfarsit|date:"d.m.Y" }}
+                                    </span>
+                                </div>
+                            {% empty %}
+                                <span class="text-muted">—</span>
+                            {% endfor %}
+                        </td>
+                        {% endif %}
+
+                        {% if coloane.col_grefier %}
+                        <td class="text-dark">{{ dosar.grefier_caz.get_full_name|default:"—" }}</td>
+                        {% endif %}
+
+                        {% if coloane.col_termene %}
+                        <td>
+                            {% for termen in dosar.termene_procedurale.all %}
+                                <div style="font-size:0.78rem;" class="mb-1">
+                                    <span class="text-muted">{{ termen.get_tip_termen_display }}:</span>
+                                    <span class="text-dark fw-medium">{{ termen.data_limita|date:"d.m.Y" }}</span>
+                                    {% if termen.ora %}
+                                        <span class="text-muted">{{ termen.ora|time:"H:i" }}</span>
+                                    {% endif %}
+                                    {% if termen.indeplinit %}
+                                        <span class="badge-cs badge-cs-green ms-1" style="padding:1px 5px;font-size:0.6rem;">✓</span>
+                                    {% endif %}
+                                </div>
+                            {% empty %}
+                                <span class="text-muted">—</span>
+                            {% endfor %}
+                        </td>
+                        {% endif %}
+
+                        {% if coloane.col_loc_savarsirii %}
+                        <td>
+                            {% for inf in dosar.infractiuni.all %}
+                                {% if inf.adresa_comiterii %}
+                                    <div class="text-dark" style="font-size:0.78rem;">{{ inf.adresa_comiterii }}</div>
+                                {% endif %}
+                            {% empty %}
+                                <span class="text-muted">—</span>
+                            {% endfor %}
+                        </td>
+                        {% endif %}
+
+                        {% if coloane.col_data_savarsirii %}
+                        <td>
+                            {% for inf in dosar.infractiuni.all %}
+                                {% if inf.data_comiterii %}
+                                    <div class="text-dark" style="font-size:0.78rem;">{{ inf.data_comiterii|date:"d.m.Y" }}</div>
+                                {% endif %}
+                            {% empty %}
+                                <span class="text-muted">—</span>
+                            {% endfor %}
+                        </td>
+                        {% endif %}
+
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="16" class="text-center py-5 text-muted bg-white border-0">
+                            <i class="bi bi-clipboard-x d-block fs-2 mb-3 opacity-40"></i>
+                            <p class="mb-0 fw-medium">Nu s-au găsit dosare pentru filtrele selectate.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
-{% if page_obj.paginator.num_pages > 1 %}
-<nav class="mt-4 mb-2 text-center" aria-label="Paginare Rapoarte">
-    <ul class="pagination pagination-sm justify-content-center d-inline-flex shadow-sm mb-0" style="border-radius: 0.5rem; overflow: hidden;">
-        
-        {% if page_obj.has_previous %}
-            <li class="page-item">
-                <a class="page-link text-primary fw-medium px-3 py-1" href="?{{ query_string }}&page={{ page_obj.previous_page_number }}">
-                    &laquo; Înapoi
-                </a>
-            </li>
-        {% else %}
-            <li class="page-item disabled">
-                <span class="page-link text-muted bg-light px-3 py-1">&laquo; Înapoi</span>
-            </li>
-        {% endif %}
 
-        <li class="page-item active" aria-current="page">
-            <span class="page-link bg-primary border-primary text-white fw-bold px-4 py-1">
-                {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
-            </span>
+{# ---- Paginare ---- #}
+{% if page_obj.paginator.num_pages > 1 %}
+<nav class="mb-4" aria-label="Paginare rapoarte">
+    <ul class="pagination pagination-sm justify-content-center gap-1 mb-0">
+
+        <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+            <a class="page-link rounded fw-semibold border px-3"
+               href="{% if page_obj.has_previous %}?{{ query_string }}&page={{ page_obj.previous_page_number }}{% else %}#{% endif %}"
+               style="font-size:0.8rem; color:#2a6cb0; border-color:#dde3ec;">
+                <i class="bi bi-chevron-left me-1"></i> Înapoi
+            </a>
         </li>
 
-        {% if page_obj.has_next %}
-            <li class="page-item">
-                <a class="page-link text-primary fw-medium px-3 py-1" href="?{{ query_string }}&page={{ page_obj.next_page_number }}">
-                    Înainte &raquo;
-                </a>
-            </li>
-        {% else %}
-            <li class="page-item disabled">
-                <span class="page-link text-muted bg-light px-3 py-1">Înainte &raquo;</span>
-            </li>
-        {% endif %}
-        
+        {% with num=page_obj.paginator.num_pages cur=page_obj.number %}
+            {% if num <= 7 %}
+                {% for i in page_obj.paginator.page_range %}
+                <li class="page-item {% if i == cur %}active{% endif %}">
+                    <a class="page-link rounded border fw-semibold" href="?{{ query_string }}&page={{ i }}"
+                       style="font-size:0.8rem; {% if i != cur %}color:#475569; border-color:#dde3ec;{% endif %}">
+                        {{ i }}
+                    </a>
+                </li>
+                {% endfor %}
+            {% else %}
+                <li class="page-item {% if cur == 1 %}active{% endif %}">
+                    <a class="page-link rounded border fw-semibold" href="?{{ query_string }}&page=1"
+                       style="font-size:0.8rem; {% if cur != 1 %}color:#475569; border-color:#dde3ec;{% endif %}">1</a>
+                </li>
+                {% if cur > 3 %}
+                <li class="page-item disabled">
+                    <span class="page-link border-0 text-muted px-1" style="font-size:0.8rem;">…</span>
+                </li>
+                {% endif %}
+                {% for i in page_obj.paginator.page_range %}
+                    {% if i > 1 and i < num and i >= cur|add:"-1" and i <= cur|add:"1" %}
+                    <li class="page-item {% if i == cur %}active{% endif %}">
+                        <a class="page-link rounded border fw-semibold" href="?{{ query_string }}&page={{ i }}"
+                           style="font-size:0.8rem; {% if i != cur %}color:#475569; border-color:#dde3ec;{% endif %}">{{ i }}</a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+                {% if cur < num|add:"-2" %}
+                <li class="page-item disabled">
+                    <span class="page-link border-0 text-muted px-1" style="font-size:0.8rem;">…</span>
+                </li>
+                {% endif %}
+                <li class="page-item {% if cur == num %}active{% endif %}">
+                    <a class="page-link rounded border fw-semibold" href="?{{ query_string }}&page={{ num }}"
+                       style="font-size:0.8rem; {% if cur != num %}color:#475569; border-color:#dde3ec;{% endif %}">{{ num }}</a>
+                </li>
+            {% endif %}
+        {% endwith %}
+
+        <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+            <a class="page-link rounded fw-semibold border px-3"
+               href="{% if page_obj.has_next %}?{{ query_string }}&page={{ page_obj.next_page_number }}{% else %}#{% endif %}"
+               style="font-size:0.8rem; color:#2a6cb0; border-color:#dde3ec;">
+                Înainte <i class="bi bi-chevron-right ms-1"></i>
+            </a>
+        </li>
+
     </ul>
 </nav>
 {% endif %}

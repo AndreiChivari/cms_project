@@ -14,7 +14,7 @@
 <body class="bg-light" style="min-height: 100vh; display: flex; flex-direction: column;">
     {% block header %}
     <nav class="navbar navbar-expand-xl navbar-dark bg-primary bg-gradient mb-4 shadow-sm border-bottom border-3 border-secondary border-opacity-25">
-            <div class="container-fluid px-3 px-xxl-5 h-100"> 
+            <div class="container-fluid px-3 px-xxl-5 h-100 "> 
                 <a class="navbar-brand fw-bold text-white d-flex align-items-center me-3 h-100" href="{% url 'cases:dashboard' %}">
                     <span class="d-flex align-items-center gap-2">
                         <img src="{% static 'images/logo_login.png' %}" alt="Logo" class="navbar-logo">
@@ -27,7 +27,8 @@
             
             <div class="collapse navbar-collapse" id="navbarNav">
                 {% if user.is_authenticated %}
-                    
+
+                     {# ── PAGINI PRINCIPALE ── #}
                     <ul class="navbar-nav me-auto mb-2 mb-xl-0 gap-1 align-items-xl-center" style="font-size: 0.95rem;">  
                         <li class="nav-item">
                             <a class="nav-link px-2 px-xxl-3 transition-base text-white {% if request.resolver_match.url_name == 'dashboard' %}active fw-bold{% else %}opacity-75 hover-opacity-100 fw-medium{% endif %}" href="{% url 'cases:dashboard' %}">
@@ -74,10 +75,12 @@
                         {% endif %}
                     </ul>
 
+                    {# -- DREAPTA: Notificări + User -- #}
                     <div class="d-flex align-items-center gap-2 gap-xl-3 mt-3 mt-xl-0">
                         
+                        {# -- CLOPOŢEL NOTIFICĂRI -- #}
                         <div class="nav-item dropdown">
-                            <a class="nav-link position-relative text-white opacity-75 hover-opacity-100 p-1" href="#" id="notificariDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="margin-top: 2px;">
+                            <a class="navbar-notif-btn nav-link position-relative text-white opacity-75 hover-opacity-100 p-1" href="#" id="notificariDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="margin-top: 2px;">
                                 <i class="bi bi-bell-fill fs-5 text-warning"></i>
                                 {% if nr_notificari > 0 %}
                                 <span id="badge-notificari" class="position-absolute translate-middle badge rounded-pill bg-danger border border-primary border-2 shadow-sm fw-bold" style="top: 25%; left: 75%; font-size: 0.6rem; padding: 0.35em 0.5em;">
@@ -90,6 +93,12 @@
                                     <div class="dropdown-header border-bottom py-3 bg-light">
                                         <h6 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2">
                                             <i class="bi bi-bell"></i> Notificări Recente
+                                            {% if nr_notificari > 0 %}
+                                            <span class="ms-auto badge rounded-pill"
+                                                style="background:rgba(13,202,240,0.15);color:#0891b2;font-size:0.65rem;">
+                                                {{ nr_notificari }} noi
+                                            </span>
+                                            {% endif %}
                                         </h6>
                                     </div>
                                 </li>
@@ -127,6 +136,7 @@
                             </ul>
                         </div>
 
+                        {# -- DROPDOWN UTILIZATOR -- #}
                         <div class="dropdown border-start border-light border-opacity-25 ps-3">
                             <a class="nav-link dropdown-toggle d-flex align-items-center gap-2 text-white opacity-75 hover-opacity-100 transition-base p-1" 
                             href="#" id="navbarUserDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
