@@ -281,7 +281,7 @@ class MasuraPreventiva(models.Model):
             return (self.data_sfarsit - date.today()).days
         return 0
     
-    history = HistoricalRecords(verbose_name="Istoric Măsură Preventivă") # <--- PĂSTREAZĂ ISTORICUL MĂSURILOR
+    history = HistoricalRecords(verbose_name="Istoric Măsură Preventivă")
 
 
 class IstoricDesemnare(models.Model):

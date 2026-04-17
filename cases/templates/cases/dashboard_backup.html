@@ -1,0 +1,388 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Pagina principală{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm mb-4 bg-primary text-white overflow-hidden rounded-3">
+    <div class="row g-0 align-items-center">
+        <div class="col-md-8 p-4">
+            <div class="d-flex align-items-center gap-3">
+                <div class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 64px; height: 64px; font-size: 1.5rem; font-weight: bold;">
+                    {{ user.first_name|slice:":1"|default:user.username|slice:":1"|upper }}{{ user.last_name|slice:":1"|upper }}
+                </div>
+                <div>
+                    <h4 class="mb-1 fw-bold">{{ user.get_full_name|default:user.username }}</h4>
+                    <p class="mb-0 opacity-75 fw-medium" style="font-size: 0.95rem;">
+                        <span class="badge bg-white text-primary me-2">{{ user_rol }}</span> 
+                        <i class="bi bi-envelope-fill me-1"></i> {{ user.email|default:"Fără email setat" }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 p-4 bg-black bg-opacity-10 h-100 d-flex flex-column justify-content-center align-items-md-end">
+            <p class="mb-2 opacity-75 small text-uppercase fw-bold">Linkuri Utile</p>
+            <div class="d-flex gap-2">
+                <a href="{% url 'cases:rapoarte' %}" class="btn btn-light text-primary fw-bold shadow-sm">
+                    <i class="bi bi-bar-chart-fill me-1"></i> Modul Rapoarte
+                </a>
+                <a href="#urgente" class="btn btn-outline-light fw-medium">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i> Vezi urgențele
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card border border-secondary border-opacity-25 shadow-sm h-100 rounded-3">
+            <div class="card-body p-3 d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">Dosarele Mele (Total)</p>
+                    <h2 class="fw-bold text-dark mb-0">{{ dosare_mele }}</h2>
+                </div>
+                <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                    <i class="bi bi-folder-fill fs-5"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card border border-secondary border-opacity-25 shadow-sm h-100 rounded-3">
+            <div class="card-body p-3 d-flex justify-content-between align-items-center">
+                <div class="w-100">
+                    <p class="text-muted text-uppercase fw-bold mb-1 d-flex align-items-center gap-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                        <i class="bi bi-hourglass-split text-warning fs-6"></i> În lucru
+                    </p>
+                    <div class="d-flex align-items-end justify-content-between mb-1">
+                        <h2 class="fw-bold text-warning mb-0">{{ dosare_in_lucru }}</h2>
+                        <span class="text-muted small fw-bold">{{ procent_lucru }}%</span>
+                    </div>
+                    <div class="progress" style="height: 4px;">
+                        <div class="progress-bar bg-warning" role="progressbar" style="width: {{ procent_lucru }}%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card border border-secondary border-opacity-25 shadow-sm h-100 rounded-3">
+            <div class="card-body p-3 d-flex justify-content-between align-items-center">
+                <div class="w-100">
+                    <p class="text-muted text-uppercase fw-bold mb-1 d-flex align-items-center gap-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                        <i class="bi bi-check-circle-fill text-success fs-6"></i> Soluționate
+                    </p>
+                    <div class="d-flex align-items-end justify-content-between mb-1">
+                        <h2 class="fw-bold text-success mb-0">{{ dosare_solutionate }}</h2>
+                        <span class="text-muted small fw-bold">{{ procent_solutionate }}%</span>
+                    </div>
+                    <div class="progress" style="height: 4px;">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ procent_solutionate }}%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card border border-secondary border-opacity-25 shadow-sm h-100 rounded-3">
+            <div class="card-body p-3 d-flex flex-column justify-content-center">
+                <p class="text-muted text-uppercase fw-bold mb-1 d-flex align-items-center gap-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                    <i class="bi bi-speedometer2 text-secondary fs-6"></i> Media pe instituție
+                </p>
+                <h4 class="fw-bold text-dark mb-1">{{ media_sistem }} <span class="text-muted" style="font-size: 0.8rem; font-weight: 500;">dosare / persoană</span></h4>
+                
+                <div>
+                    {% if diferenta_medie > 0 %}
+                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25" style="font-size: 0.7rem;" title="Tu ai {{ dosare_mele }} dosare">
+                            <i class="bi bi-graph-up-arrow me-1"></i> Ai cu {{ diferenta_medie }} dosare peste medie
+                        </span>
+                    {% elif diferenta_medie < 0 %}
+                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25" style="font-size: 0.7rem;" title="Tu ai {{ dosare_mele }} dosare">
+                            <i class="bi bi-graph-down-arrow me-1"></i> Tu ai cu {{ diferenta_medie|stringformat:"s"|slice:"1:" }} sub medie
+                        </span>
+                    {% else %}
+                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25" style="font-size: 0.7rem;">
+                            <i class="bi bi-dash me-1"></i> Ești exact pe medie
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-5">
+    
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm mb-4 rounded-3">
+            <div class="card-header bg-white py-3 border-bottom border-secondary border-opacity-10">
+                <h6 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2" style="font-size: 0.95rem;">
+                    <i class="bi bi-bar-chart-line-fill text-primary"></i> Dinamica înregistrărilor
+                </h6>
+            </div>
+            <div class="card-body p-3">
+                <div style="position: relative; height: 180px; width: 100%;">
+                    <canvas id="evolutieChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="card border-0 border-top border-primary border-3 shadow-sm rounded-3 overflow-hidden">
+            <div class="card-header bg-white py-3 border-bottom border-secondary border-opacity-10 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2" style="font-size: 0.95rem;">
+                    <i class="bi bi-clock-history text-primary"></i> Ultimele dosare repartizate
+                </h6>
+                <span class="text-muted small">Total sistem: {{ total_dosare }} dosare</span>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle mb-0" style="font-size: 0.85rem;">
+                    <thead class="table-light text-muted">
+                        <tr>
+                            <th class="py-2 px-3 fw-medium border-0">Număr dosar</th>
+                            <th class="py-2 px-3 fw-medium border-0">Dată</th>
+                            <th class="py-2 px-3 fw-medium border-0">Încadrare juridică</th>
+                            <th class="py-2 px-3 fw-medium border-0">Stadiu / Soluție</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for dosar in dosarele_mele_lista %}
+                            <tr>
+                                <td class="px-3 py-2"><strong><a href="{% url 'cases:detalii_dosar' dosar.pk %}" class="text-decoration-none text-primary"> {{ dosar.numar_unic }}</a></strong></td>
+                                <td class="px-3 py-2 text-dark">{{ dosar.data_inregistrarii|date:"d.m.Y" }}</td>
+                                
+                                <td class="px-3 py-2">
+                                    {% for infr in dosar.infractiuni.all %}
+                                        <div class="badge bg-white text-dark border border-secondary border-opacity-25 mb-1 text-wrap text-start fw-normal" style="font-size: 0.75rem;">
+                                            {% if infr.articol and infr.articol != 'None' %}
+                                                art. {{ infr.articol }} - {{ infr.get_act_normativ_display }}
+                                            {% else %}
+                                                {{ infr.get_act_normativ_display }}
+                                            {% endif %}
+                                        </div>
+                                    {% empty %}
+                                        <span class="text-muted">-</span>
+                                    {% endfor %}
+                                </td>
+                                
+                                <td class="px-3 py-2">
+                                    {% with stadiu=dosar.stadiu_curent solutie=dosar.solutie_curenta %}
+                                        {% if stadiu %}
+                                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 mb-1">{{ stadiu.get_tip_stadiu_display }}</span>
+                                            {% if solutie %}
+                                                <div class="mt-1" style="font-size: 0.8rem;">
+                                                    <span class="{% if solutie.este_finala %}text-danger{% else %}text-success{% endif %} fw-bold d-flex align-items-center gap-1">
+                                                        <i class="bi bi-arrow-return-right"></i> {{ solutie.get_tip_solutie_display }}
+                                                    </span>
+                                                    <span class="text-muted ms-3">{{ solutie.data_solutiei|date:"d.m.Y" }}</span>
+                                                </div>
+                                            {% else %}
+                                                <div class="mt-1"><span class="text-muted fst-italic small ms-1">În lucru...</span></div>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted fst-italic">Examinare sesizare</span>
+                                        {% endif %}
+                                    {% endwith %}
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center py-5 text-muted bg-white">
+                                    <i class="bi bi-inbox fs-2 text-secondary opacity-50 d-block mb-2"></i>
+                                    Nu aveți niciun dosar repartizat.
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>                  
+            <div class="card-footer bg-white text-center border-top border-secondary border-opacity-10 py-2">
+                <a href="{% url 'cases:lista_dosare' %}" class="text-decoration-none text-primary fw-medium" style="font-size: 0.85rem;">
+                    Vezi toate dosarele înregistrate în sistem <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        
+        <div class="card border-0 shadow-sm mb-4 rounded-3">
+            <div class="card-header bg-white py-3 border-bottom border-secondary border-opacity-10 d-flex justify-content-center">
+                <h6 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2" style="font-size: 0.95rem;">
+                    <i class="bi bi-pie-chart-fill text-primary"></i> Situaţia dosarelor
+                </h6>
+            </div>
+            <div class="card-body p-3 text-center">
+                <div style="position: relative; height: 180px; width: 100%;">
+                    <canvas id="dosareChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        {% if timeline_alerte %}
+        <!-- card border-0 border-top border-primary border-3 shadow-sm rounded-3 overflow-hidden -->
+        <div id="urgente" class="card border-0 border-top border-primary border-3 shadow-sm rounded-3 overflow-hidden mt-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3 border-bottom border-secondary border-opacity-10">
+                <h6 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2" style="font-size: 0.9rem;">
+                    <i class="bi bi-calendar2-week-fill text-primary"></i> Timeline Urgențe
+                </h6>
+                <span class="badge bg-danger rounded-pill shadow-sm px-2 py-1">{{ timeline_alerte|length }}</span>
+            </div>
+            
+            <div class="list-group list-group-flush">
+                {% for alerta in timeline_alerte %}
+                    <!-- <div class="list-group-item py-3 px-3 border-start border-2  -->
+                    <div class="list-group-item py-3 px-3 border-start border-top-0 border-2
+                        {% if alerta.expirat or alerta.zile_ramase == 0 %}
+                            border-danger bg-danger bg-opacity-10
+                        {% elif alerta.tip_alerta == 'MASURA' %}
+                            border-warning
+                        {% else %}
+                            border-info
+                        {% endif %}">
+                        
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="fw-bold text-dark text-truncate pe-2" style="font-size: 0.85rem;">
+                                {% if alerta.tip_alerta == 'MASURA' %}
+                                    <i class="bi bi-shield-exclamation text-warning me-1"></i>
+                                {% else %}
+                                    <i class="bi bi-file-earmark-ruled text-info me-1"></i>
+                                {% endif %}
+                                {{ alerta.titlu }}
+                            </span>
+                            
+                            {% if alerta.expirat %}
+                                <span class="badge bg-danger blink-bg px-2 py-1 shadow-sm" style="font-size: 0.65rem;">EXPIRAT</span>
+                            {% elif alerta.zile_ramase == 0 %}
+                                <span class="badge bg-danger px-2 py-1 shadow-sm" style="font-size: 0.65rem;">EXPIRĂ AZI!</span>
+                            {% else %}
+                                <span class="badge bg-white text-dark border shadow-sm" style="font-size: 0.7rem;">
+                                    <i class="bi bi-hourglass-split {% if alerta.zile_ramase <= 3 %}text-danger{% else %}text-muted{% endif %} me-1"></i> {{ alerta.zile_ramase }} zile
+                                </span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="text-muted small mb-2 lh-sm" style="font-size: 0.75rem;">
+                            {{ alerta.subtitlu }}
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center bg-white border rounded px-2 py-1 mt-1" style="font-size: 0.75rem;">
+                            <span>Dosar: <a href="{% url 'cases:detalii_dosar' alerta.dosar.pk %}" class="fw-bold text-decoration-none text-primary">{{ alerta.dosar.numar_unic }}</a></span>
+                            <span class="text-muted"><i class="bi bi-calendar-event me-1"></i> <strong>{{ alerta.data_limita|date:"d.m.Y" }}</strong></span>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            {% if timeline_alerte|length >= 10 %}
+            <div class="card-footer bg-light text-center py-2">
+                <span class="text-muted" style="font-size: 0.75rem;"><i class="bi bi-info-circle"></i> Se afișează primele 10 cele mai urgente.</span>
+            </div>
+            {% endif %}
+        </div>
+        {% else %}
+        <div class="card border-0 shadow-sm rounded-3 mt-4 bg-light border-dashed">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-calendar-check text-success opacity-50 display-4 d-block mb-3"></i>
+                <h6 class="fw-bold text-dark mb-1">Nicio urgență la orizont</h6>
+                <p class="text-muted small mb-0">Nu există măsuri sau termene care să expire în curând.</p>
+            </div>
+        </div>
+        {% endif %}
+        
+    </div>
+</div>
+
+<script src="{% static 'js/chart.min.js' %}"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const ctx = document.getElementById('dosareChart');
+        if(ctx) {
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['În lucru', 'Soluționate'],
+                    datasets: [{
+                        data: [{{ dosare_in_lucru }}, {{ dosare_solutionate }}],
+                        backgroundColor: [
+                            '#ffc107', // Warning (Galben)
+                            '#198754'  // Success (Verde)
+                        ],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                font: { size: 12, family: 'system-ui' }
+                            }
+                        }
+                    },
+                    cutout: '70%'
+                }
+            });
+        }
+        // GRAFICUL 2: Evoluție 6 luni (Bar Chart)
+        const ctxBar = document.getElementById('evolutieChart');
+        if(ctxBar) {
+            // Preluăm datele calculate în backend (views.py)
+            const labelsGrafic = {{ labels_grafic|safe }};
+            const dateGrafic = {{ date_grafic|safe }};
+            
+            new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: labelsGrafic,
+                    datasets: [{
+                        label: 'Dosare Noi',
+                        data: dateGrafic,
+                        backgroundColor: 'rgba(13, 110, 253, 0.8)', // Albastru primary
+                        borderColor: 'rgba(13, 110, 253, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4, // Colțuri rotunjite sus la bare
+                        barPercentage: 0.6 // Face barele puțin mai subțiri și elegante
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false // Ascundem legenda că avem doar un set de date
+                        },
+                        tooltip: {
+                            padding: 10,
+                            displayColors: false // Fără pătrățel colorat în tooltip
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0 // Afișează doar numere întregi (nu poți avea 1.5 dosare)
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)',
+                                drawBorder: false
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false // Fără linii verticale în spate (design mai curat)
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}
