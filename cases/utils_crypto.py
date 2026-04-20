@@ -13,13 +13,13 @@ def genereaza_identitate_digitala(user):
     Cheia privată este criptată cu Fernet înainte de salvarea în baza de date.
     """
     
-    # 1. Generăm Cheia Privată RSA (2048 biți - standard militar)
+    # 1. Generăm CHEIA PRIVATĂ RSA (2048 biți) pentru semnătura digitală
     private_key = rsa.generate_private_key(
         public_exponent=65537,
         key_size=2048,
     )
 
-    # 2. Construim Numele pentru Certificat
+    # 2. Construim NUMELE pentru CERTIFICAT
     unitate_user = getattr(user, 'unitate', 'Sistemul de Management al Dosarelor')
     nume_complet = user.get_full_name() or user.username
 
@@ -29,7 +29,7 @@ def genereaza_identitate_digitala(user):
         x509.NameAttribute(NameOID.COMMON_NAME, str(nume_complet)),
     ])
 
-    # 3. Generăm Certificatul Public (îl facem valabil 1 an)
+    # 3. Generăm CERTIFICATUL PUBLIC (setăm valabilitatea la 1 an)
     cert = x509.CertificateBuilder().subject_name(
         subject
     ).issuer_name(
@@ -44,7 +44,7 @@ def genereaza_identitate_digitala(user):
         datetime.now(timezone.utc) + timedelta(days=365)
     ).sign(private_key, hashes.SHA256())
 
-    # 4. Serializăm (transformăm în text/bytes)
+    # 4. transformăm în TEXT/BYTES pentru stocare în baza de date
     cert_pem = cert.public_bytes(serialization.Encoding.PEM).decode('utf-8')
     
     private_key_pem = private_key.private_bytes(
@@ -53,12 +53,11 @@ def genereaza_identitate_digitala(user):
         encryption_algorithm=serialization.NoEncryption()
     )
 
-    # 5. CRIPTĂM cheia privată cu cheia ta secretă Fernet din settings
-    # Asigură-te că în settings.py ai o variabilă numită FERNET_KEY (cea pe care o folosești la CNP-uri)
+    # 5. CRIPTĂM cheia privată cu cheia secretă Fernet din settings (ENCRYPTION_KEY) pentru securitate
     f = Fernet(settings.ENCRYPTION_KEY) 
     encrypted_private_key = f.encrypt(private_key_pem)
 
-    # 6. Salvăm datele în modelul userului
+    # 6. SALVĂM datele în modelul userului
     user.certificat_pem = cert_pem
     user.cheie_privata_criptata = encrypted_private_key
     user.save()

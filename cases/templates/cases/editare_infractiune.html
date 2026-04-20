@@ -10,7 +10,7 @@
             <h4 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2">
                 <span class="text-primary">⚖️</span> Editare încadrare juridică
             </h4>
-            <a href="{% url 'cases:detalii_dosar' dosar.pk %}" class="btn btn-sm btn-outline-secondary fw-medium">
+            <a href="{% url 'cases:detalii_dosar' dosar.pk %}" class="btn btn-sm btn-outline-secondary fw-medium transition-base">
                 &larr; Înapoi la dosar
             </a>
         </div>
@@ -72,7 +72,7 @@
                 </div>
 
                 <div class="card-footer bg-light border-top border-secondary border-opacity-10 px-4 py-3 d-flex justify-content-end gap-2">
-                    <a href="{% url 'cases:detalii_dosar' dosar.pk %}" class="btn btn-light border border-secondary border-opacity-25 px-4 fw-medium transition-base">Anulează</a>
+                    <a href="{% url 'cases:detalii_dosar' dosar.pk %}" class="btn btn-light border-secondary border-opacity-25 px-4 fw-medium transition-base">Anulează</a>
                     <button type="submit" class="btn btn-primary fw-medium px-4 shadow-sm transition-base">Salvează modificările</button>
                 </div>
             </form>

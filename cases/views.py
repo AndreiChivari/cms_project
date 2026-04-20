@@ -12,11 +12,12 @@ from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.core.paginator import Paginator
 from .utils import render_to_pdf
-from django.http import HttpResponse
+from django.http import HttpResponse, FileResponse, Http404
+from django.utils.text import get_valid_filename
 from django.conf import settings 
-from datetime import datetime, date, timedelta # calculul alertelor
+from datetime import datetime, date, timedelta
 from django.urls import reverse # link-urile automate către dosare
-from django.http import JsonResponse # folosim JavaScript pentru a sterge notificarile fara a da click pe ele si a nu reîncărca pagina
+from django.http import JsonResponse # JavaScript pentru a sterge notificarile fara a da click pe ele si a nu reîncărca pagina
 from django.contrib.auth import get_user_model
 import io
 import openpyxl
@@ -91,7 +92,7 @@ def dashboard(request):
         # Total dosare personale
         dosare_mele = Dosar.objects.filter(conditie_mea).count()
         
-        # Dosare personale SOLUȚIONATE (au măcar o soluție finală)
+        # Dosare personale SOLUȚIONATE
         dosare_solutionate = Dosar.objects.filter(
             conditie_mea, 
             stadii_cercetare__solutii__este_finala=True
@@ -106,23 +107,23 @@ def dashboard(request):
             'stadii_cercetare__solutii'
         ).filter(conditie_mea).order_by('-data_inregistrarii')[:7]
 
-    # 3. INDICATOR DE OPERATIVITATE / ÎNCĂRCĂTURĂ
+    # 3. INDICATOR DE VOLUM ȘI EFICIENȚĂ (comparativ cu media pe sistem)
     rol_curent = getattr(utilizator, 'rol', '')
+    media_sistem = 0
+    diferenta_medie = 0
 
     if utilizator.is_superuser or rol_curent == 'ADMIN':
         # Setăm media și diferența la 0 pentru admini
         diferenta_medie = 0
     else:
-        # A. Câți utilizatori ACTIVI există care au EXACT ACEEAȘI funcție cu utilizatorul curent?
+        # A. Calculăm numărul de utilizatori activi pe același rol (ex: câți procurori activi sunt în sistem)
         colegi_activi = User.objects.filter(rol=rol_curent).filter(
             Q(dosare_instrumentate__isnull=False) | 
             Q(dosare_supravegheate__isnull=False) | 
             Q(dosare_gestionate__isnull=False)
         ).distinct().count()
 
-        # B. Câte dosare au fost efectiv alocate pentru această categorie profesională?
-        # (Nu folosim mereu `total_dosare` pentru că poate există dosare abia create 
-        # care încă nu au primit un ofițer sau un procuror)
+        # B. Calculăm totalul dosarelor pe rol pentru a avea o bază de comparație corectă (ex: doar dosarele cu procurori desemnați pentru rolul de procuror)
         total_dosare_pe_rol = 0
         rol_upper = rol_curent.upper()
         
@@ -133,31 +134,31 @@ def dashboard(request):
         elif 'GREFIER' in rol_upper:
             total_dosare_pe_rol = Dosar.objects.filter(grefier_caz__isnull=False).count()
         else:
-            # Fallback de siguranță
+            # Pentru alte roluri sau dacă nu putem determina, folosim totalul general ca fallback
             total_dosare_pe_rol = total_dosare
 
-        # C. Calculul matematic corect pe categorie (ex: Total Dosare cu Grefieri / Total Grefieri Activi)
+        # C. Calculul matematic pe categorie (ex: Total dosare cu grefieri / Total grefieri activi)
         media_sistem = total_dosare_pe_rol / colegi_activi if colegi_activi > 0 else 0
         
-        # D. Diferența față de media departamentului său
+        # D. Diferența față de media categoriei proprii
         diferenta_medie = dosare_mele - media_sistem
     
-    # 4. AGREGARE ALERTE (TIMELINE INTELIGENT)
+    # 4. GESTIONARE ALERTE ȘI TIMELINE (Măsuri preventive și termene procedurale care expiră în curând)
     ZILE_IN_AVANS = 30  # Cu câte zile înainte apare alerta
-    ZILE_TOLERANTA = 3  # Câte zile după expirare mai stă pe ecran
+    ZILE_TOLERANTA = 3  # Câte zile după expirare mai rămâne alerta vizibilă
     azi = date.today()
     prag_viitor = azi + timedelta(days=ZILE_IN_AVANS)
     prag_trecut = azi - timedelta(days=ZILE_TOLERANTA)
     
-    # Pregătim condiția pentru utilizatorii normali (să vadă doar alertele din dosarele lor)
+    # Condiţia pentru ca utilizatorii să vadă doar alertele din dosarele lor
     conditie_alerte_user = Q(dosar__ofiter_caz=utilizator) | Q(dosar__procuror_caz=utilizator) | Q(dosar__grefier_caz=utilizator)
 
     timeline_alerte = []
 
-    # --- 4.1. Extragem Măsurile Preventive ---
+    # --- 4.1. Extragem Măsurile preventive 
     masuri_qs = MasuraPreventiva.objects.filter(
         data_sfarsit__lte=prag_viitor,
-        data_sfarsit__gte=prag_trecut # Arată și ce a expirat în ultimele zile setate
+        data_sfarsit__gte=prag_trecut # Afişăm și ce a expirat în ultimele zile setate
     )
     # Filtrăm pe roluri
     if not (utilizator.is_superuser or getattr(utilizator, 'rol', '') == 'ADMIN'):
@@ -174,7 +175,7 @@ def dashboard(request):
             'expirat': m.zile_ramase < 0
         })
 
-    # --- 4.2. Extragem Termenele Procedurale ---
+    # --- 4.2. Extragem Termenele procedurale
     termene_qs = TermenProcedural.objects.filter(
         data_limita__lte=prag_viitor,
         data_limita__gte=prag_trecut
@@ -194,26 +195,25 @@ def dashboard(request):
             'expirat': t.zile_ramase < 0
         })
 
-    # --- 4.3. Unificare și Ordonare ---
-    # Ordonăm toată lista combinată în funcție de zilele rămase (cele mai puține zile primele)
+    # --- 4.3. Unificare și ordonare
+    # Ordonăm toată lista combinată în funcție de zilele rămase
     timeline_alerte = sorted(timeline_alerte, key=lambda x: x['zile_ramase'])
     
-    # Păstrăm doar primele 10 urgențe ca să nu încărcăm vizual prea mult dashboard-ul
+    # Păstrăm doar primele 6 urgențe
     timeline_alerte = timeline_alerte[:5]
 
-# ==========================================
-    # 4.5. DATE PENTRU GRAFICUL CU BARE (Ultimele 6 luni)
-    # ==========================================
+
+    # 5. DATE PENTRU GRAFICUL CU BARE (ultimele 12 luni)
     luni_ro = {1: 'Ian', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'Mai', 6: 'Iun', 
                7: 'Iul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'}
     
     labels_grafic = []
     date_grafic = []
     
-    # Ne setăm ca punct de pornire data de 1 a lunii curente
+    # Setăm ca punct de pornire data de 1 a lunii curente
     luna_start = azi.replace(day=1)
-
-    # Mergem 5 luni în spate + luna curentă = 6 luni
+    
+    # Mergem 11 luni în urmă + luna curentă = 12 luni
     for i in range(11, -1, -1):
         an_calcul = luna_start.year
         luna_calcul = luna_start.month - i
@@ -234,10 +234,10 @@ def dashboard(request):
             
         date_grafic.append(nr_dosare)
 
-    # 5. CONTEXT PENTRU HTML
+    # 6. CONTEXT PENTRU HTML
     context = {
         'user_rol': getattr(utilizator, 'rol', 'Membru Echipă'),
-        # Stats
+        # Statistici generale și personale
         'total_dosare': total_dosare,
         'dosare_mele': dosare_mele,
         'dosare_solutionate': dosare_solutionate,
@@ -248,13 +248,11 @@ def dashboard(request):
         # Procente pentru grafic
         'procent_lucru': int((dosare_in_lucru / dosare_mele * 100)) if dosare_mele > 0 else 0,
         'procent_solutionate': int((dosare_solutionate / dosare_mele * 100)) if dosare_mele > 0 else 0,
-        # Liste
+        # Lista dosarelor personale recente
         'dosarele_mele_lista': dosarele_mele_lista,
-        
-        # Variabila NOASTRĂ NOUĂ unificată
+        # Măsuri preventive și termene procedurale care expiră în curând
         'timeline_alerte': timeline_alerte,
-
-        # DATE NOI PENTRU GRAFIC (transformate în format JSON ca să le înțeleagă JavaScript-ul)
+        # Date pentru grafic transformate în format JSON
         'labels_grafic': json.dumps(labels_grafic),
         'date_grafic': json.dumps(date_grafic),
     }
@@ -291,7 +289,6 @@ def adaugare_dosar(request):
                 infractiune.dosar = dosar
                 infractiune.save()
 
-
             # Creăm istoricul inițial
             if dosar.ofiter_caz:
                 IstoricDesemnare.objects.create(dosar=dosar, utilizator=dosar.ofiter_caz, rol='Ofițer', data_desemnare=dosar.data_inregistrarii)
@@ -300,7 +297,7 @@ def adaugare_dosar(request):
             if dosar.grefier_caz:
                 IstoricDesemnare.objects.create(dosar=dosar, utilizator=dosar.grefier_caz, rol='Grefier', data_desemnare=dosar.data_inregistrarii)
 
-            # Notificări la Crearea Dosarului
+            # Notificări la crearea dosarului
             link_dosar = reverse('cases:detalii_dosar', args=[dosar.pk])
             mesaj_nou = f"Ai fost desemnat pe dosarul nou {dosar.numar_unic}."
             
@@ -321,7 +318,7 @@ def adaugare_dosar(request):
 
 @login_required
 def lista_dosare(request):
-    # 1. Luăm inputul utilizatorului
+    # Luăm inputul utilizatorului
     query_text = request.GET.get('q', '').strip() 
     stadiu_filtru = request.GET.get('stadiu', '')
 
@@ -330,27 +327,26 @@ def lista_dosare(request):
         'stadiu_filtru': stadiu_filtru,
     }
 
-    # MODULUL DE CĂUTARE GLOBALĂ (Dacă utilizatorul a căutat ceva)
+    # 1. MODULUL DE CĂUTARE GLOBALĂ (dacă utilizatorul a căutat ceva)
     if query_text:
-        # TRUC PENTRU DIACRITICE ÎN SQLITE:
         # Generăm 3 variante ale textului pentru a ocoli limitarea SQLite privind majusculele Unicode (ă, î, ș, ț, â)
         q_lower = query_text.lower()
         q_upper = query_text.upper()
         q_title = query_text.title()
 
-        # 1. Căutăm cuvântul în etichetele Actelor Normative și extragem CHEILE (ex: 'CP')
+        # Căutăm cuvântul în etichetele Actelor normative și extragem CHEILE (ex: 'CP')
         chei_acte_normative = [
             cheie for cheie, eticheta in Infractiune.ActNormativ.choices
             if q_lower in eticheta.lower()
         ]
         
-        # 2. Căutăm cuvântul în etichetele Măsurilor Preventive și extragem CHEILE (ex: 'AREST_PREVENTIV')
+        # Căutăm cuvântul în etichetele Măsurilor preventive și extragem CHEILE (ex: 'AREST_PREVENTIV')
         chei_masuri = [
             cheie for cheie, eticheta in MasuraPreventiva.TipMasura.choices
             if q_lower in eticheta.lower()
         ]
 
-        # A. Căutăm direct în tabelul Dosare
+        # Căutăm în tabelul Dosare
         dosare_gasite = Dosar.objects.filter(
             Q(numar_unic__icontains=query_text) | 
             Q(infractiune_cercetata__icontains=q_lower) | 
@@ -358,7 +354,7 @@ def lista_dosare(request):
             Q(infractiune_cercetata__icontains=q_title)
         ).distinct()
 
-        # B. Căutăm prin modelul de Infracțiune
+        # Căutăm în tabelul Infracțiune
         dosare_din_infractiuni = Dosar.objects.filter(
             Q(infractiuni__adresa_comiterii__icontains=q_lower) |
             Q(infractiuni__adresa_comiterii__icontains=q_upper) |
@@ -369,12 +365,12 @@ def lista_dosare(request):
             Q(infractiuni__incadrare_juridica__icontains=q_title) |
             
             Q(infractiuni__articol__icontains=query_text) |
-            Q(infractiuni__act_normativ__in=chei_acte_normative) # <--- Găsește dosarele după cod (ex: "penal" -> CP)
+            Q(infractiuni__act_normativ__in=chei_acte_normative)
         ).distinct()
         
         toate_dosarele_gasite = (dosare_gasite | dosare_din_infractiuni).distinct().order_by('-data_inregistrarii')
         
-        # C. Căutăm în Părți Implicate
+        # Căutăm în tabelul Părților implicate
         # Filtrul de bază (căutarea în textele normale)
         filtru_persoane = (
             Q(nume_complet__icontains=q_lower) |
@@ -388,9 +384,9 @@ def lista_dosare(request):
             Q(mentiuni__icontains=q_title)
         )
 
-        # Verificăm dacă utilizatorul a introdus exact un CNP (13 cifre)
+        # Verificăm dacă utilizatorul a introdus un CNP (13 cifre)
         if len(query_text) == 13 and query_text.isdigit():
-            # Calculăm hash-ul exact cum o face modelul la salvare
+            # Calculăm hash-ul exact al CNP-ului introdus precum modelul la salvare
             secret = settings.SECRET_KEY.encode('utf-8')
             hash_cautat = hmac.new(secret, query_text.encode('utf-8'), hashlib.sha256).hexdigest()
             
@@ -400,9 +396,9 @@ def lista_dosare(request):
         # Aplicăm filtrul pe baza de date
         persoane_gasite = ParteImplicata.objects.filter(
             filtru_persoane
-        ).select_related('dosar').order_by('nume_complet')[:20]  # Adăugat [:20] pentru a limita afișarea și a preveni blocajele
+        ).select_related('dosar').order_by('nume_complet')[:20]  # Limităm la 20 de rezultate afişate pentru a preveni blocajele
 
-        # D. Căutăm în Documente/Acte Urmărire
+        # Căutăm în tabelul Documente
         documente_gasite = ActUrmarire.objects.filter(
             Q(titlu__icontains=q_lower) |
             Q(titlu__icontains=q_upper) |
@@ -412,7 +408,7 @@ def lista_dosare(request):
             Q(descriere_scurta__icontains=q_title)
         ).select_related('dosar').order_by('-data_incarcarii')
 
-        # E. Căutăm în Măsuri Preventive
+        # E. Căutăm în tabelul Măsuri preventive
         masuri_gasite = MasuraPreventiva.objects.filter(
             Q(tip_masura__in=chei_masuri) | 
             Q(parte__nume_complet__icontains=q_lower) | 
@@ -430,7 +426,7 @@ def lista_dosare(request):
             'total_rezultate': toate_dosarele_gasite.count() + persoane_gasite.count() + documente_gasite.count() + masuri_gasite.count()
         })
 
-    # MODUL IMPLICIT (Afișarea Listei, dacă utilizatorul nu a căutat nimic)
+    # MODUL IMPLICIT (Afișarea listei, dacă utilizatorul nu a căutat nimic)
     else:
         dosare = Dosar.objects.all().order_by('-data_inregistrarii')
         
@@ -459,14 +455,13 @@ def detalii_dosar(request, pk):
     form_parte = ParteImplicataForm()
     form_infractiune = InfractiuneForm()
     form_termen = TermenProceduralForm() 
-
-    # 1. Inițializăm formularul NOU, dându-i ID-ul dosarului
     form_masura = MasuraPreventivaForm(dosar_id=dosar.pk)
     
+    # În funcţie de butonul apăsat, verificăm ce acțiune a declanșat utilizatorul și validăm doar formularul crespunzător
     if request.method == 'POST':
         if not poate_edita:
             raise PermissionDenied("Nu ai permisiunea de a modifica acest dosar.")
-        # VERIFICARE 1: A apăsat butonul de adăugare Document?
+        # Butonul de adăugare Document
         if 'btn_salveaza_document' in request.POST:
             form_document = DocumentForm(request.POST, request.FILES)
             if form_document.is_valid():
@@ -476,16 +471,15 @@ def detalii_dosar(request, pk):
                 document.save()
                 return redirect('cases:detalii_dosar', pk=dosar.pk)
                 
-        # VERIFICARE 2: A apăsat butonul de adăugare Parte Implicată?
+        # Butonul de adăugare Parte
         elif 'btn_salveaza_parte' in request.POST:
             form_parte = ParteImplicataForm(request.POST)
             if form_parte.is_valid():
-                # 1. Salvăm persoana în dosar
                 parte = form_parte.save(commit=False)
                 parte.dosar = dosar
                 parte.save()
                 
-                # 2. Integrare între module: Salvăm poza ca Document
+                # Integrare între module: Salvăm poza ca Document
                 salveaza_doc = request.POST.get('salveaza_ca_document')
                 fisier_ci = request.FILES.get('fisier_copie_ci')
                 
@@ -501,18 +495,17 @@ def detalii_dosar(request, pk):
 
                 return redirect('cases:detalii_dosar', pk=dosar.pk)
             
-        # 2. LOGICA PENTRU SALVAREA INFRACȚIUNII
+        # Butonul de adăugare Infracțiune
         elif 'btn_salveaza_infractiune' in request.POST:
             form_infractiune = InfractiuneForm(request.POST)
             if form_infractiune.is_valid():
                 infractiune = form_infractiune.save(commit=False)
-                infractiune.dosar = dosar  # Legăm infracțiunea de dosarul curent!
+                infractiune.dosar = dosar 
                 infractiune.save()
                 return redirect('cases:detalii_dosar', pk=dosar.pk)
             
-        # 2. Logica pentru Măsuri Preventive
+        # Butonul de adăugare Măsuri preventive
         elif 'btn_salveaza_masura' in request.POST:
-            # Citim datele trimise și îi dăm din nou ID-ul dosarului pentru validare
             form_masura = MasuraPreventivaForm(request.POST, dosar_id=dosar.pk)
             if form_masura.is_valid():
                 masura = form_masura.save(commit=False)
@@ -520,7 +513,7 @@ def detalii_dosar(request, pk):
                 masura.save()
                 return redirect('cases:detalii_dosar', pk=dosar.pk)
             
-        # 2. Dacă a apăsat pe Salvare TERMEN PROCEDURAL (Cod Nou)
+        # Butonul de adăugare Termen procedural
         elif 'btn_salveaza_termen' in request.POST:
             form_termen = TermenProceduralForm(request.POST)
             if form_termen.is_valid():
@@ -544,29 +537,28 @@ def detalii_dosar(request, pk):
 
 @login_required
 def editare_dosar(request, pk):
-    # Găsim dosarul pe care vrem să-l edităm
     dosar = get_object_or_404(Dosar, pk=pk)
 
-    # 1. Memorăm echipa VECHE înainte să fie modificată
+    # Memorăm echipa VECHE înainte să fie modificată
     vechi_ofiter = dosar.ofiter_caz
     vechi_procuror = dosar.procuror_caz
     vechi_grefier = dosar.grefier_caz
 
-    # SECURITATE:
+    # Verificăm dacă utilizatorul are drepturi de editare asupra acestui dosar
     if not dosar.are_drepturi_editare(request.user):
         raise PermissionDenied("Nu ai permisiunea de a edita acest dosar.")
     
     if request.method == 'POST':
         # request.POST conține noile date. 
-        # instance=dosar încarcă dosarul existent în formular, iar request.POST îl actualizează cu noile valori.
+        # instance=dosar încarcă dosarul existent în formular, iar request.POST îl actualizează cu noile valori
         form = DosarForm(request.POST, instance=dosar)
         if form.is_valid():
-            # Preluăm data din noul câmp. Dacă grutilizatorul nu a trecut-o punem automat data de azi.
+            # Preluăm data din noul câmp. Dacă utilizatorul nu a trecut-o, punem automat data de azi.
             data_schimbare = form.cleaned_data.get('data_schimbare_echipa') or date.today()
             
-            nou_dosar = form.save() # Salvăm dosarul cu noua echipă
+            nou_dosar = form.save()
 
-            # Funcție internă care face schimbul pentru fiecare rol
+            # Funcție care face schimbul pentru fiecare rol
             def actualizeaza_istoric(rol_nume, vechi_user, nou_user):
                 if vechi_user != nou_user:
                     # Dacă exista cineva înainte, îi închidem mandatul
@@ -575,7 +567,7 @@ def editare_dosar(request, pk):
                             dosar=nou_dosar, utilizator=vechi_user, rol=rol_nume, data_finalizare__isnull=True
                         ).update(data_finalizare=data_schimbare)
                     
-                    # Creăm mandatul nou pentru noul venit
+                    # Creăm mandatul nou pentru noul membru
                     if nou_user:
                         IstoricDesemnare.objects.create(
                             dosar=nou_dosar, utilizator=nou_user, rol=rol_nume, data_desemnare=data_schimbare
@@ -589,7 +581,7 @@ def editare_dosar(request, pk):
                             link=link_dosar
                         )
 
-            # 3. Executăm verificarea pentru toți 3:
+            # Executăm verificarea pentru toate cele 3 roluri
             actualizeaza_istoric('Ofițer', vechi_ofiter, nou_dosar.ofiter_caz)
             actualizeaza_istoric('Procuror', vechi_procuror, nou_dosar.procuror_caz)
             actualizeaza_istoric('Grefier', vechi_grefier, nou_dosar.grefier_caz)
@@ -611,10 +603,10 @@ def stergere_istoric_echipa(request, pk):
     # 1. Preluăm înregistrarea din istoric
     istoric = get_object_or_404(IstoricDesemnare, pk=pk)
     
-    # 2. DEFINIM VARIABILA DOSAR (obiectul întreg, nu doar ID-ul)
+    # 2. Definim variabila (obiectul întreg, nu doar ID-ul)
     dosar = istoric.dosar
     
-    # 3. SINCRONIZARE BAZĂ DE DATE
+    # 3. Sincronizarea bazei de date
     if istoric.rol == 'Ofițer' and dosar.ofiter_caz == istoric.utilizator:
         dosar.ofiter_caz = None
         dosar.save(update_fields=['ofiter_caz'])
@@ -627,7 +619,7 @@ def stergere_istoric_echipa(request, pk):
         dosar.grefier_caz = None
         dosar.save(update_fields=['grefier_caz'])
 
-    # 4. Salvăm ID-ul dosarului separat, pentru că pe rândul următor ștergem istoricul
+    # 4. Salvăm ID-ul dosarului separat, pentru a ne redirecționa după ștergerea înregistrării din istoric - după ştergere pierdem relaţia existentă
     dosar_id = dosar.pk 
     
     # 5. Ștergem înregistrarea din istoric
@@ -641,15 +633,15 @@ def stergere_istoric_echipa(request, pk):
 def editare_parte(request, pk):
     # Găsim persoana după ID
     parte = get_object_or_404(ParteImplicata, pk=pk)
-    # Reținem ID-ul dosarului pentru a ști unde să ne întoarcem
+    # Salvăm ID-ul dosarului pentru a ne redirecționa după editare - după ștergerea părții pirdem relația
     dosar_id = parte.dosar.pk 
 
-    # SECURITATE:
+    # Verificăm dacă utilizatorul are drepturi de editare
     if not parte.dosar.are_drepturi_editare(request.user) and not request.user.is_superuser:
         raise PermissionDenied("Nu ai permisiunea de a edita acest dosar.")
     
     if request.method == 'POST':
-        # Punem instance=parte pentru a suprascrie datele existente, nu a crea una nouă
+        # Folosim instance=parte pentru a suprascrie datele existente, nu a adăuga o nouă parte
         form = ParteImplicataForm(request.POST, instance=parte)
         if form.is_valid():
             form.save()
@@ -665,13 +657,12 @@ def stergere_parte(request, pk):
     parte = get_object_or_404(ParteImplicata, pk=pk)
     dosar_id = parte.dosar.pk
     
-    # Verificăm drepturile pe dosar
+    # Verificăm dacă utilizatorul are drepturi de editare
     if not parte.dosar.are_drepturi_editare(request.user) and not request.user.is_superuser:
         raise PermissionDenied("Nu ai permisiunea de a edita acest dosar.")
 
-    # Pentru ștergere, este o bună practică să cerem confirmare printr-un formular POST
     if request.method == 'POST':
-        parte.delete() # Șterge din baza de date
+        parte.delete()
         return redirect('cases:detalii_dosar', pk=dosar_id)
         
     context = {'parte': parte}
@@ -686,7 +677,7 @@ def editare_document(request, pk):
         raise PermissionDenied("Nu ai permisiunea de a edita acest dosar.")
     
     if request.method == 'POST':
-        # request.FILES este obligatoriu aici pentru a putea schimba PDF-ul/Word-ul
+        # folosim request.FILES pentru a prelua fișierul încărcat, dacă utilizatorul a încărcat unul nou
         form = DocumentForm(request.POST, request.FILES, instance=document)
         if form.is_valid():
             form.save()
@@ -706,11 +697,11 @@ def stergere_document(request, pk):
         raise PermissionDenied("Nu ai permisiunea de a edita acest dosar.")
      
     if request.method == 'POST':
-        # șteargem și fișierul fizic, dacă există
+        # Ştergem și fișierul fizic, dacă există
         if document.fisier:
             document.fisier.delete(save=False)
             
-        document.delete() # Șterge înregistrarea din tabel
+        document.delete()
         return redirect('cases:detalii_dosar', pk=dosar_id)
         
     context = {'document': document}
@@ -727,7 +718,6 @@ def generare_pdf_dosar(request, pk):
         'request': request,
     }
     
-    # 3. Generăm PDF-ul
     pdf = render_to_pdf('cases/pdf_template.html', context)
     
     if pdf:
@@ -740,20 +730,17 @@ def generare_pdf_dosar(request, pk):
 
 @login_required
 def stergere_masura(request, pk):
-    # Găsim măsura în baza de date
     masura = get_object_or_404(MasuraPreventiva, pk=pk)
     dosar_id = masura.dosar.pk
     
-    # Verificăm dacă utilizatorul are drepturi pe dosarul respectiv
+    # Verificăm dacă utilizatorul are drepturi de editare
     if not masura.dosar.are_drepturi_editare(request.user) and not request.user.is_superuser:
         raise PermissionDenied("Nu ai permisiunea de a șterge date din acest dosar.")
         
-    # Dacă utilizatorul a apăsat "Da, șterge"
     if request.method == 'POST':
         masura.delete()
         return redirect('cases:detalii_dosar', pk=dosar_id)
         
-    # Dacă a dat doar click pe link, îi afișăm pagina de confirmare
     context = {
         'masura': masura,
         'dosar': masura.dosar
@@ -764,12 +751,12 @@ def stergere_masura(request, pk):
 def editare_masura(request, pk):
     masura = get_object_or_404(MasuraPreventiva, pk=pk)
     
-    # Securitate: Verificăm drepturile dosarului părinte
+    # Verificăm dacă utilizatorul are drepturi de editare
     if not masura.dosar.are_drepturi_editare(request.user) and not request.user.is_superuser:
         raise PermissionDenied("Nu ai permisiunea de a edita date din acest dosar.")
         
     if request.method == 'POST':
-        # Trimitem și `dosar_id` pentru ca formularul să știe să filtreze lista de persoane
+        # Adăugăm `dosar_id` pentru ca formularul să filtreze lista de persoane
         form = MasuraPreventivaForm(request.POST, instance=masura, dosar_id=masura.dosar.pk)
         if form.is_valid():
             form.save()
@@ -872,7 +859,6 @@ def stergere_infractiune(request, pk):
 def gestionare_stadii(request, pk):
     dosar = get_object_or_404(Dosar, pk=pk)
     
-    # Securitate
     if not dosar.are_drepturi_editare(request.user) and not request.user.is_superuser:
         raise PermissionDenied("Nu ai permisiunea de a edita acest dosar.")
 
@@ -880,7 +866,7 @@ def gestionare_stadii(request, pk):
     form_solutie = SolutieDosarForm()
 
     if request.method == 'POST':
-    # Funcție internă ajutătoare pentru a nu repeta codul de trimitere
+    # Funcție ajutătoare pentru a nu repeta codul de trimitere
         def trimite_notificare_colaborare(mesaj_actiune):
             link_dosar = reverse('cases:detalii_dosar', args=[dosar.pk])
             destinatari = [dosar.ofiter_caz, dosar.procuror_caz, dosar.grefier_caz]
@@ -889,8 +875,8 @@ def gestionare_stadii(request, pk):
                 # Trimitem doar dacă postul e ocupat ȘI utilizatorul nu este cel care a făcut modificarea
                 if destinatar and destinatar != request.user:
                     Notificare.objects.create(utilizator=destinatar, mesaj=mesaj_actiune, link=link_dosar)
-
-        # 1. Salvează Stadiu
+        
+        # Salvăm Stadiul
         if 'salveaza_stadiu' in request.POST:
             stadiu_id = request.POST.get('stadiu_id')
             if stadiu_id:
@@ -910,7 +896,7 @@ def gestionare_stadii(request, pk):
                     
                 return redirect('cases:gestionare_stadii', pk=dosar.pk)
 
-        # 2. Salvează Soluție
+        # Salvăm Soluția
         elif 'salveaza_solutie' in request.POST:
             solutie_id = request.POST.get('solutie_id')
             stadiu_parinte_id = request.POST.get('stadiu_parinte_id')
@@ -933,7 +919,7 @@ def gestionare_stadii(request, pk):
                     
                 return redirect('cases:gestionare_stadii', pk=dosar.pk)
 
-        # 3. Șterge Stadiu
+        # Ștergem Stadiul
         elif 'sterge_stadiu' in request.POST:
             stadiu_id = request.POST.get('stadiu_id')
             if stadiu_id:
@@ -941,7 +927,7 @@ def gestionare_stadii(request, pk):
                 stadiu.delete()
                 return redirect('cases:gestionare_stadii', pk=dosar.pk)
                 
-        # 4. Șterge Soluție
+        # Ștergem Soluția
         elif 'sterge_solutie' in request.POST:
             solutie_id = request.POST.get('solutie_id')
             if solutie_id:
@@ -967,7 +953,7 @@ def citeste_notificare(request, pk):
     # O marcăm ca citită
     notificare.citita = True
     notificare.save()
-    # Îl redirecționăm către link-ul stocat (ex: /cases/4/)
+    # Îl redirecționăm către link-ul salvat (ex: /cases/4/)
     return redirect(notificare.link)
 
 @login_required
@@ -1090,7 +1076,7 @@ def generare_rapoarte(request):
         for dosar in dosare:
             row = []
             
-            # 1. Folosim proprietățile pentru a lua mereu STAREA LA ZI
+            # Folosim proprietățile pentru a lua mereu stadiul și soluția curentă
             stadiu = dosar.stadiu_curent
             solutie = dosar.solutie_curenta
             
@@ -1102,7 +1088,7 @@ def generare_rapoarte(request):
                 row.append(curata_text(dosar.infractiune_cercetata))
                 
             if coloane['col_incadrare']: 
-                # 2. Construim lista de încadrări verificând prezența articolului (Fără 'None')
+                # Construim lista de încadrări verificând prezența articolului
                 lista_incadrari = []
                 for i in dosar.infractiuni.all():
                     if i.articol and str(i.articol) != 'None':
@@ -1169,7 +1155,7 @@ def generare_rapoarte(request):
         wb.save(virtual_workbook)
         virtual_workbook.seek(0)
         
-        # 6. Trimitem fișierul către browser cu formatul corect de .xlsx
+        # 6. Trimitem fișierul către browser cu formatul .xlsx
         response = HttpResponse(
             virtual_workbook, 
             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -1184,7 +1170,7 @@ def generare_rapoarte(request):
         del query_params['page']
     query_string = query_params.urlencode()
 
-    # 2. Împărțim rezultatele (câte 10 de dosare pe pagină)
+    # Afisăm rezultatele (câte 10 dosare pe pagină)
     paginator = Paginator(dosare, 10) 
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -1209,12 +1195,12 @@ def generare_rapoarte(request):
 
 @login_required
 def harta_infractionalitatii(request):
-    # Luăm doar infracțiunile care au coordonatele completate
+    # Preluăm doar infracțiunile care au coordonatele completate
     infractiuni = Infractiune.objects.filter(latitudine__isnull=False, longitudine__isnull=False)
     
     # Le formatăm într-o listă de dicționare pentru a le putea citi în JavaScript
     date_harta = []
-    # luăm datele cu numele lor reale din baza de date:
+    # Luăm datele cu numele lor reale din baza de date:
     for inf in infractiuni:
         date_harta.append({
             'lat': inf.latitudine,
@@ -1239,7 +1225,7 @@ def harta_infractionalitatii(request):
 # Calea către executabilul Tesseract
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
-@csrf_exempt  # Dezactivăm temporar protecția CSRF doar pentru acest test
+@csrf_exempt  # Dezactivăm temporar protecția CSRF pentru acest test
 def test_ocr_api(request):
     if request.method == 'POST' and request.FILES.get('imagine_buletin'):
         fisier_imagine = request.FILES['imagine_buletin']
@@ -1270,24 +1256,23 @@ def test_ocr_api(request):
                 date_extrase['cnp'] = cnp_match.group(0)
 
             # 2 şi 3. Căutăm Seria și Numărul (Împreună)
-            # Caută (opțional) eticheta "ID:", urmată de 2 litere (Grupul 1), 
-            # spații opționale, și fix 6 cifre (Grupul 2).
+            # Caută (opțional) eticheta "ID:", urmată de 2 litere (Grupul 1), spații opționale, și fix 6 cifre (Grupul 2).
             serie_numar_match = re.search(r'(?:ID:\s*)?([A-Z]{2})\s*(\d{6})', text_brut, re.IGNORECASE)
             
             if serie_numar_match:
                 date_extrase['serie'] = serie_numar_match.group(1).upper()  
                 date_extrase['numar'] = serie_numar_match.group(2)          
                 
-            # 2. Funcție de curățare a numelor (CU REGULA VOCALEI)
+            # 4. Funcție de curățare a numelor (cu regula vocalei)
             def curata_nume(text):
                 if not text: return ""
-                # Extragem cuvintele de minim 2 litere (majuscule)
+                # Extragem cuvintele de minimum 2 litere (majuscule)
                 cuvinte_brute = re.findall(r'\b[A-ZĂÎÂȘȚ\-]{2,}\b', text.upper())
                 cuvinte_valide = []
                 
                 for cuvant in cuvinte_brute:
                     # Dacă acel cuvânt are cel puțin o vocală, e nume valid
-                    # Astfel, construcţii ca 'LL', 'XX', 'M' nu vor fi acceptate
+                    # Construcţii ca 'LL', 'XX', 'M' nu vor fi acceptate
                     if re.search(r'[AEIOUĂÎÂ]', cuvant):
                         cuvinte_valide.append(cuvant)
                         
@@ -1304,7 +1289,7 @@ def test_ocr_api(request):
                 
             date_extrase['nume_complet'] = nume_final.strip()
             
-            # 3. Căutăm și curățăm Adresa/Domiciliul
+            # 5. Căutăm și curățăm adresa/domiciliul
             adresa_match = re.search(r'(?:ADRESA|DOMICILIU):\s*([^\n]+)', text_brut, re.IGNORECASE)
             if adresa_match:
                 adresa_bruta = adresa_match.group(1).strip()
@@ -1325,32 +1310,29 @@ def test_ocr_api(request):
             
     return JsonResponse({'status': 'error', 'mesaj': 'Metodă invalidă.'})
 
-# Funcția care afișează pagina HTML pe ecran
 @login_required
 def pagina_test_ocr(request):
     return render(request, 'cases/test_ocr.html')
 
-# === GRAF RELAŢIONAL ===
+# GRAF RELAŢIONAL
 # API apelat de JavaScript pentru a obține datele în formatul necesar pentru vizualizarea grafică
-# extrage datele, rezolvă problema duplicatelor și construiește structura matematică (Noduri și Muchii)
+# extrage datele, înlătură duplicatele și construiește structura matematică (noduri și muchii)
 @login_required
 def date_graf_relational(request):
     """
-    Acest API returnează datele întregii baze de date 
+    API care returnează datele întregii baze de date 
     formatate pentru biblioteca de grafuri Vis.js
     """
     nodes = []
     edges = []
     
-    # ==========================================
     # 1. GENERĂM NODURILE PENTRU DOSARE
-    # ==========================================
     dosare = Dosar.objects.all().prefetch_related('stadii_cercetare')
     for d in dosare:
         stadiu = d.stadiu_curent
         nume_stadiu = stadiu.get_tip_stadiu_display() if stadiu else "În lucru"
 
-        # Verificăm dacă are o soluție
+        # Verificăm dacă dosarul are soluție
         solutie = d.solutie_curenta
         text_solutie = f"\nSoluție: {solutie.get_tip_solutie_display()}" if solutie else ""
         
@@ -1362,13 +1344,11 @@ def date_graf_relational(request):
             'url_dosar': reverse('cases:detalii_dosar', args=[d.pk]) # <--- Trimitem link-ul dosarului
         })
         
-    # ==========================================
     # 2. GENERĂM NODURILE PENTRU PERSOANE ȘI LINIILE (MUCHIILE)
-    # ==========================================
     parti = ParteImplicata.objects.select_related('dosar').all()
     
     # Folosim un dicționar pentru a păstra persoanele și toate calitățile lor
-    # Cheia va fi ID-ul unic (CNP sau Nume), caloarea va fi un dicționar cu Nume și Lista de calități
+    # Cheia este ID-ul unic (CNP sau Nume), valoarea este un dicționar cu Nume și Lista de calități
     persoane_unice = {}
     
     for parte in parti:
@@ -1390,7 +1370,7 @@ def date_graf_relational(request):
                 'id': nod_id,
                 'label': label_nod,
                 'nume_complet': parte.nume_complet,
-                'calitati': {calitate} # Folosim un Set pentru calități unice (ex: să nu apară Suspect de 2 ori)
+                'calitati': {calitate} # Folosim un set pentru calități unice (ex: să nu apară suspect de 2 ori)
             }
         else:
             # Dacă există deja, doar îi adăugăm noua calitate
@@ -1407,7 +1387,7 @@ def date_graf_relational(request):
 
     # Construim lista finală de noduri pentru persoane
     for pers_id, date_pers in persoane_unice.items():
-        # Creăm un text cu toate calitățile pentru Tooltip (la hover)
+        # Creăm un text cu toate calitățile pentru Tooltip (hover)
         lista_calitati_html = ", ".join(date_pers['calitati'])
         
         nodes.append({
@@ -1415,13 +1395,13 @@ def date_graf_relational(request):
             'label': date_pers['label'],
             'group': 'persoana',
             'title': f"{date_pers['nume_complet']}\nCalitate: {lista_calitati_html}",
-            # Salvăm un câmp invizibil cu calitățile ca să le citească JavaScript pentru panoul lateral
+            # Salvăm un câmp invizibil cu calitățile - citite de JavaScript pentru panoul lateral
             'calitati_js': lista_calitati_html 
         })
         
     return JsonResponse({'nodes': nodes, 'edges': edges})
 
-# Funcția simplă care va deschide pagina HTML a Grafului
+# Funcția care deschide pagina HTML a grafului
 @login_required
 def graf_relational(request):
     return render(request, 'cases/graf_relational.html')
@@ -1436,10 +1416,9 @@ def genereaza_act(request, pk):
     if request.method == 'POST':
         tip_act = request.POST.get('tip_act')
         
-        # --- 1. SETĂM EMITENTUL ȘI VARIABILELE INDIVIDUALE ---
+        # 1. SETĂM EMITENTUL ȘI VARIABILELE INDIVIDUALE
         alegere_emitent = request.POST.get('emitent', 'politie') 
         
-        # Reguli stricte de competență
         if tip_act in ['ord_clasare', 'ord_renuntare']:
             alegere_emitent = 'procuror'
         elif tip_act in ['ref_clasare', 'ref_renuntare']:
@@ -1456,7 +1435,7 @@ def genereaza_act(request, pk):
             functie_antet = "Organ de cercetare penală al poliției judiciare"
             nume_semnatar = f"{grad} {nume_user}"
 
-        # --- 2. LOGICA PENTRU FIECARE ACT ȘI ALEGEREA ȘABLONULUI ---
+        # 2. LOGICA PENTRU FIECARE ACT ȘI ALEGEREA ȘABLONULUI
         context_doc = {}
         template_name = ""
         nume_fisier = ""
@@ -1510,7 +1489,7 @@ def genereaza_act(request, pk):
                 dt = datetime.strptime(data_raw, '%Y-%m-%d')
                 data_formatata = dt.strftime('%d.%m.%Y')
             
-            # --- DATE SPECIFICE DOSARULUI ---
+            # DATE SPECIFICE DOSARULUI
             data_inreg = dosar.data_inregistrarii.strftime('%d.%m.%Y') if dosar.data_inregistrarii else "---"
             
             infr_raw = getattr(dosar, 'infractiune_cercetata', 'faptele reclamate')
@@ -1539,7 +1518,7 @@ def genereaza_act(request, pk):
             parti_selectate = ParteImplicata.objects.filter(id__in=ids_comunicare)
             lista_parti = [{'nume_complet': p.nume_complet} for p in parti_selectate]
 
-            # --- CONTEXTUL COMUN ---
+            # CONTEXTUL COMUN
             context_doc = {
                 'numar_dosar': dosar.numar_unic,
                 'data_actului': data_formatata,
@@ -1555,7 +1534,7 @@ def genereaza_act(request, pk):
                 'lista_comunicare': lista_parti 
             }
             
-            # ---> BLOCUL CARE LIPSEA: SETAREA ȘABLOANELOR <---
+            # SETAREA ȘABLOANELOR
             if tip_act == 'oiup':
                 if alegere_emitent == 'procuror':
                     template_name = 'oiup_procuror_template.docx'
@@ -1579,7 +1558,7 @@ def genereaza_act(request, pk):
                 template_name = 'renuntare_ref_template.docx'
                 nume_fisier = f"Referat_Renuntare_{dosar.numar_unic}.docx"
 
-        # --- 3. GENERAREA FIZICĂ A DOCUMENTULUI ȘI SALVAREA ---
+        # 3. GENERAREA DOCUMENTULUI ȘI SALVAREA
         if template_name:
             template_path = os.path.join(settings.BASE_DIR, 'cases', 'templates', 'acte', template_name)
             
@@ -1593,8 +1572,8 @@ def genereaza_act(request, pk):
             file_stream = io.BytesIO()
             doc.save(file_stream)
             
-            # --- NOU: SALVAREA ÎN BAZA DE DATE ---
-            # Facem un dicționar pentru a transforma codul actului într-un text lizibil
+            # SALVAREA ÎN BAZA DE DATE
+            # Creăm un dicționar pentru a transforma codul actului într-un text lizibil
             nume_tipuri_acte = {
                 'citatie': 'Citație',
                 'oiup': 'Ordonanță Începere UP',
@@ -1605,11 +1584,10 @@ def genereaza_act(request, pk):
             }
             tip_frumos = nume_tipuri_acte.get(tip_act, tip_act.upper())
             
-            # Curățăm titlul ca să nu arate urât în tabelă (ex: "Citatie Popescu_Ion_123_P_2024" -> "Citatie Popescu Ion 123 P 2024")
+            # Curățăm titlul pentru adăugarea în tabel (ex: "Citatie Popescu_Ion_123_P_2024" -> "Citatie Popescu Ion 123 P 2024")
             titlu_curat = nume_fisier.replace('.docx', '').replace('_', ' ')
 
-            # Creăm și salvăm obiectul
-            # (Presupun că ai importat modelul ActUrmarire sus de tot)
+            # Creăm și salvăm obiectul ActUrmarire în baza de date, legat de dosar și cu fișierul generat
             act = ActUrmarire(
                 dosar=dosar,
                 tip=tip_frumos[:50], 
@@ -1618,13 +1596,12 @@ def genereaza_act(request, pk):
                 data_documentului=datetime.today().date(),
             )
             
-            # act.fisier.save() face automat și scrierea fișierului pe disc (în media/) și act.save() în baza de date!
+            # act.fisier.save() face automat scrierea fișierului în memorie (în media/) și salvarea în baza de date!
             act.fisier.save(nume_fisier.replace("/", "_"), ContentFile(file_stream.getvalue()))
             
-            # Mesaj de succes care va apărea când utilizatorul dă refresh la pagina dosarului (fiindcă fișierul se descarcă automat, browserul nu dă refresh instant)
+            # Mesaj de succes care va apărea la refresh(fișierul se descarcă automat, iar browserul nu dă refresh instant)
             messages.success(request, f'{tip_frumos} a fost generat(ă) și salvat(ă) în arhiva dosarului.')
 
-            # Resetăm pointerul stream-ului pentru a-l trimite și spre descărcare
             file_stream.seek(0)
             response = HttpResponse(file_stream.read(), content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
             response['Content-Disposition'] = f'attachment; filename="{nume_fisier.replace("/", "_")}"'
@@ -1636,34 +1613,40 @@ def genereaza_act(request, pk):
 
 @login_required
 def semneaza_act(request, pk_act):
-    # 1. Găsim actul (presupunând că modelul se numește ActUrmarire)
+    # Găsim actul de urmărire după ID
     act = get_object_or_404(ActUrmarire, pk=pk_act)
     dosar = act.dosar
     user = request.user
     
-    # 2. Verificări de siguranță
+    # Verificăm dacă utilizatorul are drepturi de editare în dosar
     if not dosar.are_drepturi_editare(user):
         raise PermissionDenied("Nu ai permisiunea de a semna în acest dosar.")
         
+    # Verificăm dacă fișierul este în format PDF
     if not act.fisier.name.lower().endswith('.pdf'):
         messages.error(request, "Eroare: Doar documentele în format PDF pot fi semnate digital.")
         return redirect('cases:detalii_dosar', pk=dosar.pk)
         
+    # Verificăm dacă utilizatorul are cheia privată și certificatul public configurate pentru semnătură digitală
     if not user.cheie_privata_criptata or not user.certificat_pem:
-        messages.error(request, "Nu ai o identitate digitală generată. Contactează administratorul.")
+        messages.error(request, "Nu puteți semna. Semnătura digitală nu este configurată pentru acest cont.")
+        return redirect('cases:detalii_dosar', pk=dosar.pk)
+
+    # Verificăm parola introdusă în modal
+    parola_introdusa = request.POST.get('parola_semnatura')
+    if not user.check_password(parola_introdusa):
+        # Dacă parola e greșită trimitem un mesaj de eroare.
+        messages.error(request, "Autorizare eșuată! Parola introdusă este incorectă.")
         return redirect('cases:detalii_dosar', pk=dosar.pk)
 
     if request.method == 'POST':
         try:
-            # 3. DECRIPTĂM CHEIA PRIVATĂ (Folosind cheia Fernet din settings)
+            # DECRIPTĂM CHEIA PRIVATĂ (folosind cheia Fernet din settings)
             f = Fernet(settings.ENCRYPTION_KEY)
             private_key_pem = f.decrypt(user.cheie_privata_criptata)
             
-            # --- MODIFICAREA ESTE AICI ---
-# 4. PREGĂTIM OBIECTELE CRIPTOGRAFICE (EXCLUSIV CU asn1crypto)
-            
-            # a) Încărcăm cheia privată
-            # private_key_pem a fost deja decriptat cu Fernet mai sus
+            # PREGĂTIM OBIECTELE CRIPTOGRAFICE (EXCLUSIV CU asn1crypto)
+            # a) Încărcăm cheia privată decriptată cu Fernet
             _, _, priv_der_bytes = pem.unarmor(private_key_pem)
             private_key = asn1_keys.PrivateKeyInfo.load(priv_der_bytes)
             
@@ -1678,26 +1661,23 @@ def semneaza_act(request, pk_act):
                 signing_key=private_key,
                 cert_registry=None
             )
-            # --- SFÂRȘIT MODIFICARE ---
             
-            # 5. DESCHIDEM PDF-UL ȘI PREGĂTIM SCRIEREA
-# 5. DESCHIDEM PDF-UL ÎN MEMORIE (Citire + Scriere)
+            # DESCHIDEM PDF-UL ÎN MEMORIE (citire şi scriere)
             pdf_stream = act.fisier.open('rb')
             pdf_bytes = pdf_stream.read()
             pdf_stream.close() # Închidem stream-ul original
             
-            # Punem biții într-un buffer nou, unde pyHanko va putea și citi, dar și scrie semnătura!
+            # Punem biții într-un buffer nou, unde pyHanko va putea și citi, dar și scrie semnătura
             in_out_buffer = io.BytesIO(pdf_bytes)
             pdf_writer = IncrementalPdfFileWriter(in_out_buffer, strict=False)
             
-            # 6. APLICĂM SEMNĂTURA CRIPTOGRAFICĂ
-            # 6. APLICĂM SEMNĂTURA CRIPTOGRAFICĂ (CU ȘTAMPILĂ VIZUALĂ)
+            # APLICĂM SEMNĂTURA CRIPTOGRAFICĂ (CU ȘTAMPILĂ VIZUALĂ)
             nume_camp = f'Semnatura_{user.username}'
             
-            # a) Creăm un "dreptunghi" vizibil pe prima pagină
+            # a. Creăm un "dreptunghi" vizibil pe ultima pagina (on_page=-1)
             # Sistemul de coordonate: (X_stânga, Y_jos, X_dreapta, Y_sus)
             # Punctul 0,0 este în colțul stânga-jos al paginii.
-            # O pagină A4 are cam 595 x 842 puncte. (300, 50, 550, 130) îl va pune în dreapta-jos.
+            # O pagină A4 are aproximativ 595 x 842 puncte
             append_signature_field(
                 pdf_writer,
                 SigFieldSpec(
@@ -1707,9 +1687,9 @@ def semneaza_act(request, pk_act):
                 )
             )
             
-            # b) Definim cum arată textul ștampilei
-            # Folosim Python (f-strings) pentru a injecta Numele și Motivul. 
-            # Lăsăm doar %(ts)s pentru ca pyHanko să pună secunda exactă a semnăturii.
+            # b. Stabilim textul ștampilei
+            # Folosim Python (f-strings) pentru a adăuga numele și motivul. 
+            # Folosim doar %(ts)s pentru ca pyHanko să pună secunda exactă a semnăturii
             nume_afisare = user.get_full_name() or user.username
             motiv_semnare = "Semnatura digitala aprobata"
             
@@ -1717,7 +1697,7 @@ def semneaza_act(request, pk_act):
                 stamp_text=f'SEMNAT DIGITAL\nSemnatar: {nume_afisare}\nData: %(ts)s\nMotiv: {motiv_semnare}'
             )
             
-            # c) Inițializăm procesul de semnare (atașând și stilul vizual creat)
+            # c. Inițializăm procesul de semnare
             pdf_signer = signers.PdfSigner(
                 signers.PdfSignatureMetadata(
                     field_name=nume_camp, 
@@ -1728,10 +1708,10 @@ def semneaza_act(request, pk_act):
                 stamp_style=stil_stampila
             )
             
-# d) Scriem semnătura pe fișier
+            # d. Scriem semnătura pe fișier
             pdf_signer.sign_pdf(pdf_writer, in_place=True)
             
-            # 7. SALVĂM VERSIUNEA SEMNATĂ (FĂRĂ SĂ DISTRUGEM ORIGINALUL)
+            # SALVĂM VERSIUNEA SEMNATĂ (FĂRĂ SĂ ŞTERGEM ORIGINALUL)
             in_out_buffer.seek(0)
             
             # Extragem numele original (ex: "ordonanta_123") și extensia (".pdf")
@@ -1745,7 +1725,6 @@ def semneaza_act(request, pk_act):
             act.este_semnat = True
             act.semnat_de = user
             act.data_semnarii = timezone.now()
-            # Am eliminat complet acel hack cu act.titlu = "[SEMNAT]" !
             
             act.save()
             
@@ -1758,13 +1737,39 @@ def semneaza_act(request, pk_act):
                 f"{type(e).__name__}: {str(e)}", 
                 exc_info=True
             )
-            # Afișăm un mesaj elegant utilizatorului
+            # Afișăm utilizatorului un mesaj de eroare fără detalii tehnice
             messages.error(
                 request, 
                 "A apărut o eroare la semnarea documentului. Verificați că fișierul PDF este valid și reîncercați."
             )
             
     return redirect('cases:detalii_dosar', pk=dosar.pk)
+
+@login_required
+def descarca_document(request, pk, tip_fisier):
+    act = get_object_or_404(ActUrmarire, pk=pk)
+    
+    # Alegem care fișier trebuie descărcat
+    if tip_fisier == 'semnat' and act.fisier_semnat:
+        fisier_fizic = act.fisier_semnat
+        sufix = "_SEMNAT.pdf"
+    elif tip_fisier == 'original' and act.fisier:
+        fisier_fizic = act.fisier
+        _, extensie = os.path.splitext(fisier_fizic.name)
+        sufix = f"_draft{extensie}"
+    else:
+        raise Http404("Documentul solicitat nu există sau nu a fost generat încă.")
+
+    # Curățăm titlul ca să fie potrivit pentru un nume de fișier Windows
+    titlu_curat = get_valid_filename(act.titlu)
+    
+    nume_final_descarcare = f"{titlu_curat}{sufix}" # ex. "Ordonanta_de_clasare_SEMNAT.pdf"
+
+    # Deschidem fișierul în mod binar și îl trimitem ca răspuns pentru descărcare
+    response = FileResponse(fisier_fizic.open('rb'))
+    response['Content-Disposition'] = f'attachment; filename="{nume_final_descarcare}"'
+    
+    return response
 
 @login_required
 def api_calendar_events(request):
@@ -1779,7 +1784,7 @@ def api_calendar_events(request):
     
     events = []
 
-    # --- FILTRAREA DOSARELOR DUPĂ UTILIZATOR ---
+    # FILTRAREA DOSARELOR DUPĂ UTILIZATOR
     if request.user.is_superuser or getattr(request.user, 'rol', '') == 'ADMIN':
         dosarele_mele = Dosar.objects.all()
     else:
@@ -1789,37 +1794,32 @@ def api_calendar_events(request):
             Q(grefier_caz=request.user)
         )
 
-    # Dicționarul de culori (Separation of Concerns, cum am discutat)
+    # Dicționarul de culori
     CULORI_TERMENE = {
-        'PRESCRIPTIE_GEN': '#dc3545', # Roșu (critic)
-        'NOTA': "#ffc107f1",
-        'INSTANTA': '#fd7e14',       # Portocaliu
-        # '#ffc107',        # Galben
-        # 'PROROGARE': '#fd7e14',       # Portocaliu
+        'PRESCRIPTIE_GEN': '#dc3545', # Roșu
+        'NOTA': "#ffc107f1",          # Galben deschis
+        'INSTANTA': '#fd7e14',        # Portocaliu
         'AUDIERE': '#0d6efd',         # Albastru
-        'ALTUL': "#9235A3",           # Gri
+        'ALTUL': "#9235A3",           # Mov
     }
 
-    # ==========================================
     # 1. PRELUĂM TERMENELE MANUALE
-    # ==========================================
     # Filtrăm doar termenele din intervalul cerut ca să nu blocăm baza de date
     termene = TermenProcedural.objects.filter(dosar__in=dosarele_mele)
     if start_str and end_str:
-        # Convertim string-ul din JS într-o dată pe care Django o înțelege
+        # Convertim string-ul din JS într-o dată compatibilă cu Django
         start_date = parse_datetime(start_str).date() if 'T' in start_str else parse_date(start_str)
         end_date = parse_datetime(end_str).date() if 'T' in end_str else parse_date(end_str)
         termene = termene.filter(data_limita__range=[start_date, end_date])
 
     for termen in termene:
         # Stabilim titlul vizibil
-
         titlu_afisat = termen.titlu or f"{termen.get_tip_termen_display()} ({termen.dosar.numar_unic})"
 
         # Dacă e îndeplinit îl facem VERDE (#198754), altfel culoarea normală
         culoare_finala = '#198754' if termen.indeplinit else CULORI_TERMENE.get(termen.tip_termen, '#6c757d')
         
-        # Stabilim formatul de timp (dacă are oră, FullCalendar îl va arăta diferit de cele "All-Day")
+        # Stabilim formatul de timp (dacă are oră, FullCalendar îl va afişa diferit)
         if termen.ora:
             start_format = f"{termen.data_limita.isoformat()}T{termen.ora.isoformat()}"
             all_day = False
@@ -1833,63 +1833,59 @@ def api_calendar_events(request):
             'start': start_format,
             'allDay': all_day,
             'color': culoare_finala,
-            # Adăugăm date extra pentru modalul de detalii la care vom lucra la frontend
+            # Date pentru modalul de detalii
             'extendedProps': {
                 'tip': 'termen',
                 'item_id': termen.id,
                 'dosar_id': termen.dosar.id,
                 'indeplinit': termen.indeplinit,
                 'dosar_numar': termen.dosar.numar_unic,
-                'dosar_url': reverse('cases:detalii_dosar', args=[termen.dosar.id]), # NOU
+                'dosar_url': reverse('cases:detalii_dosar', args=[termen.dosar.id]),
                 'detalii': termen.detalii or "Nu există detalii suplimentare."
             }
         })
 
-    # ==========================================
     # 2. PRELUĂM MĂSURILE PREVENTIVE (AUTOMATE)
-    # ==========================================
     masuri = MasuraPreventiva.objects.filter(dosar__in=dosarele_mele)
     if start_str and end_str:
         # Corectat: data_sfarsit
         masuri = masuri.filter(data_sfarsit__range=[start_date, end_date])
 
     for masura in masuri:
-        # Ne asigurăm că există o dată de sfârșit înainte să o formatăm
         if masura.data_sfarsit:
-            # Culoare: Verde dacă e gata, altfel Grena
+
             culoare_masura = '#198754' if masura.indeplinit else '#842029'
 
             events.append({
                 'id': f"masura_{masura.id}",
                 'title': f"Expirare {masura.get_tip_masura_display()} ({masura.dosar.numar_unic})",
-                'start': masura.data_sfarsit.isoformat(), # Corectat: data_sfarsit
+                'start': masura.data_sfarsit.isoformat(),
                 'allDay': True,
                 'color': culoare_masura,
                 'extendedProps': {
                     'tip': 'masura',
-                    'item_id': masura.id,         # NOU: ID-ul pentru a ști ce bifăm
-                    'indeplinit': masura.indeplinit, # NOU: Starea
+                    'item_id': masura.id,
+                    'indeplinit': masura.indeplinit,
                     'dosar_id': masura.dosar.id,
                     'dosar_numar': masura.dosar.numar_unic,
-                    'dosar_url': reverse('cases:detalii_dosar', args=[masura.dosar.id]), # NOU
-                    # Corectat: folosim atributul 'parte'
+                    'dosar_url': reverse('cases:detalii_dosar', args=[masura.dosar.id]),
                     'detalii': f"Măsură față de: {masura.parte}" 
                 }
             })
 
-    # Returnăm lista combinată sub formă de JSON
+    # Returnăm lista combinată în format JSON
     return JsonResponse(events, safe=False)
 
 @login_required
 def calendar_view(request):
     """
-    Randează pagina principală a calendarului și calculează
+    Afişează pagina principală a calendarului și calculează
     evenimentele pentru Sidebar-ul "Termene apropiate (14 zile)".
     """
     azi = date.today()
     peste_14_zile = azi + timedelta(days=14)
 
-    # --- FILTRAREA DOSARELOR ---
+    # FILTRAREA DOSARELOR DUPĂ UTILIZATOR PENTRU SIDEBAR
     if request.user.is_superuser or getattr(request.user, 'rol', '') == 'ADMIN':
         dosarele_mele = Dosar.objects.all()
     else:
@@ -1899,7 +1895,7 @@ def calendar_view(request):
             Q(grefier_caz=request.user)
         )
 
-    # Luăm termenele și măsurile din următoarele 14 zile
+    # Preluăm termenele și măsurile din următoarele 14 zile
     termene_urmeaza = TermenProcedural.objects.filter(
         dosar__in=dosarele_mele, 
         data_limita__range=[azi, peste_14_zile]
@@ -1909,10 +1905,10 @@ def calendar_view(request):
         data_sfarsit__range=[azi, peste_14_zile]
     )
 
-    # 1. Trimitem userul către formular
+    # Trimitem userul către formular
     form = TermenProceduralForm(user=request.user)
 
-    # Le punem într-o listă comună pentru a le putea sorta
+    # Adăugăm alertele într-o listă comună pentru a le putea sorta
     urgente = []
     for t in termene_urmeaza:
         urgente.append({
@@ -1921,7 +1917,7 @@ def calendar_view(request):
             'dosar': t.dosar,
             'tip': 'Termen',
             'indeplinit': t.indeplinit,
-            'zile_ramase': (t.data_limita - azi).days # NOU: Calculăm câte zile au rămas până la termen
+            'zile_ramase': (t.data_limita - azi).days
         })
         
     for m in masuri_urmeaza:
@@ -1930,18 +1926,16 @@ def calendar_view(request):
             'data': m.data_sfarsit,
             'dosar': m.dosar,
             'tip': 'Măsură',
-            'critica': True, # Pentru a o colora cu roșu în UI
-            'zile_ramase': (m.data_sfarsit - azi).days # NOU: Calculăm câte zile au rămas până la expirare
+            'critica': True,
+            'zile_ramase': (m.data_sfarsit - azi).days
         })
 
-    # Sortăm lista cronologic (cele mai apropiate primele)
+    # Sortăm lista cronologic
     urgente.sort(key=lambda x: x['data'])
 
-    # form = TermenProceduralForm()
-    
     context = {
         'urgente_sidebar': urgente,
-        'form': form  # <--- Adăugăm formularul în context
+        'form': form 
     }
     return render(request, 'cases/calendar.html', context)
 
@@ -1949,7 +1943,6 @@ def calendar_view(request):
 def adaugare_termen_calendar(request):
     """Procesează formularul de adăugare termen din modalul Calendarului"""
     if request.method == 'POST':
-        # form = TermenProceduralForm(request.POST)
         form = TermenProceduralForm(request.POST, user=request.user)
         if form.is_valid():
             termen = form.save()
@@ -1957,17 +1950,15 @@ def adaugare_termen_calendar(request):
         else:
             messages.error(request, 'Eroare la adăugarea termenului.')
             
-    # Indiferent ce se întâmplă, îl întoarcem înapoi pe pagina calendarului
     return redirect('cases:calendar')
 
-# Funcţie care schimbă starea unui termen (îndeplinit/neîndeplinit) prin AJAX
 @login_required
 @require_POST
 def toggle_termen_indeplinit(request, pk):
     """Schimbă starea termenului (Îndeplinit/Neîndeplinit) prin AJAX"""
     termen = get_object_or_404(TermenProcedural, pk=pk)
     
-    # Securitate: Verificăm dacă user-ul face parte din dosar
+    # Verificăm dacă utilizatorul face parte din dosar
     echipa_ids = [termen.dosar.ofiter_caz_id, termen.dosar.procuror_caz_id, termen.dosar.grefier_caz_id]
     if request.user.id in echipa_ids or request.user.is_superuser or getattr(request.user, 'rol', '') == 'ADMIN':
         termen.indeplinit = not termen.indeplinit
@@ -1980,8 +1971,10 @@ def toggle_termen_indeplinit(request, pk):
 @login_required
 @require_POST
 def toggle_masura_indeplinita(request, pk):
+    """Schimbă starea măsurii preventive (Îndeplinită/Neîndeplinită) prin AJAX"""
     masura = get_object_or_404(MasuraPreventiva, pk=pk)
-    # Verificăm permisiunile
+
+    # Verificăm dacă utilizatorul face parte din dosar
     echipa_ids = [masura.dosar.ofiter_caz_id, masura.dosar.procuror_caz_id, masura.dosar.grefier_caz_id]
     if request.user.id in echipa_ids or request.user.is_superuser or getattr(request.user, 'rol', '') == 'ADMIN':
         masura.indeplinit = not masura.indeplinit

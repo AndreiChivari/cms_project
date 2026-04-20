@@ -19,13 +19,13 @@
 <link rel="stylesheet" href="{% static 'leaflet/MarkerCluster.Default.css' %}" />
 <script src="{% static 'leaflet/leaflet.markercluster.js' %}"></script>
 
-<div class="container-fluid mb-4">
-    <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom border-secondary border-opacity-25 mt-2">
+<div class="container-fluid mb-4 py-1">
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom border-secondary border-opacity-25">
         <div>
-            <h3 class="mb-1 fw-bold text-dark d-flex align-items-center gap-2">
+            <h3 class="mb-1 fw-bold text-dark d-flex align-items-center gap-2" style="font-size: 1.5rem;">
                 <i class="bi bi-geo-alt-fill text-danger"></i> Analiza geografică a infracționalității
             </h3>
-            <p class="text-muted mb-0" style="font-size: 0.95rem;">
+            <p class="text-muted mb-0" style="font-size: 1rem;">
                 Filtrarea și identificarea zonelor de risc
             </p>
         </div>
@@ -140,11 +140,10 @@
         
         heatLayer.addTo(map);
         L.control.layers({}, {
-            "🔥 Zone de risc (Heatmap)": heatLayer,
-            "📍 Puncte specifice (Pini Grupate)": piniLayer
+            "🔥 Zone de risc": heatLayer,
+            "📍 Puncte specifice": piniLayer
         }, {collapsed: false}).addTo(map);
 
-    // Înlocuiește funcția populeazaDropdowns cu aceasta:
     function populeazaDropdowns(dateSursa) {
         const selectAct = document.getElementById('filtru-act');
         const selectIncadrare = document.getElementById('filtru-incadrare');

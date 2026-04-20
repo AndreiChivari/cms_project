@@ -1,198 +1,292 @@
 {% extends 'base.html' %}
 
-{% block title %}Gestionare stadii - {{ dosar.numar_unic }}{% endblock %}
+{% block title %}Gestionare stadii — {{ dosar.numar_unic }}{% endblock %}
 
 {% block content %}
-<div class="mb-4 mt-3 pb-2 border-bottom border-secondary border-opacity-25">
-    <a href="{% url 'cases:detalii_dosar' dosar.pk %}" class="text-decoration-none text-muted mb-2 d-inline-block transition-base hover-text-primary" style="font-size: 0.9rem;">
-        &larr; Înapoi la dosar
-    </a>
-    <h4 class="mb-2">⚙️ Gestionare stadii și soluții <span class="text-muted">| Dosar {{ dosar.numar_unic }}</span></h4>
-</div>
+<div class="container-fluid px-3 px-xxl-5 py-1">
 
-<div class="row">
-    <div class="col-md-5 mb-4">
-        <div class="card shadow-sm border-primary h-100">
-            <div class="card-header bg-primary text-white fw-bold">1. Adaugă / editează stadiu</div>
+{# ---- Back + titlu ---- #}
+<a href="{% url 'cases:detalii_dosar' dosar.pk %}"
+   class="text-decoration-none text-muted d-inline-flex align-items-center gap-1 mb-2 transition-base"
+   style="font-size:0.82rem;">
+    <i class="bi bi-arrow-left"></i> Înapoi la dosar
+</a>
+<h4 class="fw-bold text-dark d-flex align-items-center gap-2 mb-1" style="font-size:1.25rem;">
+    <i class="bi bi-gear-fill" style="color:#2a6cb0;"></i>
+    Gestionare stadii și soluții
+    <span class="text-muted fw-normal">| Dosar {{ dosar.numar_unic }}</span>
+</h4>
+<p class="text-muted mb-4" style="font-size:0.8rem;">
+    Selectează un stadiu din tabel pentru a-l edita sau a-i adăuga o soluție.
+</p>
+
+{# ============================================================ #}
+{# FORMULARE — două coloane                                     #}
+
+<div class="row g-3 mb-4">
+
+    {# ---- Formular STADIU ---- #}
+    <div class="col-md-5">
+        <div class="card-section cs-accent-blue h-100">
+            <div class="card-header d-flex justify-content-start align-items-center gap-2">
+                <span class="d-flex align-items-center justify-content-center rounded-circle fw-bold text-white"
+                      style="width:20px;height:20px;font-size:0.7rem;background:#2a6cb0;flex-shrink:0;">1</span>
+                <h6 class="mb-0">Adaugă / editează stadiu</h6>
+            </div>
+
             <div class="card-body">
                 <form method="POST">
                     {% if form_stadiu.errors %}
-                        <div class="alert alert-danger shadow-sm border-danger border-start border-4">
-                            <h6 class="fw-bold mb-1">🛑 S-au găsit erori de procedură:</h6>
-                            <ul class="mb-0 small">
-                            {% for field, errors in form_stadiu.errors.items %}
-                                {% for error in errors %}
-                                    <li>{{ error }}</li>
-                                {% endfor %}
-                            {% endfor %}
-                            </ul>
+                    <div class="alert alert-danger border-0 border-start border-danger border-4 py-2 px-3 mb-3" style="font-size:0.82rem;">
+                        <div class="fw-bold mb-1 d-flex align-items-center gap-1">
+                            <i class="bi bi-exclamation-triangle-fill"></i> Erori de validare:
                         </div>
+                        <ul class="mb-0 ps-3">
+                            {% for field, errors in form_stadiu.errors.items %}
+                                {% for error in errors %}<li>{{ error }}</li>{% endfor %}
+                            {% endfor %}
+                        </ul>
+                    </div>
                     {% endif %}
+
                     {% csrf_token %}
                     <input type="hidden" name="stadiu_id" id="id_stadiu_hidden">
-                    
+
                     <div class="django-form-wrapper">
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Tip stadiu urmărire</label>
+                            <label class="form-label">Tip stadiu urmărire</label>
                             {{ form_stadiu.tip_stadiu }}
                         </div>
-                        <div class="mb-4">
-                            <label class="form-label fw-bold">Data începerii stadiului</label>
+                        <div class="mb-3">
+                            <label class="form-label">Data începerii stadiului</label>
                             {{ form_stadiu.data_incepere }}
                         </div>
                     </div>
-                    
-                    <div class="d-flex align-items-center gap-2 mb-3 mt-2 p-2 bg-light border border-info rounded" style="width: fit-content;">
-                        <div class="d-flex align-items-center m-0 p-0">{{ form_stadiu.notifica_echipa }}</div>
-                        <label class="form-check-label text-primary fw-bold mb-0" for="{{ form_stadiu.notifica_echipa.id_for_label }}" style="display: inline-block; width: auto; cursor: pointer;">
+
+                    <div class="d-flex align-items-center gap-2 px-3 py-2 rounded mt-1"
+                         style="background:#eff6ff; border:1px solid #bfdbfe;">
+                        {{ form_stadiu.notifica_echipa }}
+                        <label class="fw-semibold mb-0"
+                               for="{{ form_stadiu.notifica_echipa.id_for_label }}"
+                               style="font-size:0.8rem;color:#2a6cb0;cursor:pointer;">
                             {{ form_stadiu.notifica_echipa.label }}
                         </label>
                     </div>
 
-                    <div class="d-flex justify-content-between align-items-center mt-3">
-                        <div>
-                            <button type="submit" name="salveaza_stadiu" class="btn btn-sm btn-primary fw-bold">Salvează stadiu</button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary ms-1" onclick="resetStadiuForm()">Nou (curăță)</button>
+                    <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                        <div class="d-flex gap-2">
+                            <button type="submit" name="salveaza_stadiu" class="btn btn-primary btn-sm fw-semibold">
+                                <i class="bi bi-check-lg me-1"></i> Salvează stadiu
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="resetStadiuForm()">
+                                Nou
+                            </button>
                         </div>
-                        <button type="submit" name="sterge_stadiu" id="btn_sterge_stadiu" class="btn btn-sm btn-outline-danger" style="display: none;" onclick="return confirm('⚠️ Sigur vrei să ștergi acest stadiu? ATENȚIE: Se vor șterge automat și TOATE soluțiile asociate lui!');" formnovalidate>🗑️ Șterge</button>
+                        <button type="submit" name="sterge_stadiu" id="btn_sterge_stadiu"
+                                class="btn btn-sm btn-outline-danger"
+                                style="display:none;"
+                                onclick="return confirm('Sigur vrei să ștergi acest stadiu? Atenție: se vor șterge și toate soluțiile asociate!');"
+                                formnovalidate>
+                            <i class="bi bi-trash me-1"></i> Șterge
+                        </button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
-    <div class="col-md-7 mb-4">
-        <div class="card shadow-sm border-success h-100">
-            <div class="card-header bg-success text-white fw-bold">2. Adaugă / editează soluție</div>
-            <div class="card-body bg-light">
+    {# ---- Formular SOLUȚIE ---- #}
+    <div class="col-md-7">
+        <div class="card-section cs-accent-teal h-100">
+            <div class="card-header d-flex justify-content-start align-items-center gap-2">
+                <span class="d-flex align-items-center justify-content-center rounded-circle fw-bold text-white"
+                      style="width:20px;height:20px;font-size:0.7rem;background:#0f766e;flex-shrink:0;">2</span>
+                <h6 class="mb-0" style="color:#134e4a;">Adaugă / editează soluție</h6>
+            </div>
+
+            <div class="card-body">
                 <form method="POST">
                     {% if form_solutie.errors %}
-                        <div class="alert alert-danger shadow-sm border-danger border-start border-4">
-                            <h6 class="fw-bold mb-1">🛑 S-au găsit erori de procedură:</h6>
-                            <ul class="mb-0 small">
-                            {% for field, errors in form_solutie.errors.items %}
-                                {% for error in errors %}
-                                    <li>{{ error }}</li>
-                                {% endfor %}
-                            {% endfor %}
-                            </ul>
+                    <div class="alert alert-danger border-0 border-start border-danger border-4 py-2 px-3 mb-3" style="font-size:0.82rem;">
+                        <div class="fw-bold mb-1 d-flex align-items-center gap-1">
+                            <i class="bi bi-exclamation-triangle-fill"></i> Erori de validare:
                         </div>
+                        <ul class="mb-0 ps-3">
+                            {% for field, errors in form_solutie.errors.items %}
+                                {% for error in errors %}<li>{{ error }}</li>{% endfor %}
+                            {% endfor %}
+                        </ul>
+                    </div>
                     {% endif %}
+
                     {% csrf_token %}
                     <input type="hidden" name="solutie_id" id="id_solutie_hidden">
                     <input type="hidden" name="stadiu_parinte_id" id="id_stadiu_parinte_hidden">
-                    
-                    <div class="alert alert-warning py-1 px-2 small mb-3" id="stadiu_selectat_alerta">
-                        ⚠️ Selectează un stadiu din tabelul de mai jos pentru a-i adăuga o soluție.
+
+                    {# Alert selecție stadiu #}
+                    <div id="stadiu_selectat_alerta"
+                         class="d-flex align-items-center gap-2 rounded px-3 py-2 mb-3"
+                         style="font-size:0.78rem;background:#fffbeb;border:1px solid #fde68a;color:#92400e;">
+                        <i class="bi bi-info-circle-fill flex-shrink-0"></i>
+                        <span>Selectează un stadiu din tabelul de mai jos pentru a-i adăuga o soluție.</span>
                     </div>
 
                     <div class="django-form-wrapper">
-                        <div class="row">
-                            <div class="col-md-5 mb-3">
-                                <label class="form-label fw-bold">Stabilită de</label>
-                                <div class="bg-white p-2 border rounded d-flex flex-row flex-wrap gap-3">
-                                    {% for radio in form_solutie.stabilita_de %}
-                                        <div class="form-check d-flex align-items-center gap-1 mb-0">
-                                            <div class="d-flex align-items-center m-0 p-0">{{ radio.tag }}</div>
-                                            <label class="form-check-label mb-0" for="{{ radio.id_for_label }}" style="display: inline-block; width: auto; cursor: pointer;">{{ radio.choice_label }}</label>
-                                        </div>
-                                    {% endfor %}
+                        <div class="mb-3">
+                            <label class="form-label">Stabilită de</label>
+                            <div class="d-flex flex-wrap gap-3 p-2 rounded" style="background:#f8fafc;border:1px solid #dde3ec;">
+                                {% for radio in form_solutie.stabilita_de %}
+                                <div class="form-check d-flex align-items-center gap-1 mb-0">
+                                    {{ radio.tag }}
+                                    <label class="form-check-label mb-0"
+                                           for="{{ radio.id_for_label }}"
+                                           style="font-size:0.82rem;cursor:pointer;">
+                                        {{ radio.choice_label }}
+                                    </label>
                                 </div>
+                                {% endfor %}
                             </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
                             <div class="col-md-7">
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold">Soluție dispusă / propusă</label>
-                                    {{ form_solutie.tip_solutie }}
-                                </div>
-                                <div class="row">
-                                    <div class="col-sm-6 mb-3">
-                                        <label class="form-label fw-bold">Data soluției</label>
-                                        {{ form_solutie.data_solutiei }}
-                                    </div>
-                                    <div class="col-sm-6 mb-3">
-                                        <label class="form-label fw-bold d-none d-sm-block">&nbsp;</label>
-                                        <div class="d-flex align-items-center gap-2 px-2 bg-danger bg-opacity-10 border border-danger rounded w-100" style="height: 38px;">
-                                            <div class="d-flex align-items-center m-0 p-0">{{ form_solutie.este_finala }}</div>
-                                            <label class="form-check-label fw-bold text-danger mb-0" for="id_este_finala" style="display: inline-block; width: auto; cursor: pointer;">
-                                                Este soluție finală
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
+                                <label class="form-label">Soluție dispusă / propusă</label>
+                                {{ form_solutie.tip_solutie }}
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label">Data soluției</label>
+                                {{ form_solutie.data_solutiei }}
                             </div>
                         </div>
                     </div>
 
-                    <div class="d-flex align-items-center gap-2 mb-3 mt-2 p-2 bg-white border border-success rounded" style="width: fit-content;">
-                        <div class="d-flex align-items-center m-0 p-0">{{ form_solutie.notifica_echipa }}</div>
-                        <label class="form-check-label text-success fw-bold mb-0" for="{{ form_solutie.notifica_echipa.id_for_label }}" style="display: inline-block; width: auto; cursor: pointer;">
+                    {# Checkbox soluție finală — roșu semantic #}
+                    <div class="d-flex align-items-center gap-2 px-3 py-2 rounded mb-1"
+                         style="background:#fff5f5;border:1px solid #fca5a5;">
+                        {{ form_solutie.este_finala }}
+                        <label class="fw-semibold mb-0 text-danger"
+                               for="id_este_finala"
+                               style="font-size:0.8rem;cursor:pointer;">
+                            Este soluție finală
+                        </label>
+                    </div>
+
+                    {# Checkbox notificare #}
+                    <div class="d-flex align-items-center gap-2 px-3 py-2 rounded mt-2"
+                         style="background:#f0fdf9;border:1px solid #a7f3d0;">
+                        {{ form_solutie.notifica_echipa }}
+                        <label class="fw-semibold mb-0"
+                               for="{{ form_solutie.notifica_echipa.id_for_label }}"
+                               style="font-size:0.8rem;color:#0f766e;cursor:pointer;">
                             {{ form_solutie.notifica_echipa.label }}
                         </label>
                     </div>
 
-                    <div class="d-flex justify-content-between align-items-center border-top pt-3 mt-2">
-                        <div>
-                            <button type="submit" name="salveaza_solutie" class="btn btn-sm btn-success fw-bold" id="btn_salveaza_solutie" disabled>Salvează soluția</button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary ms-1" onclick="resetSolutieForm()">Nou (curăță)</button>
+                    <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                        <div class="d-flex gap-2">
+                            <button type="submit" name="salveaza_solutie"
+                                    class="btn btn-sm fw-semibold"
+                                    id="btn_salveaza_solutie"
+                                    disabled
+                                    style="background:#0f766e;color:#fff;border-color:#0f766e;">
+                                <i class="bi bi-check-lg me-1"></i> Salvează soluția
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="resetSolutieForm()">
+                                Nou
+                            </button>
                         </div>
-                        <button type="submit" name="sterge_solutie" id="btn_sterge_solutie" class="btn btn-sm btn-outline-danger" style="display: none;" onclick="return confirm('Sigur vrei să ștergi această soluție?');" formnovalidate>🗑️ Șterge</button>
+                        <button type="submit" name="sterge_solutie" id="btn_sterge_solutie"
+                                class="btn btn-sm btn-outline-danger"
+                                style="display:none;"
+                                onclick="return confirm('Sigur vrei să ștergi această soluție?');"
+                                formnovalidate>
+                            <i class="bi bi-trash me-1"></i> Șterge
+                        </button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
+
 </div>
 
-<div class="card shadow-sm border-secondary">
-    <div class="card-header bg-secondary text-white fw-bold">
-        Istoric detaliat
+{# ============================================================ #}
+{# TABEL SOLUŢII                                                #}
+
+<div class="card-section cs-accent-blue">
+    <div class="card-header d-flex justify-content-between align-items-center" style="background:#143c7c;">
+        <h6 class="text-white">
+            <i class="bi bi-clock-history text-white"></i> Istoric detaliat stadii și soluții
+        </h6>
+        <span class="header-badge-dark">Click pe un rând pentru editare</span>
     </div>
-    <div class="card-body p-0">
-        <table class="table table-hover mb-0">
-            <thead class="table-light">
+
+    <div class="table-responsive">
+        <table class="table mb-0">
+            <thead>
                 <tr>
-                    <th>Data începere</th>
-                    <th>Stadiu urmărire penală</th>
-                    <th>Soluții</th>
+                    <th style="width:15%">Data începere</th>
+                    <th style="width:35%">Stadiu urmărire penală</th>
+                    <th style="width:50%">Soluții</th>
                 </tr>
             </thead>
             <tbody>
                 {% for stadiu in stadii %}
-                <tr class="table-primary" style="cursor: pointer;" onclick="incarcaStadiu('{{ stadiu.pk }}', '{{ stadiu.tip_stadiu }}', '{{ stadiu.data_incepere|date:'Y-m-d' }}', '{{ stadiu.get_tip_stadiu_display }}')">
-                    <td><strong>{{ stadiu.data_incepere|date:"d.m.Y" }}</strong></td>
-                    <td class="fw-bold text-primary">{{ stadiu.get_tip_stadiu_display }}</td>
+
+                {# -- Rând stadiu -- #}
+                <tr style="cursor:pointer;background:#f4f7fb;"
+                    onclick="incarcaStadiu('{{ stadiu.pk }}', '{{ stadiu.tip_stadiu }}', '{{ stadiu.data_incepere|date:'Y-m-d' }}', '{{ stadiu.get_tip_stadiu_display }}')">
+                    <td class="fw-bold" style="color:#1e293b;">
+                        {{ stadiu.data_incepere|date:"d.m.Y" }}
+                    </td>
+                    <td class="fw-semibold" style="color:#1e3a5f;">
+                        {{ stadiu.get_tip_stadiu_display }}
+                    </td>
                     <td>
-                        <button class="btn btn-sm btn-outline-primary py-0">✏️ Editează stadiu / adaugă soluție aici</button>
+                        <button class="btn-cs-icon d-inline-flex align-items-center gap-1"
+                                style="width:auto;padding:3px 10px;font-size:0.72rem;font-weight:600;color:#2a6cb0;background:#eff6ff;border-color:#bfdbfe;">
+                            <i class="bi bi-pencil"></i> Editează / adaugă soluție
+                        </button>
                     </td>
                 </tr>
-                
+
+                {# -- Rânduri soluții -- #}
                 {% for solutie in stadiu.solutii.all %}
-                <tr style="cursor: pointer; background-color: #fcfcfc;" onclick="incarcaSolutie('{{ solutie.pk }}', '{{ stadiu.pk }}', '{{ solutie.stabilita_de }}', '{{ solutie.tip_solutie }}', '{{ solutie.data_solutiei|date:'Y-m-d' }}', '{{ solutie.este_finala }}')">
-                    <td></td> 
-                    <td class="text-end text-muted">↳ <em>{{ solutie.get_stabilita_de_display }}</em> a stabilit:</td>
+                <tr style="cursor:pointer;"
+                    onclick="incarcaSolutie('{{ solutie.pk }}', '{{ stadiu.pk }}', '{{ solutie.stabilita_de }}', '{{ solutie.tip_solutie }}', '{{ solutie.data_solutiei|date:'Y-m-d' }}', '{{ solutie.este_finala }}')">
+                    <td></td>
+                    <td class="text-muted fst-italic" style="font-size:0.78rem;padding-left:28px;">
+                        ↳ {{ solutie.get_stabilita_de_display }} a stabilit:
+                    </td>
                     <td>
-                        <span class="badge {% if solutie.este_finala %}bg-success{% else %}bg-secondary{% endif %}">
+                        <span class="badge-cs {% if solutie.este_finala %}badge-cs-green{% else %}badge-cs-gray{% endif %}">
                             {{ solutie.get_tip_solutie_display }}
                         </span>
-                        <strong class="mx-1">{{ solutie.data_solutiei|date:"d.m.Y" }}</strong>
-                        
+                        <strong class="mx-2" style="font-size:0.8rem;">
+                            {{ solutie.data_solutiei|date:"d.m.Y" }}
+                        </strong>
                         {% if solutie.este_finala %}
-                            <span class="badge bg-danger ms-2">✔ FINALĂ</span>
+                            <span class="badge-cs badge-cs-red" style="font-size:0.65rem;">FINALĂ</span>
                         {% else %}
-                            <span class="text-muted small ms-2">⏳ Intermediară</span>
+                            <span class="text-muted fst-italic" style="font-size:0.75rem;">Intermediară</span>
                         {% endif %}
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
                     <td></td>
-                    <td colspan="3" class="text-muted small"><em>Nicio soluție propusă încă pe acest stadiu.</em></td>
+                    <td colspan="2" class="text-muted fst-italic" style="font-size:0.78rem;padding-left:28px;">
+                        Nicio soluție propusă încă pe acest stadiu.
+                    </td>
                 </tr>
                 {% endfor %}
 
                 {% empty %}
                 <tr>
-                    <td colspan="3" class="text-center py-4 text-muted">Niciun stadiu creat. Începe prin a adăuga unul din formularul de sus!</td>
+                    <td colspan="3" class="text-center py-5 text-muted bg-white border-0">
+                        <i class="bi bi-diagram-3 d-block fs-2 mb-3 opacity-40"></i>
+                        <p class="mb-0 fw-medium">Niciun stadiu creat. Începe prin a adăuga unul din formularul de sus.</p>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -200,86 +294,83 @@
     </div>
 </div>
 
-<script>
-    function incarcaStadiu(id, tip, data, nume_stadiu) {
-        document.getElementById('id_stadiu_hidden').value = id;
-        document.getElementById('id_tip_stadiu').value = tip;
-        document.getElementById('id_data_incepere').value = data;
-        
-        resetSolutieForm(); 
-        document.getElementById('id_stadiu_parinte_hidden').value = id;
-        
-        document.getElementById('btn_salveaza_solutie').disabled = false;
-        document.getElementById('stadiu_selectat_alerta').className = "alert alert-success py-1 px-2 small mb-3";
-        document.getElementById('stadiu_selectat_alerta').innerHTML = "✅ Se adaugă o soluție nouă pe stadiul: <strong>" + nume_stadiu + "</strong>";
-        document.getElementById('btn_sterge_stadiu').style.display = 'block';
-        
-        window.scrollTo(0, 0); 
-    }
+</div>{# /.container-fluid #}
 
-    function incarcaSolutie(solutie_id, stadiu_id, stabilita_de, tip_solutie, data, este_finala) {
-        document.getElementById('id_solutie_hidden').value = solutie_id;
-        document.getElementById('id_stadiu_parinte_hidden').value = stadiu_id;
-        document.getElementById('id_tip_solutie').value = tip_solutie;
-        document.getElementById('id_data_solutiei').value = data;
-        
-        let radios = document.getElementsByName('stabilita_de');
-        for (let i = 0; i < radios.length; i++) {
-            if (radios[i].value === stabilita_de) {
-                radios[i].checked = true;
-            }
-        }
-        
-        document.getElementById('id_este_finala').checked = (este_finala === 'True');
-        
-        document.getElementById('btn_salveaza_solutie').disabled = false;
-        document.getElementById('stadiu_selectat_alerta').className = "alert alert-primary py-1 px-2 small mb-3";
-        document.getElementById('stadiu_selectat_alerta').innerHTML = "✏️ <strong>EDITARE</strong> soluție existentă.";
-
-        document.getElementById('btn_sterge_solutie').style.display = 'block';
-        
-        window.scrollTo(0, 0);
-    }
-
-    function resetStadiuForm() {
-        document.getElementById('id_stadiu_hidden').value = "";
-        document.getElementById('id_tip_stadiu').value = "";
-        document.getElementById('id_data_incepere').value = "";
-        document.getElementById('btn_sterge_stadiu').style.display = 'none';
-    }
-
-    function resetSolutieForm() {
-        document.getElementById('id_solutie_hidden').value = "";
-        document.getElementById('id_tip_solutie').value = "";
-        document.getElementById('id_data_solutiei').value = "";
-        document.getElementById('id_este_finala').checked = false;
-        let radios = document.getElementsByName('stabilita_de');
-        for (let i = 0; i < radios.length; i++) { radios[i].checked = false; }
-
-        document.getElementById('btn_sterge_solutie').style.display = 'none';
-        
-        document.getElementById('stadiu_selectat_alerta').className = "alert alert-warning py-1 px-2 small mb-3";
-        document.getElementById('stadiu_selectat_alerta').innerHTML = "⚠️ Selectează un stadiu din tabelul de mai jos pentru a-i adăuga o soluție.";
-        document.getElementById('btn_salveaza_solutie').disabled = true;
-    }
-</script>
+{# ============================================================ #}
+{# SCRIPTURI                                                    #}
 
 <script>
-    // Asigură-te că nicio dată din formularele de stadii/soluții nu este setată în viitor.
-    // Un stadiu sau o soluție trebuie introdusă doar dacă ea chiar s-a întâmplat.
-    document.addEventListener("DOMContentLoaded", function() {
-        // Obținem data curentă în format YYYY-MM-DD
-        const today = new Date().toISOString().split('T')[0];
-        
-        const dataIncepereStadiu = document.getElementById('id_data_incepere');
-        if (dataIncepereStadiu) {
-            dataIncepereStadiu.setAttribute('max', today); // Previne selectarea unei date din viitor
-        }
+function incarcaStadiu(id, tip, data, numeStadiu) {
+    document.getElementById('id_stadiu_hidden').value = id;
+    document.getElementById('id_tip_stadiu').value = tip;
+    document.getElementById('id_data_incepere').value = data;
 
-        const dataSolutie = document.getElementById('id_data_solutiei');
-        if (dataSolutie) {
-            dataSolutie.setAttribute('max', today);
-        }
+    resetSolutieForm();
+    document.getElementById('id_stadiu_parinte_hidden').value = id;
+    document.getElementById('btn_salveaza_solutie').disabled = false;
+    document.getElementById('btn_sterge_stadiu').style.display = 'block';
+
+    const alerta = document.getElementById('stadiu_selectat_alerta');
+    alerta.style.background = '#f0fdf4';
+    alerta.style.borderColor = '#a7f3d0';
+    alerta.style.color = '#065f46';
+    alerta.innerHTML = '<i class="bi bi-check-circle-fill flex-shrink-0"></i><span>Se adaugă o soluție nouă pe stadiul: <strong>' + numeStadiu + '</strong></span>';
+
+    window.scrollTo(0, 0);
+}
+
+function incarcaSolutie(solutieId, stadiuId, stabilita_de, tipSolutie, data, esteFinala) {
+    document.getElementById('id_solutie_hidden').value = solutieId;
+    document.getElementById('id_stadiu_parinte_hidden').value = stadiuId;
+    document.getElementById('id_tip_solutie').value = tipSolutie;
+    document.getElementById('id_data_solutiei').value = data;
+
+    document.querySelectorAll('[name="stabilita_de"]').forEach(r => {
+        r.checked = (r.value === stabilita_de);
     });
+
+    document.getElementById('id_este_finala').checked = (esteFinala === 'True');
+    document.getElementById('btn_salveaza_solutie').disabled = false;
+    document.getElementById('btn_sterge_solutie').style.display = 'block';
+
+    const alerta = document.getElementById('stadiu_selectat_alerta');
+    alerta.style.background = '#eff6ff';
+    alerta.style.borderColor = '#bfdbfe';
+    alerta.style.color = '#1e40af';
+    alerta.innerHTML = '<i class="bi bi-pencil-fill flex-shrink-0"></i><span><strong>Editare</strong> soluție existentă.</span>';
+
+    window.scrollTo(0, 0);
+}
+
+function resetStadiuForm() {
+    document.getElementById('id_stadiu_hidden').value = '';
+    document.getElementById('id_tip_stadiu').value = '';
+    document.getElementById('id_data_incepere').value = '';
+    document.getElementById('btn_sterge_stadiu').style.display = 'none';
+}
+
+function resetSolutieForm() {
+    document.getElementById('id_solutie_hidden').value = '';
+    document.getElementById('id_tip_solutie').value = '';
+    document.getElementById('id_data_solutiei').value = '';
+    document.getElementById('id_este_finala').checked = false;
+    document.querySelectorAll('[name="stabilita_de"]').forEach(r => r.checked = false);
+    document.getElementById('btn_sterge_solutie').style.display = 'none';
+    document.getElementById('btn_salveaza_solutie').disabled = true;
+
+    const alerta = document.getElementById('stadiu_selectat_alerta');
+    alerta.style.background = '#fffbeb';
+    alerta.style.borderColor = '#fde68a';
+    alerta.style.color = '#92400e';
+    alerta.innerHTML = '<i class="bi bi-info-circle-fill flex-shrink-0"></i><span>Selectează un stadiu din tabelul de mai jos pentru a-i adăuga o soluție.</span>';
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const today = new Date().toISOString().split('T')[0];
+    ['id_data_incepere', 'id_data_solutiei'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.setAttribute('max', today);
+    });
+});
 </script>
 {% endblock %}

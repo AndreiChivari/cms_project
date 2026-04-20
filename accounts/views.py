@@ -12,7 +12,6 @@ from django.shortcuts import render, redirect
 from .models import CustomUser
 from django.conf import settings
 
-
 @login_required
 def setup_2fa(request):
     # Găsim sau creăm dispozitivul pentru utilizator
@@ -26,12 +25,12 @@ def setup_2fa(request):
     if request.method == 'POST':
         token = request.POST.get('token')
         
-        # device.verify_token() face magia matematică și verifică codul
+        # device.verify_token() verifică codul
         if device.verify_token(token):
             device.confirmed = True
             device.save()
             
-            # Marcăm utilizatorul ca având 2FA activat (dacă ai adăugat câmpul la Pasul 5)
+            # Marcăm utilizatorul ca având 2FA activat în baza de date
             request.user.totp_activ = True
             request.user.save()
             messages.success(request, "Autentificarea în 2 pași a fost activată cu succes!")
@@ -39,18 +38,14 @@ def setup_2fa(request):
         else:
             messages.error(request, "Codul introdus este incorect sau a expirat. Mai încearcă.")
 
-    # Logica pentru GET (generarea codului QR)
-    # url = device.config_url
-    # url = url.replace('otpauth://totp/', f'otpauth://totp/CMS Penal:{request.user.username}?')
-
     # Extragem cheia secretă din baza de date în format Base32 (necesar pentru Authenticator)
     secret_b32 = base64.b32encode(device.bin_key).decode('utf-8')
     
-    # Formatăm numele care va apărea în aplicația de pe telefon (ex: "CMS Penal: andrei")
+    # Formatăm numele care va apărea în aplicația de pe telefon (ex: "CMS Penal: ManeaI")
     issuer = urllib.parse.quote("CMS Penal")
     account_name = urllib.parse.quote(request.user.username)
     
-    # Construim URL-ul standardizat corect
+    # Construim URL-ul standardizat
     url = f"otpauth://totp/{issuer}:{account_name}?secret={secret_b32}&issuer={issuer}&digits=6&period=30"
 
     # Generăm imaginea codului QR în memorie RAM
@@ -70,7 +65,7 @@ def setup_2fa(request):
     }
     return render(request, 'accounts/setup_2fa.html', context)
 
-# 1. FUNCȚIA NOUĂ DE LOGIN
+# FUNCȚIA DE LOGARE
 def custom_login(request):
     if request.method == 'POST':
         # Folosim formularul standard Django pentru a valida username-ul și parola
@@ -78,29 +73,35 @@ def custom_login(request):
         if form.is_valid():
             user = form.get_user()
             
-            # Verificăm dacă utilizatorul are 2FA activat (câmpul din modelul CustomUser)
-            if hasattr(user, 'totp_activ') and user.totp_activ:
+            from django_otp.plugins.otp_totp.models import TOTPDevice
+            
+            # Verificăm dacă utilizatorul are un dispozitiv activ și confirmat
+            are_dispozitiv_2fa = TOTPDevice.objects.filter(user=user, name="default", confirmed=True).exists()
+            
+            if are_dispozitiv_2fa:
                 
-                # ---MSesiunea Pending ---
-                # NU îl logăm încă. Îi salvăm ID-ul în sesiune și calea "backend"-ului.
+                # Încă nu logăm utilizatorul - salvăm ID-ul în sesiune.
+                request.session['pending_user_id'] = user.id
+                request.session['pending_user_backend'] = user.backend
+
                 request.session['pending_user_id'] = user.id
                 request.session['pending_user_backend'] = user.backend
                 
-                # Salvăm și parametrul "next" (dacă a vrut să acceseze o anumită pagină)
+                # Salvăm parametrul "next" (dacă a vrut să acceseze o anumită pagină)
                 if request.GET.get('next'):
                     request.session['next_url'] = request.GET.get('next')
                     
-                # Îl trimitem la pagina de introducere a codului de 6 cifre
+                # Redirecţionăm utilizatorul la pagina de introducere a codului de 6 cifre
                 return redirect('accounts:verify_2fa')
             else:
                 # --- DACĂ NU ARE 2FA ACTIVAT ---
-                # Dacă e Procuror sau Admin, îl lăsăm să se logheze dar îl FORȚĂM să-și activeze 2FA
+                # Dacă e Procuror sau Admin, îl lăsăm să se logheze dar îl obligăm să-și activeze 2FA
                 if user.rol in getattr(settings, 'MANDATORY_2FA_ROLES', []):
                     login(request, user)
                     messages.warning(request, "Atenție! Politica de securitate vă obligă să activați Autentificarea în 2 pași pentru rolul dumneavoastră.")
                     return redirect('accounts:setup_2fa')
                 else:
-                    # Pentru politisti sau grefieri (dacă nu vrem să fie obligatoriu pentru ei), logare normală
+                    # Pentru politisti sau grefieri logare normală
                     login(request, user)
                     next_url = request.GET.get('next', 'cases:dashboard')
                     return redirect(next_url)
@@ -110,13 +111,13 @@ def custom_login(request):
     return render(request, 'registration/login.html', {'form': form})
 
 
-# 2. FUNCȚIA CARE VERIFICĂ CODUL LA LOGARE
+# FUNCȚIA DE VERIFICARE A CODULUI LA LOGARE
 def verify_2fa(request):
-    # Căutăm utilizatorul în "cutia temporară" (sesiune)
+    # Căutăm utilizatorul în sesiune
     pending_user_id = request.session.get('pending_user_id')
     
     if not pending_user_id:
-        # Dacă cineva accesează linkul direct, fără să introducă parola înainte, îl trimitem la login
+        # Dacă cineva accesează linkul direct, fără să introducă parola înainte, îl redirecţionăm către login
         return redirect('login')
         
     user = CustomUser.objects.get(id=pending_user_id)
@@ -129,8 +130,8 @@ def verify_2fa(request):
         device = TOTPDevice.objects.filter(user=user, name="default", confirmed=True).first()
         
         if device and device.verify_token(token):
-            # Îi dăm accesul real în platformă.
-            user.backend = request.session.get('pending_user_backend') # Restabilim backend-ul
+            # Dăm acces în platformă
+            user.backend = request.session.get('pending_user_backend')
             login(request, user)
             
             # Curățăm datele temporare din sesiune

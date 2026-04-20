@@ -30,18 +30,18 @@ urlpatterns = [
         success_url=reverse_lazy('accounts:password_reset_done')
     ), name='password_reset'),
 
-    # 2: Pagina care afişează "Verifică-ți mailul"
+    # 2. Pagina care afişează "Verifică-ți mailul"
     path('parola/resetare/trimis/', auth_views.PasswordResetDoneView.as_view(
         template_name='accounts/resetare_parola_trimis.html'
     ), name='password_reset_done'),
 
-    # 3: Pagina unde utilizatorul introduce noua parolă (ajunge aici din link-ul de pe email)
+    # 3. Pagina unde utilizatorul introduce noua parolă (ajunge aici din link-ul de pe email)
     path('parola/resetare/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(
         template_name='accounts/resetare_parola_confirmare.html',
         success_url=reverse_lazy('accounts:password_reset_complete')
     ), name='password_reset_confirm'),
 
-    # 4: Mesajul de succes final
+    # 4. Mesajul de succes final
     path('parola/resetare/finalizat/', auth_views.PasswordResetCompleteView.as_view(
         template_name='accounts/resetare_parola_complet.html'
     ), name='password_reset_complete'),

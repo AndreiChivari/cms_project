@@ -1,8 +1,8 @@
 from simple_history.models import HistoricalRecords
 from django.db import models
-from django.conf import settings # importăm modelul de User corect
-from datetime import date # calculul alertelor
-from django.utils import timezone # pentru a modifica data inregistrarii
+from django.conf import settings
+from datetime import date
+from django.utils import timezone
 from geopy.geocoders import Nominatim
 from cryptography.fernet import Fernet
 import hmac
@@ -12,7 +12,7 @@ class EncryptedTextField(models.TextField):
     """Câmp custom care criptează transparent datele la salvarea în baza de date."""
     
     def get_prep_value(self, value):
-        # Se execută fix înainte de a scrie în baza de date (INSERT/UPDATE)
+        # Se execută chiar înainte de a scrie în baza de date (INSERT/UPDATE)
         value = super().get_prep_value(value)
         if value:
             f = Fernet(settings.ENCRYPTION_KEY)
@@ -26,17 +26,22 @@ class EncryptedTextField(models.TextField):
                 f = Fernet(settings.ENCRYPTION_KEY)
                 return f.decrypt(value.encode('utf-8')).decode('utf-8')
             except Exception:
-                # O plasă de siguranță: dacă ai deja date necriptate în baza ta actuală, le va lăsa așa
+                # Lăsăm datele vechi necriptate dacă decriptarea eșuează 
                 return value
         return value
 
 class Dosar(models.Model):
+    """
+    Modelul pentru un dosar penal. Conține informații generale despre dosar, legături către 
+    echipa de cercetare și metode de verificare a drepturilor de editare.
+    """
+    
     class Stadiu(models.TextChoices):
         POLITIE = 'POLITIE', 'În lucru la Poliție'
         PROCUROR = 'PROCUROR', 'În lucru la Procuror'
         SOLUTIONAT = 'SOLUTIONAT', 'Soluționat'
 
-    # 2. Opţiunile pentru soluții/propuneri
+    # Opţiunile pentru soluții/propuneri
     class Solutie(models.TextChoices):
         TRIMITERE = 'TRIMITERE', 'Trimitere în judecată'
         CLASARE = 'CLASARE', 'Clasare'
@@ -45,7 +50,6 @@ class Dosar(models.Model):
         SUSPENDARE = 'SUSPENDARE', 'Suspendare'
         TRECERE = 'TRECERE', 'Trecere la alt organ'
 
-    # Datele de identificare ale dosarului
     numar_unic = models.CharField(max_length=50, unique=True, help_text="Ex: 123/P/2026")
 
     data_inregistrarii = models.DateField(
@@ -59,6 +63,7 @@ class Dosar(models.Model):
         help_text="Descrierea faptei pe scurt (opțional)"
     )
     
+    # ForeignKey (1-la-mulți): mai multe dosare pot avea același ofițer; la ștergerea utilizatorului, câmpul devine NULL.
     ofiter_caz = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
         on_delete=models.SET_NULL, 
@@ -67,6 +72,7 @@ class Dosar(models.Model):
         related_name='dosare_instrumentate'
     )
     
+    # ForeignKey (1-la-mulți): mai multe dosare pot avea același procuror; la ștergerea utilizatorului, câmpul devine NULL.
     procuror_caz = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
         on_delete=models.SET_NULL, 
@@ -75,6 +81,7 @@ class Dosar(models.Model):
         related_name='dosare_supravegheate'
     )
 
+    # ForeignKey (1-la-mulți): mai multe dosare pot avea același grefier; la ștergerea utilizatorului, câmpul devine NULL.
     grefier_caz = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
         on_delete=models.SET_NULL, 
@@ -88,6 +95,7 @@ class Dosar(models.Model):
         verbose_name_plural = "Dosare Penale"
         ordering = ['-data_inregistrarii'] # Sortează descrescător după dată
 
+    # Metodă de verificare a drepturilor de editare pentru un utilizator
     def are_drepturi_editare(self, utilizator):
         # 1. Dacă nu este logat, nu are acces
         if not utilizator.is_authenticated:
@@ -97,7 +105,7 @@ class Dosar(models.Model):
         if utilizator.is_superuser or utilizator.rol == 'ADMIN':
             return True
             
-        # 3.Comparăm ID-ul utilizatorului logat cu ID-urile anchetatorilor
+        # 3.Comparăm ID-ul utilizatorului logat cu ID-urile membrilor
         # Folosim "_id" la final pentru a lua direct numărul din baza de date, fără a mai face interogări extra
         utilizator_id = utilizator.pk
         
@@ -116,7 +124,7 @@ class Dosar(models.Model):
     def __str__(self):
         return f"Dosar nr. {self.numar_unic}"
     
-    history = HistoricalRecords(verbose_name="Istoric Dosar") # Păstrează istoricul modificărilor dosarului
+    history = HistoricalRecords(verbose_name="Istoric Dosar")
 
     @property
     def stadiu_curent(self):
@@ -138,6 +146,12 @@ class Dosar(models.Model):
         return stadiu.solutii.order_by('-data_solutiei', '-id').first()
 
 class ParteImplicata(models.Model):
+    """
+    Modelul pentru o parte implicată într-un dosar penal. 
+
+    Conține datele de identificare și calitatea procesuală.
+    """
+
     class Calitate(models.TextChoices):
         FAPTUITOR = 'FAPTUITOR', 'Făptuitor'
         SUSPECT = 'SUSPECT', 'Suspect'
@@ -146,17 +160,15 @@ class ParteImplicata(models.Model):
         PARTE_CIVILA = 'PARTE_CIVILA', 'Parte civilă'
         MARTOR = 'MARTOR', 'Martor'
 
-    # Legătura către dosar. Când un dosar e șters, se șterg și părțile implicate din el (CASCADE)
+    # ForeignKey (1-la-mulți): un dosar are mai multe părți implicate; la ștergerea dosarului, părțile se șterg în cascadă.
     dosar = models.ForeignKey(Dosar, on_delete=models.CASCADE, related_name='parti_implicate')
     
     nume_complet = models.CharField(max_length=150)
-    # CNP în forma iniţială, necriptat
-    # cnp = models.CharField(max_length=13, blank=True, null=True, verbose_name="CNP")
-    # Stocăm CNP-ul criptat în baza de date. În interfață, va fi afișat normal, 
-    # iar la salvare va fi criptat automat. Folosim un câmp custom EncryptedTextField
     cnp = EncryptedTextField(blank=True, null=True, verbose_name="CNP")
-    # Blind Index pe care îl vom folosi pentru căutări (nu poate fi decriptat)
+    
+    # Blind Index-ul - hash HMAC-SHA256 al CNP-ului, permite căutări rapide fără a decripta toate înregistrările.
     cnp_hash = models.CharField(max_length=64, blank=True, null=True, editable=False)
+
     adresa = models.CharField(max_length=255, blank=True, null=True, verbose_name="Adresă")
     calitate_procesuala = models.CharField(max_length=20, choices=Calitate.choices)
     mentiuni = models.TextField(blank=True, null=True, help_text="Alte date de contact, antecedente, etc.")
@@ -183,6 +195,11 @@ class ParteImplicata(models.Model):
     history = HistoricalRecords() # Păstrează istoricul modificărilor părților implicate
     
 class Infractiune(models.Model):
+    """ 
+    Modelul pentru o infracțiune cercetată într-un dosar penal. Conține detalii despre actul normativ, data comiterii și locația faptei. 
+    De asemenea, generează automat coordonatele geografice pe baza adresei comiterii faptei. 
+    """
+
     class ActNormativ(models.TextChoices):
         CP = 'CP', 'Codul Penal'
         CPP = 'CPP', 'Codul de Procedură Penală'
@@ -194,12 +211,12 @@ class Infractiune(models.Model):
         L123 = 'L123_2012', 'Legea energiei electrice şi a gazelor naturale (Legea 123/2012)'
         ALTUL = 'ALTUL', 'Alt act normativ'
 
+    # ForeignKey (1-la-mulți): un dosar poate avea mai multe infracțiuni; la ștergerea dosarului, infracțiunile se șterg în cascadă.
     dosar = models.ForeignKey(Dosar, on_delete=models.CASCADE, related_name='infractiuni')
     
-    # Doar Actul normativ este obligatoriu
+    # Doar actul normativ este obligatoriu, celelalte câmpuri sunt opționale
     act_normativ = models.CharField(max_length=50, choices=ActNormativ.choices, default=ActNormativ.CP)
     
-    #  opționale (blank=True, null=True)
     articol = models.CharField(max_length=50, blank=True, null=True, help_text="Ex: 228 alin. 1")
     incadrare_juridica = models.CharField(max_length=255, blank=True, null=True, help_text="Ex: Furt calificat")
     data_comiterii = models.DateField(null=True, blank=True, help_text="Data presupusei fapte")
@@ -212,7 +229,8 @@ class Infractiune(models.Model):
         verbose_name="Locul săvârșirii faptei",
         help_text="Ex: Strada Mureșenilor nr. 1, Brașov"
     )
-    # Vor fi completate automat - le lăsăm blank/null
+
+    # Vor fi completate automat în funcţie de adresă - le lăsăm blank/null
     latitudine = models.FloatField(null=True, blank=True)
     longitudine = models.FloatField(null=True, blank=True)
 
@@ -223,7 +241,7 @@ class Infractiune(models.Model):
         verbose_name_plural = "Infracțiuni"
 
     def __str__(self):
-        # Afişare în funcţie de date disponibile
+        # Construim un text descriptiv pentru infracțiune, combinând actul normativ, articolul și încadrările juridice dacă sunt disponibile
         text = self.get_act_normativ_display()
         if self.articol:
             text = f"art. {self.articol} {text}"
@@ -231,11 +249,11 @@ class Infractiune(models.Model):
             text = f"{self.incadrare_juridica} ({text})"
         return text
     
-    # 2. Suprascriem metoda save() pentru a genera coordonatele automat
+    # Suprascriem metoda save() pentru a genera coordonatele automat
     def save(self, *args, **kwargs):
         # Verificăm dacă am introdus o adresă
         if self.adresa_comiterii:
-            # Inițializăm geolocatorul (folosim un 'user_agent' ca să știe cine face cererea)
+            # Inițializăm geolocatorul (folosim un 'user_agent' pentru a evita blocarea de către serverul de hărți)
             geolocator = Nominatim(user_agent="cms_penal_licenta")
             
             try:
@@ -252,6 +270,13 @@ class Infractiune(models.Model):
         super().save(*args, **kwargs)
 
 class MasuraPreventiva(models.Model):
+    """
+    Modelul pentru măsurile preventive dispuse într-un dosar penal. 
+    
+    Conține tipul măsurii, durata și datele de început și sfârșit. 
+    De asemenea, are un câmp boolean folosit pentru alerte.
+    """
+
     class TipMasura(models.TextChoices):
         RETINERE = 'RETINERE', 'Reținere (24h)'
         AREST_PREVENTIV = 'AREST_PREVENTIV', 'Arest preventiv'
@@ -259,7 +284,10 @@ class MasuraPreventiva(models.Model):
         CONTROL_JUDICIAR = 'CONTROL_JUDICIAR', 'Control judiciar'
         CONTROL_JUDICIAR_CAUTIUNE = 'CONTROL_JUDICIAR_CAUTIUNE', 'Control judiciar pe cauțiune'
 
+    # ForeignKey (1-la-mulți): un dosar poate avea mai multe măsuri preventive; la ștergerea dosarului, măsurile se șterg în cascadă.
     dosar = models.ForeignKey(Dosar, on_delete=models.CASCADE, related_name='masuri_preventive')
+
+    # ForeignKey (1-la-mulți): o parte implicată poate avea mai multe măsuri preventive; la ștergerea părții, măsurile se șterg în cascadă.
     parte = models.ForeignKey(ParteImplicata, on_delete=models.CASCADE, related_name='masuri_preventive')
     
     tip_masura = models.CharField(max_length=50, choices=TipMasura.choices)
@@ -281,12 +309,21 @@ class MasuraPreventiva(models.Model):
             return (self.data_sfarsit - date.today()).days
         return 0
     
-    history = HistoricalRecords(verbose_name="Istoric Măsură Preventivă") # <--- PĂSTREAZĂ ISTORICUL MĂSURILOR
+    history = HistoricalRecords(verbose_name="Istoric Măsură Preventivă")
 
 
 class IstoricDesemnare(models.Model):
+    """
+    Modelul pentru istoricul de desemnări ale dosarului. 
+    
+    Fiecare înregistrare reprezintă o perioadă în care un utilizator a fost desemnat în dosar într-un anumit rol (ofițer, procuror, grefier.
+    Conține datele de început și sfârșit ale desemnării, precum și rolul utilizatorului în acea perioadă.
+    """
+
+    # ForeignKey (1-la-mulți): un dosar poate avea mai multe înregistrări în istoric; la ștergerea dosarului, istoricul se șterge în cascadă.
     dosar = models.ForeignKey(Dosar, on_delete=models.CASCADE, related_name='istoric_desemnari')
     
+    # ForeignKey (1-la-mulți): un utilizator poate apărea în mai multe desemnări; la ștergerea utilizatorului, înregistrările se șterg în cascadă.
     utilizator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     
     rol = models.CharField(max_length=50) 
@@ -303,11 +340,13 @@ class IstoricDesemnare(models.Model):
         return f"{self.rol} - {self.utilizator} ({self.data_desemnare} -> {self.data_finalizare or 'Prezent'})"
 
 class StadiuCercetare(models.Model):
+    """ Modelul pentru stadiile de cercetare ale unui dosar penal. Conține tipul stadiului și data începerii acestuia. """
     class TipStadiu(models.TextChoices):
         EXAMINARE = 'EXAMINARE', 'Examinare sesizare'
         UP_INCEPUTA = 'UP_INCEPUTA', 'Urmărire penală începută'
         AP_MASCATA = 'AP_MASCATA', 'Acțiune penală pusă în mișcare'
 
+    # ForeignKey (1-la-mulți): un dosar poate avea mai multe stadii de cercetare; la ștergerea dosarului, stadiile se șterg în cascadă.
     dosar = models.ForeignKey(Dosar, on_delete=models.CASCADE, related_name='stadii_cercetare')
     tip_stadiu = models.CharField(max_length=50, choices=TipStadiu.choices, default=TipStadiu.EXAMINARE)
     data_incepere = models.DateField(help_text="Data începerii stadiului")
@@ -317,13 +356,19 @@ class StadiuCercetare(models.Model):
     class Meta:
         verbose_name = "Stadiu Urmărire"
         verbose_name_plural = "Stadii Urmărire"
-        ordering = ['-data_incepere'] # Cele mai noi primele
+        ordering = ['-data_incepere']
 
     def __str__(self):
         return f"{self.get_tip_stadiu_display()} ({self.data_incepere})"
 
 
 class SolutieDosar(models.Model):
+    """
+    Modelul pentru soluțiile/propunerile privind un dosar penal.
+
+    Fiecare soluție este legată de un stadiu de cercetare și conține informații despre tipul soluției, data acesteia și cine a stabilit-o.
+    """
+
     class Emitent(models.TextChoices):
         ORGAN_CERCETARE = 'ORGAN', 'Organ de cercetare'
         PROCUROR = 'PROCUROR', 'Procuror'
@@ -346,6 +391,7 @@ class SolutieDosar(models.Model):
         RESTITUIRE = 'RESTITUIRE', 'Restituire la organul de cercetare'
         ALTA = 'ALTA', 'Altă soluție'
 
+    # ForeignKey (1-la-mulți): un stadiu poate avea mai multe soluții/propuneri; la ștergerea stadiului, soluțiile se șterg în cascadă.
     stadiu = models.ForeignKey(StadiuCercetare, on_delete=models.CASCADE, related_name='solutii')
     stabilita_de = models.CharField(max_length=20, choices=Emitent.choices, default=Emitent.ORGAN_CERCETARE)
     tip_solutie = models.CharField(max_length=50, choices=TipSolutie.choices)
@@ -363,7 +409,13 @@ class SolutieDosar(models.Model):
         return f"{self.get_tip_solutie_display()} - {self.get_stabilita_de_display()}"
 
 class Notificare(models.Model):
-    # Legăm notificarea de utilizatorul care trebuie să o primească
+    """ 
+    Modelul pentru notificările generate de sistem pentru utilizatori. 
+    
+    Conține mesajul notificării, link-ul către dosarul vizat și starea de citire. 
+    """
+
+    # ForeignKey (1-la-mulți): un utilizator poate primi mai multe notificări; la ștergerea utilizatorului, notificările se șterg în cascadă.
     utilizator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notificari')
 
     # Conținutul notificării
@@ -375,7 +427,7 @@ class Notificare(models.Model):
     data_crearii = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['-data_crearii'] # Cele mai noi apar primele
+        ordering = ['-data_crearii'] # Cele mai noi sunt afişate primele
         verbose_name = "Notificare"
         verbose_name_plural = "Notificări"
 
@@ -385,20 +437,27 @@ class Notificare(models.Model):
     
 
 class TermenProcedural(models.Model):
+    """
+    Modelul pentru termenele procedurale asociate unui dosar penal.
+
+    Fiecare termen procedural este legat de un dosar și conține informații despre tipul termenului, data limită, ora (opțional) și detalii suplimentare.
+    """
+
     TIP_TERMEN_CHOICES = [
         ('PRESCRIPTIE_GEN', 'Prescripție'),
-        ('NOTA', 'Notă de dispoiţii'),
+        ('NOTA', 'Notă de dispoziţii'),
         ('INSTANTA', 'Termen instanță (Contestație durată proces)'),
         ('AUDIERE', 'Audiere'),
         ('ALTUL', 'Alt tip de termen procedural'),
     ]
 
-    # Legăm termenul direct de Dosar (nu de o persoană)
+    # ForeignKey (1-la-mulți): un dosar poate avea mai multe termene procedurale; la ștergerea dosarului, termenele se șterg în cascadă.
     dosar = models.ForeignKey(
         'Dosar', 
         on_delete=models.CASCADE, 
         related_name='termene_procedurale'
     )
+
     # Titlu scurt pentru calendar
     titlu = models.CharField(
         max_length=150,
@@ -415,6 +474,7 @@ class TermenProcedural(models.Model):
     data_limita = models.DateField(
         verbose_name="Dată Limită / Scadență"
     )
+
     # Oră opțională
     ora = models.TimeField(
         blank=True,
@@ -438,22 +498,20 @@ class TermenProcedural(models.Model):
     class Meta:
         verbose_name = "Termen Procedural"
         verbose_name_plural = "Termene Procedurale"
-        # Ordonăm automat după data limită (cele mai urgente primele)
-        ordering = ['data_limita', 'ora']
+        ordering = ['data_limita', 'ora'] # Ordonăm după data limită (cele mai urgente apar primele)
 
     def __str__(self):
         return f"{self.get_tip_termen_display()} - {self.dosar.numar_unic}"
 
-    # Proprietate calculată dinamic (foarte utilă pentru Dashboard)
+    # Proprietate calculată dinamic pentru a afișa câte zile au rămas până la termenul procedural
     @property
     def zile_ramase(self):
         if self.data_limita:
             return (self.data_limita - date.today()).days
         return 0
     
-    # auto-completare
     def save(self, *args, **kwargs):
-        # Dacă utilizatorul nu a pus un titlu, generăm automat unul bazat pe tipul termenului și numărul dosarului
+        # Auto-completare - dacă utilizatorul nu a pus un titlu, generăm automat unul bazat pe tipul termenului și numărul dosarului
         if not self.titlu:
             self.titlu = f"{self.get_tip_termen_display()} ({self.dosar.numar_unic})"
         super().save(*args, **kwargs)

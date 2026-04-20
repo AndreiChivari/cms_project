@@ -1,0 +1,54 @@
+{% extends 'portal/base_portal.html' %}
+{% block title %}Cerere acces dosar{% endblock %}
+
+{% block content %}
+<div class="portal-card">
+    <div class="portal-card-header">
+        <h5>Cerere de acces la dosar electronic</h5>
+        <p>Completați datele de mai jos pentru a solicita accesul la dosarul dumneavoastră</p>
+    </div>
+    <div class="portal-card-body">
+        {% if form.errors %}
+        <div class="portal-alert portal-alert-danger">
+            {% for field in form %}
+                {% for error in field.errors %}{{ error }}{% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="portal-alert portal-alert-warning" style="margin-bottom:1.5rem;">
+            Cererea va fi analizată de procurorul de caz. Veți fi notificat
+            prin email cu privire la decizia luată.
+        </div>
+
+        <form method="POST">
+            {% csrf_token %}
+            <div class="portal-field">
+                <label class="portal-label">Număr dosar</label>
+                {{ form.numar_dosar }}
+            </div>
+            <div class="portal-field">
+                <label class="portal-label">CNP</label>
+                {{ form.cnp }}
+            </div>
+            <div class="portal-field">
+                <label class="portal-label">Adresă email</label>
+                {{ form.email }}
+            </div>
+            <div class="portal-field">
+                <label class="portal-label">Motivul solicitării</label>
+                {{ form.motiv }}
+            </div>
+            <div style="display:flex; gap:10px; margin-top:1.5rem;">
+                <button type="submit" class="portal-btn portal-btn-primary">
+                    Trimiteţi cererea
+                </button>
+                <a href="{% url 'portal:login' %}" class="portal-btn portal-btn-light">
+                    Înapoi
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

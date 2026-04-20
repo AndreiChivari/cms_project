@@ -9,7 +9,7 @@ class CustomUserAdmin(UserAdmin):
     # Filtre laterale
     list_filter = ('rol', 'is_staff', 'is_superuser', 'is_active')
     
-    # Câmpurile personalizate trebuie adăugate în 'fieldsets' pentru a putea fi editate din Admin
+    # Adăugăm câmpuri personalizate în 'fieldsets' pentru a putea fi editate din panoul Admin
     fieldsets = UserAdmin.fieldsets + (
         ('Informații Profesionale', {'fields': ('rol', 'grad_profesional', 'unitate')}),
     )

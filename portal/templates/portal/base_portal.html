@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Portal Dosare{% endblock %} — SED</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+            color: #1a1a2e;
+        }
+        .portal-header {
+            background: #1c437a;
+            color: white;
+            padding: 0 2rem;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 3px solid #f6ad55;
+        }
+        .portal-header .brand {
+            font-size: 0.95rem;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .portal-header .brand-sub {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            font-weight: 400;
+        }
+        .portal-badge {
+            font-size: 0.7rem;
+            background: rgba(246,173,85,0.2);
+            border: 1px solid #f6ad55;
+            color: #f6ad55;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .portal-main {
+            max-width: 800px;
+            margin: 2.5rem auto;
+            padding: 0 1.5rem;
+        }
+        .portal-card {
+            background: white;
+            border-radius: 10px;
+            border: 0.5px solid rgba(108,117,125,0.2);
+            overflow: hidden;
+        }
+        .portal-card-header {
+            background: #F7F6F3;
+            border-bottom: 2px solid #E6F1FB;
+            border-left: 3px solid #1c437a;
+            padding: 14px 20px;
+        }
+        .portal-card-header h5 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #1a1a2e;
+            margin: 0;
+        }
+        .portal-card-header p {
+            font-size: 0.8rem;
+            color: #6c757d;
+            margin: 4px 0 0;
+        }
+        .portal-card-body { padding: 24px; }
+        .portal-input {
+            display: block;
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.9rem;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            transition: border-color 0.15s, box-shadow 0.15s;
+            font-family: inherit;
+            color: #212529;
+            background: #fff;
+        }
+        .portal-input:focus {
+            border-color: #1c437a;
+            outline: 0;
+            box-shadow: 0 0 0 0.2rem rgba(28,67,122,0.2);
+        }
+        .portal-label {
+            display: block;
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+        .portal-field { margin-bottom: 1.1rem; }
+        .portal-btn {
+            display: inline-block;
+            padding: 0.5rem 1.5rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+        .portal-btn:hover { opacity: 0.9; }
+        .portal-btn-primary { background: #1c437a; color: white; }
+        .portal-btn-light {
+            background: #f8f9fa;
+            color: #495057;
+            border: 1px solid #dee2e6;
+        }
+        .portal-alert {
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+        }
+        .portal-alert-danger {
+            background: #fff5f5;
+            border: 1px solid #fed7d7;
+            color: #c53030;
+        }
+        .portal-alert-warning {
+            background: #fffbeb;
+            border: 1px solid #fbd38d;
+            color: #744210;
+        }
+        .portal-alert-info {
+            background: #ebf8ff;
+            border: 1px solid #bee3f8;
+            color: #2c5282;
+        }
+        .portal-footer {
+            text-align: center;
+            padding: 2rem 1rem 1rem;
+            font-size: 0.75rem;
+            color: #adb5bd;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 0.5px solid rgba(108,117,125,0.1);
+            font-size: 0.875rem;
+        }
+        .info-row:last-child { border-bottom: none; }
+        .info-label { color: #6c757d; font-weight: 500; }
+        .info-value { color: #1a1a2e; font-weight: 500; text-align: right; }
+        .badge-calitate {
+            display: inline-block;
+            font-size: 0.72rem;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        .badge-danger { background: #fff5f5; color: #c53030; border: 1px solid #fed7d7; }
+        .badge-secondary { background: #f7f6f3; color: #5f5e5a; border: 1px solid #d3d1c7; }
+        .section-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #6c757d;
+            margin: 1.5rem 0 0.6rem;
+            padding-bottom: 6px;
+            border-bottom: 0.5px solid rgba(108,117,125,0.2);
+        }
+        .doc-item {
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            border: 0.5px solid rgba(108,117,125,0.15);
+            border-radius: 7px;
+            margin-bottom: 8px;
+            font-size: 0.875rem;
+        }
+        .doc-item:last-child { margin-bottom: 0; }
+        .termen-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 9px 0;
+            border-bottom: 0.5px solid rgba(108,117,125,0.1);
+            font-size: 0.875rem;
+        }
+        .termen-item:last-child { border-bottom: none; }
+        .termen-data {
+            font-weight: 600;
+            color: #1c437a;
+            min-width: 80px;
+        }
+        {% block extra_style %}{% endblock %}
+    </style>
+</head>
+<body>
+    <header class="portal-header">
+        <div class="brand">
+            <div>
+                Sistemul Informatic de Evidență a Dosarelor Penale
+                <div class="brand-sub">Portal Acces Părți</div>
+            </div>
+        </div>
+        <div class="portal-badge">Portal public</div>
+    </header>
+
+    <main class="portal-main">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="portal-footer">
+        Acces restricționat. Toate sesiunile sunt înregistrate conform legii.
+        &nbsp;·&nbsp; Sistem de Evidență Dosare Penale
+    </footer>
+</body>
+</html>

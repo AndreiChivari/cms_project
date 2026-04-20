@@ -1,0 +1,45 @@
+{% extends 'portal/base_portal.html' %}
+{% block title %}Autentificare Portal{% endblock %}
+
+{% block content %}
+<div class="portal-card">
+    <div class="portal-card-header">
+        <h5>Acces dosar electronic</h5>
+        <p>Introduceți datele primite prin email pentru a accesa dosarul</p>
+    </div>
+    <div class="portal-card-body">
+        {% if eroare %}
+        <div class="portal-alert portal-alert-danger">{{ eroare }}</div>
+        {% endif %}
+
+        <form method="POST">
+            {% csrf_token %}
+            <div class="portal-field">
+                <label class="portal-label">Număr dosar</label>
+                {{ form.numar_dosar }}
+            </div>
+            <div class="portal-field">
+                <label class="portal-label">Cod de acces</label>
+                {{ form.cod_acces }}
+            </div>
+            <div class="portal-field">
+                <label class="portal-label">PIN (4 cifre)</label>
+                {{ form.pin }}
+            </div>
+            <div style="display:flex; gap:10px; margin-top:1.5rem;">
+                <button type="submit" class="portal-btn portal-btn-primary">
+                    Accesează dosarul
+                </button>
+                <a href="{% url 'portal:cerere' %}" class="portal-btn portal-btn-light">
+                    Solicit acces
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="portal-alert portal-alert-info" style="margin-top:1rem; font-size:0.8rem;">
+    Nu aveți date de acces? Depuneți o cerere de studiu dosar și veți primi
+    codul de acces la adresa de email indicată, după aprobarea procurorului.
+</div>
+{% endblock %}

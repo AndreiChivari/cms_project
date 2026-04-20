@@ -43,31 +43,27 @@
             return;
         }
 
-        // Modificăm UI-ul ca să arate că lucrează (poate dura 2-4 secunde)
         this.disabled = true;
         spinner.classList.remove('d-none');
         iconScan.classList.add('d-none');
         rezultatText.innerHTML = "Se procesează imaginea. Te rog așteaptă...";
 
-        // Pregătim datele pentru a fi trimise către Django
         const formData = new FormData();
         formData.append('imagine_buletin', inputImagine.files[0]);
 
-        // Facem apelul către API-ul nostru
-        fetch('/cases/api/test-ocr/', {  // <-- Asigură-te că ruta se potrivește cu urls.py al tău!
+        fetch('/cases/api/test-ocr/', {  
             method: 'POST',
             body: formData
         })
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
-                // Afișăm datele extrase inteligent
+
                 let rezultat = `<strong class="text-success">Extragere cu succes!</strong><br><br>`;
                 rezultat += `<strong>CNP:</strong> <span class="text-primary">${data.date_structurate.cnp}</span><br>`;
                 rezultat += `<strong>Serie C.I.:</strong> <span class="text-primary">${data.date_structurate.serie}</span><br>`;
                 rezultat += `<strong>Număr C.I.:</strong> <span class="text-primary">${data.date_structurate.numar}</span><br><br>`;
                 
-                // Opțional, afișăm și textul brut mai mic dedesubt
                 rezultat += `<hr><span class="small text-muted">Text brut procesat:</span><br>`;
                 rezultat += `<span class="small text-muted" style="font-size: 0.7rem;">${data.text_brut}</span>`;
                 
@@ -80,7 +76,7 @@
             rezultatText.innerHTML = "Eroare de rețea: " + error;
         })
         .finally(() => {
-            // Revenim la starea inițială a butonului
+
             this.disabled = false;
             spinner.classList.add('d-none');
             iconScan.classList.remove('d-none');
