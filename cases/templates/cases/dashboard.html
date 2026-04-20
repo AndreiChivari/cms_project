@@ -33,7 +33,7 @@
 </div>
 
 {# ============================================================ #}
-{# SECȚIUNEA 2 — Carduri metrici (4 egale)                     #}
+{# SECȚIUNEA 2 — Carduri detalii                     #}
 {# ============================================================ #}
 <div class="dashboard-metrics mb-4">
 
@@ -79,7 +79,7 @@
             <i class="bi bi-speedometer2"></i> Media pe instituție
         </div>
         <div class="metric-value mc-slate-text" style="font-size: 1.35rem;">
-            {{ media_sistem }} <span class="metric-unit">dos/pers</span>
+            {{ media_sistem }} <span class="metric-unit">dosare/persoană</span>
         </div>
         <div class="mt-2">
             {% if diferenta_medie > 0 %}
@@ -109,7 +109,7 @@
     <div class="chart-card chart-card-bar">
         <div class="chart-card-header">
             <h6><i class="bi bi-bar-chart-line-fill"></i> Dinamica înregistrărilor</h6>
-            <span class="chart-card-meta">ultimele 8 luni</span>
+            <span class="chart-card-meta">ultimele 12 luni</span>
         </div>
         <div class="chart-card-body">
             <div style="position: relative; height: 160px; width: 100%;">
@@ -182,7 +182,7 @@
                     <td>
                         {% with stadiu=dosar.stadiu_curent solutie=dosar.solutie_curenta %}
                             {% if stadiu %}
-                                <span class="badge-cs badge-cs-gray">{{ stadiu.get_tip_stadiu_display }}</span>
+                                <span class="badge-cs badge-cs-blue">{{ stadiu.get_tip_stadiu_display }}</span>
                                 {% if solutie %}
                                     <div class="mt-1" style="font-size: 0.78rem;">
                                         <span class="fw-bold d-flex align-items-center gap-1
@@ -291,7 +291,7 @@
 {% else %}
 <div class="card border-0 shadow-sm rounded-3 mb-4 text-center py-5" style="background:#fff;">
     <i class="bi bi-calendar-check display-4 d-block mb-3 text-success opacity-40"></i>
-    <h6 class="fw-bold text-dark mb-1">Nicio urgență la orizont</h6>
+    <h6 class="fw-bold text-dark mb-1">Nicio urgență în acest moment</h6>
     <p class="text-muted small mb-0">Nu există măsuri sau termene care să expire în curând.</p>
 </div>
 {% endif %}
@@ -305,7 +305,7 @@
 <script>
 document.addEventListener("DOMContentLoaded", function () {
 
-    // ── Donut ──────────────────────────────────────────────
+    // ── Donut chart
     const ctxDonut = document.getElementById('dosareChart');
     if (ctxDonut) {
         new Chart(ctxDonut, {
@@ -333,7 +333,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // ── Bar chart ──────────────────────────────────────────
+    // ── Bar chart
     const ctxBar = document.getElementById('evolutieChart');
     if (ctxBar) {
         const labelsGrafic = {{ labels_grafic|safe }};

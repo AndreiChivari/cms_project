@@ -16,12 +16,12 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from django.conf import settings # pentru a accesa MEDIA_URL
+from django.conf import settings
 from django.conf.urls.static import static # pentru a servi fișierele
 from django.views.generic import RedirectView # pentru redirecționarea de pe /
-from django.contrib.auth.views import LogoutView # Importăm Logout pentru a-l avea separat
+from django.contrib.auth.views import LogoutView
 
-# Importăm funcția noastră nouă de login din aplicația accounts
+# Importăm funcția de login din aplicația accounts
 from accounts.views import custom_login
 
 urlpatterns = [
@@ -31,19 +31,19 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('cases/', include('cases.urls')),
 
-    # --- AICI AM FĂCUT MODIFICAREA ---
-    # Am înlocuit auth_views.LoginView cu funcția noastră custom_login.
-    # Acum, oricine accesează /conturi/login/ trece automat prin verificarea 2FA.
+    # Când accesăm /conturi/login/ trecem automat prin verificarea 2FA
     path('conturi/login/', custom_login, name='login'),
 
-    # Deconectarea (logout) - am adăugat next_page pentru a te trimite la login după ieșire
+    # Deconectarea - next_page ne trimite la login după ieșire
     path('conturi/logout/', LogoutView.as_view(next_page='/conturi/login/'), name='logout'),
 
-    # Rutele built-in Django rămân active pentru alte funcții (ex. resetare parolă pe viitor)
+    # Rutele built-in Django rămân active pentru alte funcții (ex. resetare parolă)
     path('conturi/', include('django.contrib.auth.urls')),
 
     # Rutele pentru gestionarea 2FA (activează și verifică) din aplicația accounts
     path('cont/', include('accounts.urls')),
+
+    path('portal/', include('portal.urls')),
 ]
 
 # Condiție care adaugă ruta pentru fișiere doar în modul de dezvoltare

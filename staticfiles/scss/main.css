@@ -1,217 +1,3 @@
-@charset "UTF-8";
-/*
-// ==========================================================
-// main.scss — temă Bootstrap + ajustări UI pentru aplicație juridică
-// ==========================================================
-
-// *** SECTIUNE DE TEST
-$legal-navy: #1e293b;
-$legal-gold: #bf953f;
-$legal-red-sober: #9b2226; // Un roșu spre vișiniu, mai serios pentru dosare
-
-
-
-// ----------------------------------------------------------
-// 1) Variabile Bootstrap suprascrise înainte de import
-// ----------------------------------------------------------
-// Paletă cromatică sobră, potrivită unui produs instituțional.
-// $primary: #1c437a;       // Albastru principal (brand / acțiuni primare)
-$primary: #2d3748  ;
-$secondary: #4a5568;     // Gri închis (acțiuni secundare / texte utilitare)
-$success: #2f855a;       // Verde echilibrat (confirmări / reușite)
-$danger: #c53030;        // Roșu moderat (erori / acțiuni destructive)
-$body-bg: #f7fafc;       // Fundal deschis, confortabil vizual
-$border-radius: 0.2rem;  // Colțuri ușor mai ferme (look profesional)
-
-// ----------------------------------------------------------
-// 2) Import Bootstrap
-// ----------------------------------------------------------
-// Bootstrap va prelua valorile variabilelor definite mai sus.
-@import "bootstrap/bootstrap";
-
-// ----------------------------------------------------------
-// 3) Stiluri custom aplicație
-// ----------------------------------------------------------
-
-// Tabel dosare: antet mai clar, ușor tehnic.
-.tabel-dosare th {
-    font-weight: 600;
-    letter-spacing: 0.05em;
-}
-
-// Navbar: înălțime fixă pentru aliniere constantă în toate paginile.
-.navbar {
-    height: 64px;
-    padding-top: 0;
-    padding-bottom: 0;
-}
-
-// Container intern navbar: întinde pe verticală și centrează conținutul.
-.navbar .container-xl {
-    height: 100%;
-    display: flex;
-    align-items: center;
-}
-
-// Logo navbar: dimensiune controlată, fără deformare.
-.navbar-logo {
-    height: 50px;      // Lasă spațiu vertical în navbar-ul de 64px
-    width: auto;
-    object-fit: contain;
-    margin-top: 5px;
-
-    // Dacă PNG-ul are margini transparente și pare mic,
-    // activează și ajustează scala (ex: 1.1 - 1.4).
-    // transform: scale(1.2);
-}
-
-// ----------------------------------------------------------
-// Utilitare mici pentru varianta instituțională a navbar-ului
-// ----------------------------------------------------------
-
-// Tranziție standard reutilizabilă.
-.transition-base {
-    transition: all 0.2s ease-in-out;
-}
-
-// Hover: opacitate forțată la 100%.
-.hover-opacity-100:hover {
-    opacity: 1 !important;
-}
-
-// Hover: fundal deschis.
-.hover-bg-light:hover {
-    background-color: #f8f9fa !important;
-}
-
-// Elimină border-ul de jos pentru ultimul element din listă.
-.last-child-no-border:last-child {
-    border-bottom: none !important;
-}
-
-// ==========================================================
-// Formulare Django (în modale + în wrapper general de pagină)
-// ==========================================================
-.modal-body,
-.django-form-wrapper {
-
-    // Django `as_p` învelește câmpurile în <p>; uniformizăm spațierea.
-    p {
-        margin-bottom: 1.25rem;
-    }
-
-    // Stil unificat pentru controalele principale de formular.
-    // Excludem checkbox/radio deoarece au layout diferit.
-    input:not([type="checkbox"]):not([type="radio"]),
-    select,
-    textarea {
-        display: block !important;
-        width: 100% !important;
-        padding: 0.5rem 0.75rem;
-        font-size: 0.95rem;
-        font-family: inherit;
-        color: #212529;
-        background-color: #fff;
-        border: 1px solid #ced4da;
-        border-radius: 0.375rem;
-        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-
-        // Focus accesibil, în culoarea primară a temei.
-        &:focus {
-            border-color: $primary;
-            outline: 0;
-            box-shadow: 0 0 0 0.25rem rgba($primary, 0.25);
-        }
-    }
-
-    // Label-uri în stil tehnic: compacte, uppercase, lizibile.
-    label {
-        display: block;
-        width: 100%;
-        font-size: 0.8rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        color: #6c757d;
-        margin-bottom: 0.4rem;
-    }
-
-    // Text auxiliar Django (`help_text`).
-    .helptext {
-        display: block;
-        font-size: 0.75rem;
-        color: #6c757d;
-        margin-top: 0.25rem;
-    }
-
-    // Mesaje de eroare Django (`ul.errorlist`).
-    ul.errorlist {
-        list-style-type: none;
-        padding: 0.75rem 1rem;
-        margin-top: 0;
-        margin-bottom: 0.5rem;
-        background-color: #f8d7da;
-        border: 1px solid #f5c2c7;
-        border-radius: 0.375rem;
-        color: #842029;
-        font-size: 0.85rem;
-        font-weight: 600;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-
-        li {
-            margin-bottom: 0.25rem;
-
-            &:last-child {
-                margin-bottom: 0;
-            }
-
-            // Prefix vizual pentru evidențiere rapidă a erorii.
-            &::before {
-                content: "⚠️ ";
-                margin-right: 6px;
-                font-size: 0.9rem;
-            }
-        }
-    }
-}
-
-
-
-// *** SECTIUNE DE TEST: Stiluri experimentale pentru elemente specifice aplicației juridice
-// ----------------------------------------------------------
-// Navbar: nav-link activ cu fundal, colțuri rotunjite și bordură jos
-// ----------------------------------------------------------
-.navbar .nav-link {
-    border-radius: 1.2rem;
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
-    position: relative;
-    
-    &.active {
-        background-color: rgba(255, 255, 255, 0.12);
-        opacity: 1 !important;
-        font-weight: 600;
-        
-        // Bordura de jos colorată — accent vizual distinct
-        &::after {
-            content: '';
-            position: absolute;
-            bottom: -5px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80%;
-            height: 2px;
-            background-color: #f79620; // portocaliu-auriu — contrast bun pe albastru închis
-            border-radius: 2px 2px 0 0;
-        }
-    }
-    
-    &:hover:not(.active) {
-        background-color: rgba(255, 255, 255, 0.07);
-        opacity: 1 !important;
-    }
-}
-*/
 /*!
    * Bootstrap  v5.3.8 (https://getbootstrap.com/)
    * Copyright 2011-2025 The Bootstrap Authors
@@ -9474,6 +9260,18 @@ textarea.form-control-lg {
   .d-print-none {
     display: none !important; } }
 
+.btn-primary:hover, .btn-primary:focus, .btn-primary:active {
+  background-color: #274b85;
+  border-color: #143c7c; }
+
+.btn-outline-primary {
+  color: #2a6cb0;
+  border-color: #2a6cb0; }
+  .btn-outline-primary:hover, .btn-outline-primary:focus {
+    background-color: #2a6cb0;
+    border-color: #2a6cb0;
+    color: #fff; }
+
 .transition-base {
   transition: all 0.2s ease-in-out; }
 
@@ -10036,10 +9834,6 @@ textarea.form-control-lg {
     height: 1px;
     background: #e2e8f0; }
 
-/* ==========================================================================
-   TABELE GLOBALE (.table-cs)
-   Se folosește pe elementul <table> alături de clasa standard .table Bootstrap
-   ========================================================================== */
 .table-cs {
   font-size: 0.9rem;
   margin-bottom: 0; }

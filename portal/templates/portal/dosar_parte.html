@@ -1,0 +1,201 @@
+{% extends 'portal/base_portal.html' %}
+{% block title %}Dosar {{ dosar.numar_unic }}{% endblock %}
+
+{% block extra_style %}
+.logout-link {
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.7);
+    text-decoration: none;
+    padding: 4px 10px;
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 4px;
+}
+.logout-link:hover { color: white; border-color: white; }
+{% endblock %}
+
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+    <div>
+        <div style="font-size:0.75rem; color:#6c757d; text-transform:uppercase; letter-spacing:0.5px;">
+            Dosar penal
+        </div>
+        <div style="font-size:1.3rem; font-weight:700; color:#1c437a;">
+            {{ dosar.numar_unic }}
+        </div>
+    </div>
+    <div style="text-align:right; font-size:0.8rem; color:#6c757d;">
+        Acces valabil până la <strong>{{ data_expirare|date:"d.m.Y" }}</strong>
+        <br>
+        <a href="{% url 'portal:logout' %}" style="color:#c53030; font-size:0.75rem;">
+            Ieșire din portal
+        </a>
+    </div>
+</div>
+
+<div class="portal-card">
+    <div class="portal-card-header">
+        <h5>Date identificare</h5>
+    </div>
+    <div class="portal-card-body" style="padding: 16px 20px;">
+        <div class="info-row">
+            <span class="info-label">Calitate procesuală</span>
+            <span class="info-value">
+                {% if parte.calitate_procesuala == 'SUSPECT' or parte.calitate_procesuala == 'INCULPAT' %}
+                    <span class="badge-calitate badge-danger">{{ parte.get_calitate_procesuala_display }}</span>
+                {% else %}
+                    <span class="badge-calitate badge-secondary">{{ parte.get_calitate_procesuala_display }}</span>
+                {% endif %}
+            </span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Stadiu curent</span>
+            <span class="info-value">
+                {{ stadiu_curent.get_tip_stadiu_display|default:"Neînceput" }}
+            </span>
+        </div>
+        {% if solutie_curenta %}
+        <div class="info-row">
+            <span class="info-label">Soluție</span>
+            <span class="info-value">{{ solutie_curenta.get_tip_solutie_display }}</span>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% comment %} PERSOANE IMPLICATE — fără date personale {% endcomment %}
+{% with total_parti=dosar.parti_implicate.count %}
+{% if total_parti %}
+<div class="section-title">Persoane implicate în cauză</div>
+<div class="portal-card">
+    <div class="portal-card-body" style="padding: 16px 20px;">
+        <div class="info-row">
+            <span class="info-label">Total persoane</span>
+            <span class="info-value">{{ total_parti }}</span>
+        </div>
+        {% regroup dosar.parti_implicate.all by get_calitate_procesuala_display as parti_pe_calitate %}
+        {% for grup in parti_pe_calitate %}
+        <div class="info-row">
+            <span class="info-label">{{ grup.grouper }}</span>
+            <span class="info-value">{{ grup.list|length }}</span>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% endwith %}
+
+{% comment %} ÎNCADRĂRI JURIDICE {% endcomment %}
+{% if dosar.infractiuni.all %}
+<div class="section-title">Încadrări juridice</div>
+{% for infractiune in dosar.infractiuni.all %}
+<div class="portal-card" style="margin-bottom: 8px;">
+    <div class="portal-card-body" style="padding: 14px 20px;">
+        <div class="info-row">
+            <span class="info-label">Act normativ</span>
+            <span class="info-value">{{ infractiune.get_act_normativ_display }}</span>
+        </div>
+        {% if infractiune.articol %}
+        <div class="info-row">
+            <span class="info-label">Articol</span>
+            <span class="info-value">art. {{ infractiune.articol }}</span>
+        </div>
+        {% endif %}
+        {% if infractiune.incadrare_juridica %}
+        <div class="info-row">
+            <span class="info-label">Încadrare</span>
+            <span class="info-value">{{ infractiune.incadrare_juridica }}</span>
+        </div>
+        {% endif %}
+        {% if infractiune.data_comiterii %}
+        <div class="info-row">
+            <span class="info-label">Data faptei</span>
+            <span class="info-value">{{ infractiune.data_comiterii|date:"d.m.Y" }}</span>
+        </div>
+        {% endif %}
+        {% if infractiune.adresa_comiterii %}
+        <div class="info-row" style="border-bottom: none;">
+            <span class="info-label">Locul faptei</span>
+            <span class="info-value" style="max-width: 60%; text-align: right;">
+                {{ infractiune.adresa_comiterii }}
+            </span>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+
+{% comment %} SITUAȚIA DE FAPT {% endcomment %}
+{% if dosar.infractiune_cercetata %}
+<div class="section-title">Situația de fapt</div>
+<div class="portal-card">
+    <div class="portal-card-body" style="padding: 16px 20px;">
+        <p style="font-size: 0.875rem; line-height: 1.6; color: #1a1a2e; margin: 0; white-space: pre-wrap;">{{ dosar.infractiune_cercetata }}</p>
+    </div>
+</div>
+{% endif %}
+
+{% comment %} MĂSURI PREVENTIVE — doar cele care privesc partea logată {% endcomment %}
+{% with masuri_proprii=acces.parte.masuri_preventive.all %}
+{% if masuri_proprii %}
+<div class="section-title">Măsuri preventive</div>
+{% for masura in masuri_proprii %}
+<div class="portal-card" style="margin-bottom: 8px; border-left: 3px solid #E24B4A;">
+    <div class="portal-card-body" style="padding: 14px 20px;">
+        <div class="info-row">
+            <span class="info-label">Măsura dispusă</span>
+            <span class="info-value" style="color: #c53030; font-weight: 600;">
+                {{ masura.get_tip_masura_display }}
+            </span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Durată</span>
+            <span class="info-value">{{ masura.durata_zile }} zile</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Perioadă</span>
+            <span class="info-value">
+                {{ masura.data_inceput|date:"d.m.Y" }} → {{ masura.data_sfarsit|date:"d.m.Y" }}
+            </span>
+        </div>
+        <div class="info-row" style="border-bottom: none;">
+            <span class="info-label">Timp rămas</span>
+            <span class="info-value">
+                {% if masura.zile_ramase < 0 %}
+                    <span style="color: #6c757d;">Expirată</span>
+                {% elif masura.zile_ramase == 0 %}
+                    <span style="color: #c53030; font-weight: 600;">Expiră azi</span>
+                {% elif masura.zile_ramase <= 7 %}
+                    <span style="color: #c53030;">{{ masura.zile_ramase }} zile</span>
+                {% else %}
+                    <span style="color: #1a1a2e;">{{ masura.zile_ramase }} zile</span>
+                {% endif %}
+            </span>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+{% if documente %}
+<div class="section-title">Documente accesibile</div>
+{% for act in documente %}
+<div class="doc-item">
+    <div>
+        <div style="font-weight:500; font-size:0.875rem;">{{ act.titlu }}</div>
+        <div style="font-size:0.75rem; color:#6c757d;">
+            {{ act.data_documentului|date:"d.m.Y" }}
+            &nbsp;·&nbsp; {{ act.get_tip_display }}
+        </div>
+    </div>
+    {% if act.fisier %}
+    <a href="{{ act.fisier.url }}" target="_blank"
+       style="font-size:0.8rem; color:#1c437a; font-weight:600; text-decoration:none;">
+        Vizualizează ↗
+    </a>
+    {% endif %}
+</div>
+{% endfor %}
+{% endif %}
+{% endblock %}

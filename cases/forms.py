@@ -1,6 +1,6 @@
 from django import forms
 from .models import Dosar, ParteImplicata, Infractiune, MasuraPreventiva, StadiuCercetare, SolutieDosar, TermenProcedural
-from django.contrib.auth import get_user_model #  modelul de utilizator
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.utils import timezone
@@ -8,7 +8,6 @@ from django.utils import timezone
 User = get_user_model() # Preluăm modelul de utilizator pentru a face filtrarile
 
 class DosarForm(forms.ModelForm):
-    # Câmp "virtual" - nu se salvează direct în tabelul Dosar, îl folosim pentru Istoric
     data_schimbare_echipa = forms.DateField(
         required=False,
         widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
@@ -20,7 +19,7 @@ class DosarForm(forms.ModelForm):
         model = Dosar
         fields = ['numar_unic', 'infractiune_cercetata', 'ofiter_caz', 'procuror_caz', 'grefier_caz']
         
-        # Etichete personalizate care vor apărea în HTML
+        # Etichete HTML
         labels = {
             'ofiter_caz': 'Poliţist',
             'procuror_caz': 'Procuror',
@@ -42,7 +41,7 @@ class DosarForm(forms.ModelForm):
         # Filtrarea dropdown-urilor
         if 'ofiter_caz' in self.fields:
             self.fields['ofiter_caz'].queryset = User.objects.filter(rol='POLITIST')
-            # Formatăm afișarea (Afișează numele complet; dacă nu e completat, afișează username-ul)
+            # Formatăm afișarea (afișăm numele complet; dacă nu e completat, afișăm username-ul)
             self.fields['ofiter_caz'].label_from_instance = lambda obj: obj.get_full_name() or obj.username
             
         if 'procuror_caz' in self.fields:
@@ -58,10 +57,10 @@ class DosarForm(forms.ModelForm):
         cleaned_data = super().clean()
         data_schimbare = cleaned_data.get('data_schimbare_echipa')
         
-        # Preluăm data înregistrării (fie din formular, dacă o edităm acum, fie din baza de date)
+        # Preluăm data înregistrării (din formular, dacă o edităm acum, ori din baza de date)
         data_inreg = cleaned_data.get('data_inregistrarii') or self.instance.data_inregistrarii
         
-        # 1. Verificăm dacă s-a modificat MĂCAR UNUL dintre membrii echipei
+        # Verificăm dacă s-a modificatcel puţin unul dintre membrii echipei
         echipa_modificata = any(camp in self.changed_data for camp in ['ofiter_caz', 'procuror_caz', 'grefier_caz'])
         
         if echipa_modificata:
@@ -106,12 +105,12 @@ class CreareDosarForm(forms.ModelForm):
             'grefier_caz': forms.Select(attrs={'class': 'form-select'}),
         }
 
-    # iltrarea dropdown-urilor
+    # Filtrarea dropdown-urilor
     def __init__(self, *args, **kwargs):
         super(CreareDosarForm, self).__init__(*args, **kwargs)
         if 'ofiter_caz' in self.fields:
             self.fields['ofiter_caz'].queryset = User.objects.filter(rol='POLITIST')
-            # Formatăm afișarea (Afișează numele complet; dacă nu e completat, afișează username-ul)
+            # Formatăm afișarea (afișăm numele complet; dacă nu e completat, afișăm username-ul)
             self.fields['ofiter_caz'].label_from_instance = lambda obj: obj.get_full_name() or obj.username
             
         if 'procuror_caz' in self.fields:
@@ -122,10 +121,9 @@ class CreareDosarForm(forms.ModelForm):
             self.fields['grefier_caz'].queryset = User.objects.filter(rol='GREFIER')
             self.fields['grefier_caz'].label_from_instance = lambda obj: obj.get_full_name() or obj.username
         
-        # Validare frontend pentru data înregistrării - nu poate fi în viitor
         today = timezone.now().date().isoformat() # ex: '2026-04-12'
 
-        # Adăugăm atributul 'max' pe input-ul de dată
+        # Validare frontend pentru data înregistrării - nu poate fi o dată viitoare
         if 'data_inregistrarii' in self.fields:
             self.fields['data_inregistrarii'].widget.attrs['max'] = today
 
@@ -137,7 +135,7 @@ class CreareDosarForm(forms.ModelForm):
             # AUTO-CORECȚIE: Litere mari și fără spații
             numar = numar.upper().strip()
 
-            # VALIDARE: Verificăm prezența lui '/P/'
+            # VALIDARE: Verificăm dacă există '/P/'
             if '/P/' not in numar:
                 raise ValidationError("Numărul dosarului trebuie să conțină indicativul standard '/P/'. Ex: 123/P/2026")
 
@@ -155,11 +153,11 @@ class CreareDosarForm(forms.ModelForm):
             if not numar_dosar.isdigit():
                 raise ValidationError(f"Numărul dosarului trebuie să conțină doar cifre. Aţi introdus litere/simboluri: '{numar_dosar}'")
 
-            # VALIDARE: Anul să fie STRICT 4 CIFRE
+            # VALIDARE: Anul să conţină STRICT 4 CIFRE
             if not anul_dosar.isdigit() or len(anul_dosar) != 4:
                 raise ValidationError(f"Anul trebuie să fie format din exact 4 cifre. Aţi introdus: '{anul_dosar}'")
                 
-            # siguranță logică pentru an
+            # Siguranță logică pentru an
             an_cifre = int(anul_dosar)
             if an_cifre < 1990 or an_cifre > 2100:
                 raise ValidationError(f"Anul {an_cifre} nu este valid!")
@@ -169,7 +167,6 @@ class CreareDosarForm(forms.ModelForm):
 class ParteImplicataForm(forms.ModelForm):
     class Meta:
         model = ParteImplicata
-        # Nu includem 'dosar' pentru că îl legăm în spate (în views.py)
         fields = ['nume_complet', 'calitate_procesuala', 'cnp', 'adresa', 'mentiuni', 'serie_ci', 'numar_ci']
         
         widgets = {
@@ -297,14 +294,13 @@ class StadiuCercetareForm(forms.ModelForm):
         tip_stadiu = cleaned_data.get('tip_stadiu')
         data_incepere = cleaned_data.get('data_incepere')
         
-        # Preluăm dosarul în siguranță
         try:
             dosar = self.instance.dosar
         except:
             dosar = None
 
         if not tip_stadiu or not data_incepere or not dosar:
-            return cleaned_data # Dacă lipsesc date, lăsăm validarea standard să preia
+            return cleaned_data
 
         # VALIDARE: Niciun stadiu înaintea înregistrării dosarului
         if data_incepere < dosar.data_inregistrarii:
@@ -317,12 +313,12 @@ class StadiuCercetareForm(forms.ModelForm):
             ultimul_stadiu = dosar.stadii_cercetare.order_by('-data_incepere', '-id').first()
 
         if ultimul_stadiu:
-            # VALIDARE: Cronologia Stadiilor
+            # VALIDARE: Cronologia stadiilor
             if data_incepere < ultimul_stadiu.data_incepere:
                 self.add_error('data_incepere', f"Data trebuie să fie consecutivă. Ultimul stadiu a fost pe {ultimul_stadiu.data_incepere.strftime('%d.%m.%Y')}.")
 
-            # VALIDARE: Succesiunea Logică
-            # chei din models.py (clasa TipStadiu)
+            # VALIDARE: Succesiunea logică
+            # Chei din models.py (clasa TipStadiu)
             ORDINE_STADII = {
                 'EXAMINARE': 1,
                 'UP_INCEPUTA': 2,
@@ -349,7 +345,6 @@ class SolutieDosarForm(forms.ModelForm):
         model = SolutieDosar
         fields = ['stabilita_de', 'tip_solutie', 'data_solutiei', 'este_finala']
         widgets = {
-            # RadioSelect afișează opțiunile ca butoane radio
             'stabilita_de': forms.RadioSelect(), 
             'tip_solutie': forms.Select(attrs={'class': 'form-select'}),
             'data_solutiei': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
@@ -370,16 +365,16 @@ class SolutieDosarForm(forms.ModelForm):
         if not data_solutiei or not stadiu:
             return cleaned_data
 
-        # VALIDARE: Cronologia Soluției
+        # VALIDARE: Cronologia soluției
         if data_solutiei < stadiu.data_incepere:
             self.add_error('data_solutiei', f"Data soluției ({data_solutiei.strftime('%d.%m.%Y')}) nu poate fi anterioară începerii stadiului ({stadiu.data_incepere.strftime('%d.%m.%Y')}).")
 
         if data_solutiei < dosar.data_inregistrarii:
             self.add_error('data_solutiei', f"Soluția nu poate fi anterioară înregistrării dosarului ({dosar.data_inregistrarii.strftime('%d.%m.%Y')}).")
 
-        # VALIDARE: O singură Soluție Finală pe Dosar
+        # VALIDARE: O singură Soluție finală pe dosar
         if este_finala:
-            # Căutăm dacă mai există VREO soluție finală pe ORICE stadiu al acestui dosar
+            # Căutăm dacă mai există vreo soluție finală pe orice stadiu al acestui dosar
             solutii_finale = SolutieDosar.objects.filter(stadiu__dosar=dosar, este_finala=True)
             
             # Dacă edităm o soluție deja existentă, o excludem pe ea însăși din căutare
@@ -405,13 +400,6 @@ class TermenProceduralForm(forms.ModelForm):
             'detalii': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Detalii suplimentare...'}),
         }
 
-    # def __init__(self, *args, **kwargs):
-    #     # Opțional: Dacă vrei să îi trimiți utilizatorul curent pentru a filtra dosarele
-    #     # user = kwargs.pop('user', None)
-    #     super(TermenProceduralForm, self).__init__(*args, **kwargs)
-    #     # Dacă vrei să arăți doar dosarele active, poți filtra aici:
-    #     # self.fields['dosar'].queryset = Dosar.objects.filter(stadiu='ACTIV')
-
     def __init__(self, *args, **kwargs):
         # Extragem utilizatorul trimis din view (dacă există)
         user = kwargs.pop('user', None)
@@ -426,5 +414,5 @@ class TermenProceduralForm(forms.ModelForm):
                     Q(ofiter_caz=user) | Q(procuror_caz=user) | Q(grefier_caz=user)
                 )
             
-            # Afișăm doar numărul dosarului, curat și scurt
+            # Afișăm doar numărul dosarului
             self.fields['dosar'].label_from_instance = lambda d: d.numar_unic

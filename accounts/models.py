@@ -2,14 +2,13 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 
 class CustomUser(AbstractUser):
-    # Definim opțiunile pentru roluri folosind TextChoices (foarte elegant și ușor de citit)
+    # Opțiunile pentru roluri
     class Role(models.TextChoices):
         PROCUROR = 'PROCUROR', 'Procuror'
         POLITIST = 'POLITIST', 'Ofițer de Poliție Judiciară'
         GREFIER = 'GREFIER', 'Grefier'
         ADMIN = 'ADMIN', 'Administrator Sistem'
 
-    # Adăugăm noile noastre câmpuri
     rol = models.CharField(
         max_length=20,
         choices=Role.choices,
@@ -44,7 +43,7 @@ class CustomUser(AbstractUser):
     )
 
     def __str__(self):
-        # Așa va fi afișat utilizatorul în panoul de administrare
+        # Cum va fi afișat utilizatorul în panoul de administrare
         nume_complet = self.get_full_name()
         if nume_complet:
             return f"{nume_complet} ({self.get_rol_display()} - {self.unitate})"

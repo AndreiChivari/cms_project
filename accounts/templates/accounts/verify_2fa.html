@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Verificare în 2 Pași{% endblock %}
+{% block title %}Verificare în 2 pași{% endblock %}
 
 {% block content %}
 <div class="container mt-5">
@@ -12,7 +12,7 @@
                     <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px;">
                         <i class="bi bi-phone-vibrate-fill" style="font-size: 2rem;"></i>
                     </div>
-                    <h4 class="mb-0 fw-bold">Autentificare în 2 Pași</h4>
+                    <h4 class="mb-0 fw-bold">Autentificare în 2 pași</h4>
                     <p class="text-muted small mb-0 mt-2">Introduceți codul din aplicația Authenticator pentru <strong>{{ utilizator.username }}</strong>.</p>
                 </div>
                 
@@ -39,8 +39,8 @@
                     <div class="text-center mt-3">
                         <form method="POST" action="{% url 'logout' %}" class="d-inline">
                             {% csrf_token %}
-                            <button type="submit" class="btn btn-link text-muted small text-decoration-none border-bottom border-secondary p-0 shadow-none">
-                                &larr; Anulează și revino la conectare
+                            <button type="submit" class="btn btn-link text-muted small text-decoration-none border-bottom border-secondary py-1 shadow-none">
+                                &larr; Anulaţi și reveniţi la conectare
                             </button>
                         </form>
                     </div>

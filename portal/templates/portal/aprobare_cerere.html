@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+{% block title %}Procesare cerere portal{% endblock %}
+{% block content %}
+
+<div class="d-flex align-items-center gap-2 mb-4 pb-3 border-bottom border-secondary border-opacity-25">
+    <a href="{% url 'cases:detalii_dosar' dosar.pk %}"
+       class="text-muted text-decoration-none" style="font-size:0.9rem;">
+        &larr; Înapoi la dosar
+    </a>
+</div>
+
+<div class="row justify-content-center">
+<div class="col-lg-8">
+
+<div class="card-dosar mb-4">
+    <div class="card-header-dosar">
+        <div class="header-title">
+            <i class="bi bi-person-badge text-primary"></i>
+            Cerere acces portal — Dosar {{ dosar.numar_unic }}
+        </div>
+    </div>
+    <div class="p-4">
+        <div class="row">
+            <div class="col-md-6">
+                <p class="mb-1 text-muted text-uppercase fw-bold" style="font-size:0.7rem;">Solicitant</p>
+                <p class="fw-medium text-dark mb-3">{{ cerere.nume_solicitant }}</p>
+
+                <p class="mb-1 text-muted text-uppercase fw-bold" style="font-size:0.7rem;">Email</p>
+                <p class="text-dark mb-3">{{ cerere.email_solicitant }}</p>
+
+                <p class="mb-1 text-muted text-uppercase fw-bold" style="font-size:0.7rem;">Calitate în dosar</p>
+                <p class="mb-3">
+                    {% if cerere.parte %}
+                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">
+                            {{ cerere.parte.get_calitate_procesuala_display }}
+                        </span>
+                        {% if este_faptuitor %}
+                        <span class="badge bg-danger ms-1">Acces interzis</span>
+                        {% endif %}
+                    {% endif %}
+                </p>
+            </div>
+            <div class="col-md-6">
+                <p class="mb-1 text-muted text-uppercase fw-bold" style="font-size:0.7rem;">Data cererii</p>
+                <p class="text-dark mb-3">{{ cerere.data_cererii|date:"d.m.Y H:i" }}</p>
+
+                <p class="mb-1 text-muted text-uppercase fw-bold" style="font-size:0.7rem;">Motivul invocat</p>
+                <p class="text-dark mb-0" style="font-size:0.875rem;">{{ cerere.motiv_solicitare }}</p>
+            </div>
+        </div>
+
+        {% if este_faptuitor %}
+        <div class="alert alert-danger border border-danger border-opacity-25 mt-3" style="font-size:0.875rem;">
+            <strong>Atenție:</strong> Solicitantul are calitatea de <strong>Făptuitor</strong>
+            în acest dosar. Conform legislației în vigoare, accesul la dosarul electronic
+            nu poate fi acordat persoanelor fără calitate procesuală dobândită.
+            Cererea poate fi doar respinsă.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if not este_faptuitor %}
+<div class="card-dosar mb-4">
+    <div class="card-header-dosar">
+        <div class="header-title">
+            <i class="bi bi-check-circle text-primary"></i> Aprobare acces
+        </div>
+    </div>
+    <div class="p-4">
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="actiune" value="aproba">
+
+            <div class="mb-3">
+                <label class="form-label fw-bold small text-uppercase text-muted mb-1"
+                       style="font-size:0.7rem;">Acces valabil până la</label>
+                {{ form_aprobare.data_expirare }}
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label fw-bold small text-uppercase text-muted mb-1"
+                       style="font-size:0.7rem;">
+                    Documente accesibile solicitantului
+                    <span class="text-muted fw-normal ms-1">(opțional)</span>
+                </label>
+                <div class="p-3 rounded" style="background:#F7F6F3; border:0.5px solid rgba(108,117,125,0.15); max-height:220px; overflow-y:auto;">
+                    {% if form_aprobare.documente_selectate %}
+                        {% for checkbox in form_aprobare.documente_selectate %}
+                        <div class="form-check mb-1">
+                            {{ checkbox.tag }}
+                            <label class="form-check-label text-dark" style="font-size:0.875rem;">
+                                {{ checkbox.choice_label }}
+                            </label>
+                        </div>
+                        {% empty %}
+                        <span class="text-muted small">Nu există documente atașate acestui dosar.</span>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <div class="form-text">
+                    Documentele nebifate nu vor fi vizibile în portal. Stadiul dosarului și termenele procedurale sunt întotdeauna vizibile.
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-success fw-medium px-4 shadow-sm">
+                <i class="bi bi-check-lg me-1"></i> Aprobă și trimite acces
+            </button>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<div class="card-dosar mb-4" style="border-left-color: #E24B4A;">
+    <div class="card-header-dosar danger">
+        <div class="header-title">
+            <i class="bi bi-x-circle" style="color:#E24B4A;"></i> Respingere cerere
+        </div>
+    </div>
+    <div class="p-4">
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="actiune" value="respinge">
+
+            <div class="mb-3">
+                <label class="form-label fw-bold small text-uppercase text-muted mb-1"
+                       style="font-size:0.7rem;">Motiv</label>
+                {{ form_respingere.motiv }}
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold small text-uppercase text-muted mb-1"
+                       style="font-size:0.7rem;">Detalii suplimentare (opțional)</label>
+                {{ form_respingere.detalii }}
+            </div>
+
+            <button type="submit" class="btn btn-outline-danger fw-medium px-4"
+                    onclick="return confirm('Confirmați respingerea cererii?')">
+                <i class="bi bi-x-lg me-1"></i> Respinge cererea
+            </button>
+        </form>
+    </div>
+</div>
+
+</div>
+</div>
+{% endblock %}

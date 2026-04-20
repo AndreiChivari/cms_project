@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'accounts',
     'cases',
     'documents',
+    'portal',
     'simple_history', # pentru audit (istoric modificări)
     'sass_processor', # leaga codul sass in Django
     'django_otp',
@@ -239,6 +240,10 @@ EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
 
 # Adresa care va apărea la "Expeditor" când utilizatorul primește mailul
 DEFAULT_FROM_EMAIL = f"SED <{EMAIL_HOST_USER}>"
+
+# Adaugat la componenta PORTAL
+# URL-ul de bază al aplicației (folosit în emailuri)
+SITE_URL = 'http://localhost:8000'  # în producție: 'https://domeniu.ro'
 
 # CONFIGURARE SERVICII GEOGRAFICE
 # Setăm un fallback sigur către OpenStreetMap standard în caz că lipsește din .env

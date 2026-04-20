@@ -7,7 +7,7 @@ class Force2FAMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        # 1. Lăsăm vizitatorii nelogați în pace (se ocupă de ei @login_required)
+        # 1. Utilizatorii nelogaţi - tratăm prin @login_required)
         if not request.user.is_authenticated:
             return self.get_response(request)
 
@@ -17,7 +17,7 @@ class Force2FAMiddleware:
         
         if rol_utilizator in getattr(settings, 'MANDATORY_2FA_ROLES', []) and not are_2fa:
             
-            # Lista de pagini unde ARE VOIE să meargă ca să rezolve problema sau să iasă
+            # Lista de pagini pe care are voie să le acceseze fără 2FA
             allowed_urls = [
                 reverse('accounts:setup_2fa'),
                 reverse('logout'),
@@ -27,7 +27,7 @@ class Force2FAMiddleware:
             if request.path.startswith('/static/') or request.path.startswith('/media/'):
                 return self.get_response(request)
             
-            # Dacă dă click pe orice altă pagină (Dashboard, Dosare, etc.), îl aruncăm înapoi!
+            # Dacă dă click pe orice altă pagină (Dashboard, Dosare, etc.), îl trimitem înapoi la setup 2FA
             if request.path not in allowed_urls:
                 return redirect('accounts:setup_2fa')
 

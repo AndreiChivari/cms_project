@@ -1,7 +1,7 @@
 from .models import Notificare
 
 def notificari_globale(request):
-    # Dacă utilizatorul e logat, îi căutăm notificările Necitite
+    # Dacă utilizatorul e logat, îi căutăm notificările necitite
     if request.user.is_authenticated:
         necitite = Notificare.objects.filter(utilizator=request.user, citita=False)
         return {

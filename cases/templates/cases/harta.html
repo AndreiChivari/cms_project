@@ -140,11 +140,10 @@
         
         heatLayer.addTo(map);
         L.control.layers({}, {
-            "🔥 Zone de risc (Heatmap)": heatLayer,
-            "📍 Puncte specifice (Pini Grupate)": piniLayer
+            "🔥 Zone de risc": heatLayer,
+            "📍 Puncte specifice": piniLayer
         }, {collapsed: false}).addTo(map);
 
-    // Înlocuiește funcția populeazaDropdowns cu aceasta:
     function populeazaDropdowns(dateSursa) {
         const selectAct = document.getElementById('filtru-act');
         const selectIncadrare = document.getElementById('filtru-incadrare');

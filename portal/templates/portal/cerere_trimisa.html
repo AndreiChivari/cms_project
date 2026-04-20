@@ -1,0 +1,23 @@
+{% extends 'portal/base_portal.html' %}
+{% block title %}Cerere înregistrată{% endblock %}
+{% block content %}
+<div class="portal-card">
+    <div class="portal-card-header">
+        <h5>Cerere înregistrată cu succes</h5>
+    </div>
+    <div class="portal-card-body" style="text-align:center; padding: 2rem;">
+        <div style="font-size:3rem; margin-bottom:1rem;">✉</div>
+        <p style="font-size:0.95rem; color:#1a1a2e; font-weight:500; margin-bottom:0.5rem;">
+            Cererea pentru dosarul <strong>{{ dosar_numar }}</strong> a fost înregistrată.
+        </p>
+        <p style="font-size:0.85rem; color:#6c757d;">
+            Veți fi notificat la adresa <strong>{{ email }}</strong>
+            în momentul în care procurorul dosarului va soluţiona cererea.
+        </p>
+        <a href="{% url 'portal:login' %}" class="portal-btn portal-btn-light"
+           style="margin-top:1.5rem; display:inline-block;">
+            Înapoi la portal
+        </a>
+    </div>
+</div>
+{% endblock %}

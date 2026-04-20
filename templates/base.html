@@ -13,7 +13,7 @@
 </head>
 <body class="bg-light" style="min-height: 100vh; display: flex; flex-direction: column;">
     {% block header %}
-    <nav class="navbar navbar-expand-xl navbar-dark bg-primary bg-gradient mb-4 shadow-sm border-bottom border-3 border-secondary border-opacity-25">
+    <nav class="navbar navbar-expand-xl navbar-dark bg-primary mb-4 shadow-sm border-bottom border-3 border-secondary border-opacity-25">
             <div class="container-fluid px-3 px-xxl-5 h-100 "> 
                 <a class="navbar-brand fw-bold text-white d-flex align-items-center me-3 h-100" href="{% url 'cases:dashboard' %}">
                     <span class="d-flex align-items-center gap-2">
@@ -57,7 +57,7 @@
                         </li>
                         <li class="nav-item">
                             <a class="nav-link px-2 px-xxl-3 transition-base text-white {% if request.resolver_match.url_name == 'harta' %}active fw-bold{% else %}opacity-75 hover-opacity-100 fw-medium{% endif %}" href="{% url 'cases:harta' %}">
-                                <i class="bi bi-geo-alt-fill"></i> Harta Infracționalității
+                                <i class="bi bi-geo-alt-fill"></i> Harta infracționalității
                             </a>
                         </li>
                         <li class="nav-item">
@@ -161,7 +161,7 @@
                                 
                                 <li>
                                     <a class="dropdown-item py-2 small d-flex align-items-center" href="{% url 'accounts:schimba_parola' %}">
-                                        <i class="bi bi-key-fill text-muted me-2"></i> Schimbă Parola
+                                        <i class="bi bi-key-fill text-muted me-2"></i> Schimbă parola
                                     </a>
                                 </li>
                                 

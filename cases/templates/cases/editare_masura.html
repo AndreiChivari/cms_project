@@ -74,8 +74,9 @@
 </div>
 
 <script>
+    // VALIDARE ŞI AUTOCOMPLETARE DATĂ - MĂSURĂ PREVENTIVĂ
     document.addEventListener("DOMContentLoaded", function() {
-        // Găsim câmpurile din formularul generat de Django
+        // câmpurile din formularul generat de Django
         const durataInput = document.getElementById('id_durata_zile');
         const dataInceputInput = document.getElementById('id_data_inceput');
         const dataSfarsitInput = document.getElementById('id_data_sfarsit');
@@ -83,7 +84,7 @@
         // Verificăm dacă suntem pe o pagină care are aceste câmpuri
         if (durataInput && dataInceputInput && dataSfarsitInput) {
             
-            // --- LOGICA DE AUTOCOMPLETARE ŞI CALCUL AUTOMAT A DATEI DE SFARSIT ---
+            // --- AUTOCOMPLETARE ŞI CALCUL AUTOMAT A DATEI DE SFARSIT ---
             function calculeazaDataSfarsit() {
                 const durata = parseInt(durataInput.value);
                 const dataInceputVal = dataInceputInput.value;
@@ -92,9 +93,8 @@
                 if (!isNaN(durata) && dataInceputVal) {
                     const dataCalculata = new Date(dataInceputVal);
                     
-                    // Atenție juridică: Modifică formula de mai jos în funcție de specificul calculului (CPP)
-                    // Matematic: 1 Ian + 30 zile = 31 Ian. 
-                    // Dacă juridic ziua de început se ia în calcul integral (ex. expiră pe 30 Ian), adaugă un "- 1" după durata.
+                    // Zile pline vs. zile calendaristice
+                    // Matematic: 1 Ian + 30 zile = 31 Ian
                     dataCalculata.setDate(dataCalculata.getDate() + durata - 1); 
 
                     // Formatăm data înapoi în standardul YYYY-MM-DD acceptat de input-ul HTML
@@ -105,17 +105,17 @@
                     // Setăm valoarea în câmpul de final
                     dataSfarsitInput.value = `${an}-${luna}-${zi}`;
                     
-                    // Opțional: Facem câmpul să "pâlpâie" un pic vizual pentru a arăta că s-a autocompletat
+                    // Feedback vizual la autocompletare
                     dataSfarsitInput.classList.add('bg-success', 'bg-opacity-10', 'text-success');
                     setTimeout(() => {
                         dataSfarsitInput.classList.remove('bg-success', 'bg-opacity-10', 'text-success');
                     }, 500);
 
-                    valideazaCronologia(); // După autocompletare, verificăm că e totul ok
+                    valideazaCronologia();
                 }
             }
 
-            // --- LOGICA DE VALIDARE - DATA SFÂRŞIT NU POATE FI ANTERIOARĂ DATEI DE ÎNCEPUT ---
+            // ---  VALIDARE - DATA SFÂRŞIT NU POATE FI ANTERIOARĂ DATEI DE ÎNCEPUT ---
             function valideazaCronologia() {
                 if (dataInceputInput.value && dataSfarsitInput.value) {
                     const dInceput = new Date(dataInceputInput.value);
@@ -124,14 +124,14 @@
                     if (dSfarsit < dInceput) {
                         dataSfarsitInput.setCustomValidity("Data de sfârșit nu poate fi înaintea datei de început!");
                     } else {
-                        dataSfarsitInput.setCustomValidity(""); // E corect, resetăm eroarea
+                        dataSfarsitInput.setCustomValidity("");
                     }
                 }
             }
 
             durataInput.addEventListener('input', calculeazaDataSfarsit);
             dataInceputInput.addEventListener('change', calculeazaDataSfarsit);
-            dataSfarsitInput.addEventListener('change', valideazaCronologia); // Validăm dacă pune data manual
+            dataSfarsitInput.addEventListener('change', valideazaCronologia); 
         }
     });
 </script>
