@@ -106,7 +106,6 @@ class Dosar(models.Model):
             return True
             
         # 3.Comparăm ID-ul utilizatorului logat cu ID-urile membrilor
-        # Folosim "_id" la final pentru a lua direct numărul din baza de date, fără a mai face interogări extra
         utilizator_id = utilizator.pk
         
         echipa_dosar_ids = [
@@ -192,7 +191,7 @@ class ParteImplicata(models.Model):
             self.cnp_hash = None
         super().save(*args, **kwargs)
     
-    history = HistoricalRecords() # Păstrează istoricul modificărilor părților implicate
+    history = HistoricalRecords()
     
 class Infractiune(models.Model):
     """ 

@@ -138,7 +138,7 @@ def verify_2fa(request):
             del request.session['pending_user_id']
             del request.session['pending_user_backend']
             
-            # Verificăm dacă voia să meargă undeva anume înainte de logare
+            # Verificăm pagina pe care a dat click înainte să se logheze
             next_url = request.session.pop('next_url', 'cases:dashboard')
             return redirect(next_url)
             

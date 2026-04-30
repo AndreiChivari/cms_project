@@ -5,7 +5,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from urllib3 import request
 from .models import Dosar, ParteImplicata, Infractiune, MasuraPreventiva, IstoricDesemnare, StadiuCercetare, SolutieDosar, Notificare, TermenProcedural
 from documents.forms import DocumentForm 
-from .forms import DosarForm, ParteImplicataForm, CreareDosarForm, InfractiuneForm, MasuraPreventivaForm, StadiuCercetareForm, SolutieDosarForm, TermenProceduralForm
+from .forms import DosarForm, ParteImplicataForm, CreareDosarForm, InfractiuneForm, MasuraPreventivaForm, StadiuCercetareForm, SolutieDosarForm, TermenProceduralForm, TermenProceduralDoarForm 
 from documents.models import ActUrmarire
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
@@ -16,8 +16,8 @@ from django.http import HttpResponse, FileResponse, Http404
 from django.utils.text import get_valid_filename
 from django.conf import settings 
 from datetime import datetime, date, timedelta
-from django.urls import reverse # link-urile automate către dosare
-from django.http import JsonResponse # JavaScript pentru a sterge notificarile fara a da click pe ele si a nu reîncărca pagina
+from django.urls import reverse
+from django.http import JsonResponse
 from django.contrib.auth import get_user_model
 import io
 import openpyxl
@@ -26,6 +26,7 @@ from django.contrib import messages
 import json
 from django.utils.dateparse import parse_datetime, parse_date
 from django.views.decorators.http import require_POST
+from .utils import render_to_pdf, curata_diacritice
 # Importuri pentru ocr
 import pytesseract
 from PIL import Image
@@ -86,7 +87,7 @@ def dashboard(request):
             'stadii_cercetare__solutii'
         ).all().order_by('-data_inregistrarii')[:7]
     else:
-        # Condiția pentru a găsi dosarele unde userul este implicat
+        # Condiția pentru a găsi dosarele unde userul este desemnat
         conditie_mea = Q(ofiter_caz=utilizator) | Q(procuror_caz=utilizator) | Q(grefier_caz=utilizator)
         
         # Total dosare personale
@@ -107,7 +108,7 @@ def dashboard(request):
             'stadii_cercetare__solutii'
         ).filter(conditie_mea).order_by('-data_inregistrarii')[:7]
 
-    # 3. INDICATOR DE VOLUM ȘI EFICIENȚĂ (comparativ cu media pe sistem)
+    # 3. INDICATOR DE VOLUM (comparativ cu media pe sistem)
     rol_curent = getattr(utilizator, 'rol', '')
     media_sistem = 0
     diferenta_medie = 0
@@ -200,7 +201,7 @@ def dashboard(request):
     timeline_alerte = sorted(timeline_alerte, key=lambda x: x['zile_ramase'])
     
     # Păstrăm doar primele 6 urgențe
-    timeline_alerte = timeline_alerte[:5]
+    timeline_alerte = timeline_alerte[:6]
 
 
     # 5. DATE PENTRU GRAFICUL CU BARE (ultimele 12 luni)
@@ -234,7 +235,6 @@ def dashboard(request):
             
         date_grafic.append(nr_dosare)
 
-    # 6. CONTEXT PENTRU HTML
     context = {
         'user_rol': getattr(utilizator, 'rol', 'Membru Echipă'),
         # Statistici generale și personale
@@ -422,7 +422,7 @@ def lista_dosare(request):
             'dosare_gasite': toate_dosarele_gasite,
             'persoane_gasite': persoane_gasite,
             'documente_gasite': documente_gasite,
-            'masuri_gasite': masuri_gasite, # <--- Am adăugat noua listă
+            'masuri_gasite': masuri_gasite, 
             'total_rezultate': toate_dosarele_gasite.count() + persoane_gasite.count() + documente_gasite.count() + masuri_gasite.count()
         })
 
@@ -447,6 +447,7 @@ def lista_dosare(request):
 @login_required
 def detalii_dosar(request, pk):
     dosar = get_object_or_404(Dosar, pk=pk)
+    form_termen = TermenProceduralDoarForm()
     
     # Verificăm dacă utilizatorul are drepturi de editare asupra acestui dosar pentru a afişa/ascunde acţiuni/butoane în template
     poate_edita = dosar.are_drepturi_editare(request.user)
@@ -479,7 +480,7 @@ def detalii_dosar(request, pk):
                 parte.dosar = dosar
                 parte.save()
                 
-                # Integrare între module: Salvăm poza ca Document
+                # Salvăm poza ca Document
                 salveaza_doc = request.POST.get('salveaza_ca_document')
                 fisier_ci = request.FILES.get('fisier_copie_ci')
                 
@@ -515,7 +516,7 @@ def detalii_dosar(request, pk):
             
         # Butonul de adăugare Termen procedural
         elif 'btn_salveaza_termen' in request.POST:
-            form_termen = TermenProceduralForm(request.POST)
+            form_termen = TermenProceduralDoarForm(request.POST)
             if form_termen.is_valid():
                 termen = form_termen.save(commit=False)
                 termen.dosar = dosar
@@ -633,7 +634,7 @@ def stergere_istoric_echipa(request, pk):
 def editare_parte(request, pk):
     # Găsim persoana după ID
     parte = get_object_or_404(ParteImplicata, pk=pk)
-    # Salvăm ID-ul dosarului pentru a ne redirecționa după editare - după ștergerea părții pirdem relația
+    # Salvăm ID-ul dosarului pentru a ne redirecționa după editare - după ștergerea părții pierdem relația
     dosar_id = parte.dosar.pk 
 
     # Verificăm dacă utilizatorul are drepturi de editare
@@ -781,13 +782,13 @@ def editare_termen(request, pk):
         raise PermissionDenied("Nu ai permisiunea de a edita date din acest dosar.")
 
     if request.method == 'POST':
-        form = TermenProceduralForm(request.POST, instance=termen)
+        form = TermenProceduralDoarForm(request.POST, instance=termen)
         if form.is_valid():
             form.save()
             messages.success(request, 'Termenul procedural a fost actualizat cu succes.')
             return redirect('cases:detalii_dosar', pk=dosar.pk)
     else:
-        form = TermenProceduralForm(instance=termen)
+        form = TermenProceduralDoarForm(instance=termen)
 
     context = {
         'form': form,
@@ -1208,8 +1209,8 @@ def harta_infractionalitatii(request):
             'dosar': inf.dosar.numar_unic,
             'dosar_id': inf.dosar.pk,
             'act_normativ': inf.get_act_normativ_display() or "Necunoscut",
-            'incadrare': inf.incadrare_juridica if inf.incadrare_juridica else "Fără încadrare", # <--- NOU
-            'articol': inf.articol if inf.articol else "-", # <--- NOU
+            'incadrare': inf.incadrare_juridica if inf.incadrare_juridica else "Fără încadrare",
+            'articol': inf.articol if inf.articol else "-",
             'adresa': inf.adresa_comiterii,
             'data': inf.data_comiterii.isoformat() if inf.data_comiterii else None
         })
@@ -1671,7 +1672,7 @@ def semneaza_act(request, pk_act):
             in_out_buffer = io.BytesIO(pdf_bytes)
             pdf_writer = IncrementalPdfFileWriter(in_out_buffer, strict=False)
             
-            # APLICĂM SEMNĂTURA CRIPTOGRAFICĂ (CU ȘTAMPILĂ VIZUALĂ)
+            # APLICĂM SEMNĂTURA CRIPTOGRAFICĂ CU ȘTAMPILĂ VIZUALĂ
             nume_camp = f'Semnatura_{user.username}'
             
             # a. Creăm un "dreptunghi" vizibil pe ultima pagina (on_page=-1)
@@ -1687,10 +1688,11 @@ def semneaza_act(request, pk_act):
                 )
             )
             
-            # b. Stabilim textul ștampilei
+            # b. Stabilim textul ștampilei și curățăm diacriticele
             # Folosim Python (f-strings) pentru a adăuga numele și motivul. 
             # Folosim doar %(ts)s pentru ca pyHanko să pună secunda exactă a semnăturii
-            nume_afisare = user.get_full_name() or user.username
+            nume_brut = user.get_full_name() or user.username
+            nume_afisare = curata_diacritice(nume_brut) # Aici are loc magia
             motiv_semnare = "Semnatura digitala aprobata"
             
             stil_stampila = text.TextStampStyle(

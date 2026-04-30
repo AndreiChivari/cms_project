@@ -264,7 +264,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     const btnDosar = document.getElementById('btn-mergi-dosar');
 
                     if (nodeInfo.group === 'dosar') {
-                        document.getElementById('detalii-tip').innerText = "Dosar Penal";
+                        document.getElementById('detalii-tip').innerText = "Dosar penal";
                         document.getElementById('detalii-tip').className = "badge bg-dark mt-2";
                         document.getElementById('detalii-icon').className = "bi bi-folder-fill text-dark";
                         
@@ -368,14 +368,14 @@ document.addEventListener("DOMContentLoaded", function() {
                 document.getElementById('input-cautare').value = '';
                 
                 let updates = [];
-                activeSearchSet = null; // Anulăm starea de căutare
+                activeSearchSet = null;
                     
                 // Resetăm bifele să fie toate active
                 document.getElementById('filtru-suspecti').checked = true;
                 document.getElementById('filtru-victime').checked = true;
                 document.getElementById('filtru-martori').checked = true;
                 
-                aplicaFiltre(); // Recalculăm pânza
+                aplicaFiltre();
                 
                 network.unselectAll();
                 network.fit({ animation: { duration: 1000, easingFunction: "easeInOutQuad" }});

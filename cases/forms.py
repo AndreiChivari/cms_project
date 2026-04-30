@@ -416,3 +416,16 @@ class TermenProceduralForm(forms.ModelForm):
             
             # Afișăm doar numărul dosarului
             self.fields['dosar'].label_from_instance = lambda d: d.numar_unic
+
+class TermenProceduralDoarForm(forms.ModelForm):
+    """Folosit în modalul din detalii_dosar — fără câmpul dosar (se setează din view)"""
+    class Meta:
+        model = TermenProcedural
+        fields = ['tip_termen', 'titlu', 'data_limita', 'ora', 'detalii']
+        widgets = {
+            'titlu': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Audiere Popescu Ion (opțional)'}),
+            'tip_termen': forms.Select(attrs={'class': 'form-select'}),
+            'data_limita': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'ora': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
+            'detalii': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Detalii suplimentare...'}),
+        }
