@@ -1,0 +1,218 @@
+{% extends 'base.html' %}
+
+{% block title %}Notificări{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-xxl-5 py-1">
+
+{# ── Page header ── #}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 pb-3 border-bottom">
+    <div>
+        <h3 class="fw-bold text-dark d-flex align-items-center gap-2 mb-1" style="font-size:1.1rem;">
+            <i class="bi bi-bell-fill" style="color:#2a6cb0;"></i> Notificări
+        </h3>
+        <p class="text-muted mb-0" style="font-size:0.82rem;">
+            Istoricul tuturor notificărilor primite.
+        </p>
+    </div>
+    {% if are_necitite %}
+    <div class="mt-3 mt-md-0">
+        <form method="POST" action="{% url 'cases:marcheaza_toate_citite_pagina' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-secondary fw-semibold d-flex align-items-center gap-2" style="font-size:0.82rem;">
+                <i class="bi bi-check2-all"></i> Marchează toate ca citite
+            </button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+
+{# ── Filtru rapid ── #}
+<div class="d-flex flex-wrap gap-2 mb-4 align-items-center">
+
+    {# ── Citite/Necitite ── #}
+    <a href="?tip={{ tip }}&sortare={{ sortare }}"
+       class="btn btn-sm fw-semibold {% if not filtru %}btn-primary{% else %}btn-outline-secondary{% endif %}"
+       style="font-size:0.78rem;">Toate</a>
+    <a href="?filtru=necitite&tip={{ tip }}&sortare={{ sortare }}"
+       class="btn btn-sm fw-semibold {% if filtru == 'necitite' %}btn-primary{% else %}btn-outline-secondary{% endif %}"
+       style="font-size:0.78rem;">
+        Necitite
+        {% if nr_necitite > 0 %}
+        <span class="ms-1 badge rounded-pill"
+              style="background:rgba(13,202,240,0.2);color:#0891b2;font-size:0.65rem;">
+            {{ nr_necitite }}
+        </span>
+        {% endif %}
+    </a>
+
+    <div class="vr opacity-25 mx-1"></div>
+
+    {# ── Filtru tip ── #}
+    <a href="?filtru={{ filtru }}&sortare={{ sortare }}"
+       class="btn btn-sm fw-semibold {% if not tip %}btn-outline-primary{% else %}btn-outline-secondary{% endif %}"
+       style="font-size:0.78rem;">Toate tipurile</a>
+    {% for tip_val, tip_label in tipuri %}
+    <a href="?filtru={{ filtru }}&sortare={{ sortare }}&tip={{ tip_val }}"
+       class="btn btn-sm fw-semibold {% if tip == tip_val %}btn-outline-primary{% else %}btn-outline-secondary{% endif %}"
+       style="font-size:0.78rem;">{{ tip_label }}</a>
+    {% endfor %}
+
+    <div class="vr opacity-25 mx-1"></div>
+
+    {# ── Sortare ── #}
+    <a href="?filtru={{ filtru }}&tip={{ tip }}&sortare=nou"
+       class="btn btn-sm fw-semibold {% if sortare != 'vechi' %}btn-outline-primary{% else %}btn-outline-secondary{% endif %}"
+       style="font-size:0.78rem;">
+        <i class="bi bi-sort-down me-1"></i> Cele mai noi
+    </a>
+    <a href="?filtru={{ filtru }}&tip={{ tip }}&sortare=vechi"
+       class="btn btn-sm fw-semibold {% if sortare == 'vechi' %}btn-outline-primary{% else %}btn-outline-secondary{% endif %}"
+       style="font-size:0.78rem;">
+        <i class="bi bi-sort-up me-1"></i> Cele mai vechi
+    </a>
+
+</div>
+
+{# ── Lista notificări ── #}
+{% if page_obj.object_list %}
+
+    <div class="card-section cs-accent-blue mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center bg-primary bg-gradient" style="background:#1e293b;">
+            <h6 class="text-white">
+                <i class="bi bi-bell-fill"></i> Notificări
+            </h6>
+            <span class="header-badge-dark">
+                {{ page_obj.paginator.count }} total
+            </span>
+        </div>
+
+
+        {% for notificare in page_obj %}
+        <div class="notif-page-item {% if not notificare.citita %}notif-page-item-nou{% endif %}">
+
+            <div class="notif-icon
+                {% if notificare.tip == 'DOCUMENT' %}notif-icon-document
+                {% elif notificare.tip == 'TERMEN' %}notif-icon-termen
+                {% elif notificare.tip == 'STADIU' %}notif-icon-stadiu
+                {% elif notificare.tip == 'PORTAL' %}notif-icon-portal
+                {% elif notificare.tip == 'MASURA' %}notif-icon-masura
+                {% elif notificare.tip == 'EMAIL' %}notif-icon-email
+                {% else %}notif-icon-general{% endif %}">
+                {% if notificare.tip == 'DOCUMENT' %}<i class="bi bi-file-earmark-text"></i>
+                {% elif notificare.tip == 'TERMEN' %}<i class="bi bi-calendar-event"></i>
+                {% elif notificare.tip == 'STADIU' %}<i class="bi bi-diagram-3-fill"></i>
+                {% elif notificare.tip == 'PORTAL' %}<i class="bi bi-globe"></i>
+                {% elif notificare.tip == 'MASURA' %}<i class="bi bi-shield-exclamation"></i>
+                {% elif notificare.tip == 'EMAIL' %}<i class="bi bi-envelope-fill"></i>
+                {% else %}<i class="bi bi-bell-fill"></i>{% endif %}
+            </div>
+
+            <a class="notif-page-body text-decoration-none"
+            href="{% url 'cases:citeste_notificare' notificare.pk %}">
+                <div class="notif-page-meta">
+                    <div class="d-flex align-items-center gap-2">
+                        {% if not notificare.citita %}
+                        <span class="notif-nou-label">
+                            <span class="notif-nou-dot"></span> NOU
+                        </span>
+                        {% endif %}
+                        <span class="notif-page-tip">{{ notificare.get_tip_display }}</span>
+                    </div>
+                    <span class="notif-page-time">{{ notificare.data_crearii|date:"d.m.Y H:i" }}</span>
+                </div>
+                <p class="notif-page-text mb-0">{{ notificare.mesaj }}</p>
+            </a>
+
+        </div>
+        {% endfor %}
+
+        </div>
+
+    {# ── Paginare ── #}
+    <p class="text-center text-muted mb-2" style="font-size:0.75rem;">
+        Afișare <strong class="text-dark">{{ page_obj.start_index }}</strong> –
+        <strong class="text-dark">{{ page_obj.end_index }}</strong>
+        din <strong class="text-dark">{{ page_obj.paginator.count }}</strong> notificări
+    </p>
+    {% if page_obj.paginator.num_pages > 1 %}
+
+    <nav class="mb-5" aria-label="Paginare notificări">
+        <ul class="pagination pagination-sm justify-content-center gap-1 mb-0">
+
+            <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+                <a class="page-link rounded fw-semibold border px-3"
+                   href="?{% if filtru %}filtru={{ filtru }}&{% endif %}page={{ page_obj.previous_page_number }}"
+                   style="font-size:0.8rem; color:#2a6cb0; border-color:#dde3ec;">
+                    <i class="bi bi-chevron-left me-1"></i> Înapoi
+                </a>
+            </li>
+
+            {% with num=page_obj.paginator.num_pages cur=page_obj.number %}
+                {% if num <= 7 %}
+                    {% for i in page_obj.paginator.page_range %}
+                    <li class="page-item {% if i == cur %}active{% endif %}">
+                        <a class="page-link rounded border fw-semibold"
+                           href="?{% if filtru %}filtru={{ filtru }}&{% endif %}page={{ i }}"
+                           style="font-size:0.8rem; {% if i != cur %}color:#475569; border-color:#dde3ec;{% endif %}">
+                            {{ i }}
+                        </a>
+                    </li>
+                    {% endfor %}
+                {% else %}
+                    <li class="page-item {% if cur == 1 %}active{% endif %}">
+                        <a class="page-link rounded border fw-semibold"
+                           href="?{% if filtru %}filtru={{ filtru }}&{% endif %}page=1"
+                           style="font-size:0.8rem; {% if cur != 1 %}color:#475569; border-color:#dde3ec;{% endif %}">1</a>
+                    </li>
+                    {% if cur > 3 %}
+                    <li class="page-item disabled">
+                        <span class="page-link border-0 text-muted px-1" style="font-size:0.8rem;">…</span>
+                    </li>
+                    {% endif %}
+                    {% for i in page_obj.paginator.page_range %}
+                        {% if i > 1 and i < num and i >= cur|add:"-1" and i <= cur|add:"1" %}
+                        <li class="page-item {% if i == cur %}active{% endif %}">
+                            <a class="page-link rounded border fw-semibold"
+                               href="?{% if filtru %}filtru={{ filtru }}&{% endif %}page={{ i }}"
+                               style="font-size:0.8rem; {% if i != cur %}color:#475569; border-color:#dde3ec;{% endif %}">{{ i }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    {% if cur < num|add:"-2" %}
+                    <li class="page-item disabled">
+                        <span class="page-link border-0 text-muted px-1" style="font-size:0.8rem;">…</span>
+                    </li>
+                    {% endif %}
+                    <li class="page-item {% if cur == num %}active{% endif %}">
+                        <a class="page-link rounded border fw-semibold"
+                           href="?{% if filtru %}filtru={{ filtru }}&{% endif %}page={{ num }}"
+                           style="font-size:0.8rem; {% if cur != num %}color:#475569; border-color:#dde3ec;{% endif %}">{{ num }}</a>
+                    </li>
+                {% endif %}
+            {% endwith %}
+
+            <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+                <a class="page-link rounded fw-semibold border px-3"
+                   href="?{% if filtru %}filtru={{ filtru }}&{% endif %}page={{ page_obj.next_page_number }}"
+                   style="font-size:0.8rem; color:#2a6cb0; border-color:#dde3ec;">
+                    Înainte <i class="bi bi-chevron-right ms-1"></i>
+                </a>
+            </li>
+
+        </ul>
+    </nav>
+    {% endif %}
+
+{% else %}
+    <div class="text-center py-5 bg-white rounded-3 border" style="border-color:#dde3ec !important;">
+        <i class="bi bi-bell-slash d-block fs-1 mb-3 text-muted opacity-40"></i>
+        <h5 class="fw-bold text-dark mb-1">
+            {% if filtru == 'necitite' %}Nu ai notificări necitite.{% else %}Nu ai nicio notificare.{% endif %}
+        </h5>
+        <p class="text-muted small mb-0">Notificările apar automat când au loc acțiuni în dosarele tale.</p>
+    </div>
+{% endif %}
+
+</div>
+{% endblock %}

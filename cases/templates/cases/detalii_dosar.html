@@ -128,7 +128,6 @@
                     </a>
                 {% endif %}
             </div>
-            
             <div class="table-responsive">
                 <table class="table">
                     <thead>
@@ -289,7 +288,6 @@
                 </button>
                 {% endif %}
             </div>
-
             <div class="table-responsive">
                 <table class="table">
                     <thead>
@@ -339,7 +337,6 @@
                     </button>
                 {% endif %}
             </div>
-
             <div class="table-responsive">
                 <table class="table">
                     <thead>
@@ -513,60 +510,79 @@
                             <th>Înregistrat la</th>
                             <th>Încărcat la</th>
                             <th>Autor</th>
-                            {% if poate_edita %}<th class="text-end">Acțiuni</th>{% endif %}
+                            <th class="text-end">Acțiuni</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for act in dosar.documente.all %}
                         <tr {% if act.este_semnat %}class="row-done"{% endif %}>
                             <td><span class="badge-cs badge-cs-gray">{{ act.get_tip_display }}</span></td>
-                            
                             <td>
                                 <span class="fw-semibold text-dark">{{ act.titlu }}</span>
                                 {% if act.este_semnat %}
-                                    <i class="bi bi-patch-check-fill text-success ms-1" 
-                                       data-bs-toggle="tooltip" 
-                                       data-bs-placement="top" 
+                                    <i class="bi bi-patch-check-fill text-success ms-1"
+                                       data-bs-toggle="tooltip"
+                                       data-bs-placement="top"
                                        title="Semnat digital de {{ act.semnat_de.get_full_name|default:act.semnat_de.username }} la {{ act.data_semnarii|date:'d.m.Y H:i' }}">
                                     </i>
                                 {% endif %}
                             </td>
-                            
                             <td>{{ act.data_documentului|date:"d M Y" }}</td>
                             <td>{{ act.data_inregistrarii|date:"d M Y" }}</td>
                             <td class="text-muted" style="font-size:0.78rem;">{{ act.data_incarcarii|date:"d M Y, H:i" }}</td>
                             <td><span class="fw-medium">{{ act.autor.get_full_name|default:"Sistem" }}</span></td>
-                            
-                            {% if poate_edita %}
                             <td>
                                 <div class="btn-cs-actions">
-                                    
+
                                     {% if act.fisier %}
-                                        <a href="{% url 'cases:descarca_document' act.pk 'original' %}" class="btn-cs-icon" title="Descarcă draft-ul (nesemnat)"><i class="bi bi-file-earmark-text"></i></a>
+                                        <a href="{% url 'cases:descarca_document' act.pk 'original' %}" class="btn-cs-icon" title="Descarcă draft-ul (nesemnat)">
+                                            <i class="bi bi-file-earmark-text"></i>
+                                        </a>
                                     {% endif %}
-                                                                        
+
                                     {% if act.este_semnat and act.fisier_semnat %}
-                                        <a href="{% url 'cases:descarca_document' act.pk 'semnat' %}" class="btn-cs-icon btn-cs-success" title="Descarcă documentul securizat"><i class="bi bi-shield-lock"></i></a>
-                                    
+                                        <a href="{% url 'cases:descarca_document' act.pk 'semnat' %}" class="btn-cs-icon btn-cs-success" title="Descarcă documentul securizat">
+                                            <i class="bi bi-shield-lock"></i>
+                                        </a>
                                     {% elif act.fisier and ".pdf" in act.fisier.name|lower %}
-                                        
                                         {% if request.user.cheie_privata_criptata %}
                                             <button type="button" class="btn-cs-icon btn-cs-success" data-bs-toggle="modal" data-bs-target="#semnareModal{{ act.pk }}" title="Aplică semnătura digitală">
                                                 <i class="bi bi-pen-fill"></i>
                                             </button>
                                         {% else %}
-                                            <button type="button" class="btn-cs-icon text-muted opacity-50" style="border: none; background: transparent; padding: 0; cursor: not-allowed;" data-bs-toggle="tooltip" title="Semnătura digitală nu este configurată">
+                                            <button type="button" class="btn-cs-icon text-muted opacity-50" style="border:none;background:transparent;padding:0;cursor:not-allowed;" data-bs-toggle="tooltip" title="Semnătura digitală nu este configurată">
                                                 <i class="bi bi-pen"></i>
                                             </button>
                                         {% endif %}
-                                        
-                                    {% endif %} 
-                                    <a href="{% url 'cases:editare_document' act.pk %}" class="btn-cs-icon" title="Editare"><i class="bi bi-pencil"></i></a>
-                                    <a href="{% url 'cases:stergere_document' act.pk %}" class="btn-cs-icon btn-cs-danger" title="Ștergere"><i class="bi bi-trash"></i></a>
-                                    
+                                    {% endif %}
+
+                                    {# ── Buton trimite email ── #}
+                                    <button type="button"
+                                            class="btn-cs-icon"
+                                            title="Trimite pe email"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#trimiteEmailModal"
+                                            onclick="pregatesteTrimitereEmail(
+                                                '{{ act.pk }}',
+                                                '{{ act.titlu|default:act.get_tip_display|escapejs }}',
+                                                '{{ dosar.numar_unic|escapejs }}'
+                                            )">
+                                        <i class="bi bi-envelope"></i>
+                                    </button>
+
+                                    {% if poate_edita %}
+                                    <a href="{% url 'cases:editare_document' act.pk %}" class="btn-cs-icon" title="Editare">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'cases:stergere_document' act.pk %}" class="btn-cs-icon btn-cs-danger" title="Ștergere">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                    {% endif %}
+
                                 </div>
                             </td>
-                            
+
+                            {# Modal semnare #}
                             <div class="modal fade" id="semnareModal{{ act.pk }}" tabindex="-1" aria-hidden="true">
                                 <div class="modal-dialog modal-dialog-centered">
                                     <div class="modal-content border-0 shadow-lg rounded-3 text-start">
@@ -585,7 +601,6 @@
                                                         Este necesară autorizarea explicită pentru aplicarea ștampilei criptografice pe documentul <strong>{{ act.titlu }}</strong>.
                                                     </p>
                                                 </div>
-                                                
                                                 <div class="mb-2">
                                                     <label class="form-label fw-bold small text-uppercase text-muted" style="font-size: 0.72rem;">
                                                         Parola contului dumneavoastră <span class="text-danger">*</span>
@@ -603,7 +618,7 @@
                                     </div>
                                 </div>
                             </div>
-                            {% endif %}
+
                         </tr>
                         {% empty %}
                         <tr>
@@ -625,7 +640,6 @@
             <div class="card-header">
                 <h6><i class="bi bi-person-badge"></i> Cereri acces portal electronic</h6>
             </div>
-
             {% with cereri=dosar.cereri_acces_portal.all %}
             {% if cereri %}
             <div class="table-responsive">
@@ -652,8 +666,6 @@
                                     {% with calitate=cerere.parte.calitate_procesuala %}
                                         {% if calitate == 'SUSPECT' or calitate == 'INCULPAT' %}
                                             <span class="badge-cs badge-cs-red">{{ cerere.parte.get_calitate_procesuala_display }}</span>
-                                        {% elif calitate == 'FAPTUITOR' %}
-                                            <span class="badge-cs badge-cs-gray">{{ cerere.parte.get_calitate_procesuala_display }}</span>
                                         {% else %}
                                             <span class="badge-cs badge-cs-gray">{{ cerere.parte.get_calitate_procesuala_display }}</span>
                                         {% endif %}
@@ -669,9 +681,7 @@
                                 {% elif cerere.stare == 'APROBATA' %}
                                     {% if cerere.acces_generat.activ %}
                                         <span class="badge-cs badge-cs-green">Acces activ</span>
-                                        <div style="font-size:0.72rem; color:#6c757d; margin-top:2px;">
-                                            exp. {{ cerere.acces_generat.data_expirare|date:"d.m.Y" }}
-                                        </div>
+                                        <div style="font-size:0.72rem; color:#6c757d; margin-top:2px;">exp. {{ cerere.acces_generat.data_expirare|date:"d.m.Y" }}</div>
                                     {% else %}
                                         <span class="badge-cs badge-cs-gray">Revocat</span>
                                     {% endif %}
@@ -684,8 +694,7 @@
                                 <div class="btn-cs-actions justify-content-end">
                                     {% if cerere.stare == 'IN_ASTEPTARE' %}
                                         {% if request.user == dosar.procuror_caz or request.user.is_superuser or request.user.rol == 'ADMIN' %}
-                                        <a href="{% url 'portal:aprobare_cerere' cerere.pk %}"
-                                        class="btn-cs-icon" title="Procesează cererea">
+                                        <a href="{% url 'portal:aprobare_cerere' cerere.pk %}" class="btn-cs-icon" title="Procesează cererea">
                                             <i class="bi bi-check2-circle"></i>
                                         </a>
                                         {% endif %}
@@ -721,200 +730,14 @@
             {% endif %}
             {% endwith %}
         </div>
-        
-    <!-- </div> </div> <div class="modal fade" id="adaugaInfractiuneModal" tabindex="-1" aria-labelledby="infractiuneModalLabel" aria-hidden="true">
-    </div> -->
+
+    </div>{# /.col-lg-10 #}
+</div>{# /.row #}
 
 
-
-
-<div class="modal fade" id="adaugaInfractiuneModal" tabindex="-1" aria-labelledby="infractiuneModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow-lg rounded-3">
-            <div class="modal-header bg-light border-bottom border-secondary border-opacity-10 px-4 pt-3 pb-3">
-                <h5 class="modal-title text-dark fw-bold d-flex align-items-center gap-2" style="font-size: 1.05rem;" id="infractiuneModalLabel">
-                    <i class="bi bi-file-earmark-ruled-fill text-primary"></i> Adaugă încadrare juridică
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form method="POST" action="{% url 'cases:detalii_dosar' dosar.pk %}">
-                {% csrf_token %}
-                <div class="modal-body px-4 py-4">
-                    
-                    <div class="row mb-4">
-                        <div class="col-md-6 mb-3 mb-md-0">
-                            <label class="form-label fw-bold small text-uppercase text-muted mb-1">{{ form_infractiune.act_normativ.label }}</label>
-                            {{ form_infractiune.act_normativ }}
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold small text-uppercase text-muted mb-1">{{ form_infractiune.articol.label }}</label>
-                            {{ form_infractiune.articol }}
-                        </div>
-                    </div>
-                    
-                    <div class="mb-4">
-                        <label class="form-label fw-bold small text-uppercase text-muted mb-1">{{ form_infractiune.incadrare_juridica.label }}</label>
-                        {{ form_infractiune.incadrare_juridica }}
-                    </div>
-
-                    <div class="row mb-2">
-                        <div class="col-md-8 mb-3 mb-md-0">
-                            <label class="form-label fw-bold small text-uppercase text-muted mb-1 text-primary">
-                                <i class="bi bi-geo-alt-fill"></i> {{ form_infractiune.adresa_comiterii.label }}
-                            </label>
-                            {{ form_infractiune.adresa_comiterii }}
-                            <div class="form-text mt-1">Sistemul va prelua automat coordonatele GPS pentru această adresă.</div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold small text-uppercase text-muted mb-1">{{ form_infractiune.data_comiterii.label }}</label>
-                            {{ form_infractiune.data_comiterii }}
-                        </div>
-                    </div>
-
-                </div>
-                <div class="modal-footer border-top border-secondary border-opacity-10 px-4 py-3 bg-light">
-                    <button type="button" class="btn btn-light border border-secondary border-opacity-25" data-bs-dismiss="modal">Anulează</button>
-                    <button type="submit" name="btn_salveaza_infractiune" class="btn btn-primary px-4 shadow-sm fw-medium">Salvează încadrarea</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="adaugaParteModal" tabindex="-1" aria-labelledby="parteModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow-lg rounded-3">
-            <div class="modal-header bg-light border-bottom border-secondary border-opacity-10 px-4 pt-3 pb-3">
-                <h5 class="modal-title text-dark fw-bold d-flex align-items-center gap-2" style="font-size: 1.05rem;" id="parteModalLabel">
-                    <i class="bi bi-person-lines-fill text-primary"></i> Adaugă parte
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            
-            <form method="POST" enctype="multipart/form-data">
-                {% csrf_token %}
-                
-                <div class="modal-body px-4 py-4 django-form-wrapper">
-                    
-                    <div class="alert alert-primary bg-primary bg-opacity-10 border-0 border-start border-primary border-4 mb-4">
-                        <div class="d-flex align-items-center justify-content-between">
-                            <div>
-                                <h6 class="fw-bold mb-1 text-primary"><i class="bi bi-magic me-1"></i> Autocompletare inteligentă</h6>
-                                <p class="small text-muted mb-0">Încărcați o copie a actului de identitate pentru extragerea automată a datelor.</p>
-                            </div>
-                            <div>
-                                <input type="file" name="fisier_copie_ci" id="input-ocr-scan" style="display: none !important;" accept="image/*">
-                                <button type="button" class="btn btn-primary btn-sm px-3 fw-bold shadow-sm" onclick="document.getElementById('input-ocr-scan').click();">
-                                    <span id="ocr-spinner" class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true"></span>
-                                    <i id="ocr-icon" class="bi bi-camera-fill"></i> Scanează C.I.
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div class="form-check mt-3 pt-3 border-top border-primary border-opacity-25">
-                            <input class="form-check-input" type="checkbox" value="DA" id="check-salveaza-doc" name="salveaza_ca_document" checked>
-                            <label class="form-check-label small fw-medium text-dark" for="check-salveaza-doc">
-                                💾 Salvează automat copia C.I. în secțiunea <strong class="text-primary">"Documente / Acte Urmărire"</strong> a dosarului.
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">Nume complet</label>
-                        {{ form_parte.nume_complet }}
-                    </div>
-                    
-                    <div class="row mb-4">
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">Calitate procesuală</label>
-                            {{ form_parte.calitate_procesuala }}
-                        </div>
-                        <div class="col-md-4 mt-3 mt-md-0">
-                            <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">CNP</label>
-                            {{ form_parte.cnp }}
-                        </div>
-                        <div class="col-md-2 mt-3 mt-md-0">
-                            <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">Serie</label>
-                            {{ form_parte.serie_ci }}
-                        </div>
-                        <div class="col-md-2 mt-3 mt-md-0">
-                            <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">Număr</label>
-                            {{ form_parte.numar_ci }}
-                        </div>
-                    </div>
-                    
-                    <div class="mb-4">
-                        <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">Adresă (Domiciliu)</label>
-                        {{ form_parte.adresa }}
-                    </div>
-
-                    <div class="mb-2">
-                        <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">Mențiuni / detalii suplimentare</label>
-                        {{ form_parte.mentiuni }}
-                    </div>
-                </div>
-                
-                <div class="modal-footer border-top border-secondary border-opacity-10 px-4 py-3 bg-light">
-                    <button type="button" class="btn btn-light border border-secondary border-opacity-25" data-bs-dismiss="modal">Anulează</button>
-                    <button type="submit" name="btn_salveaza_parte" class="btn btn-primary px-4 shadow-sm fw-medium">Salvează persoana</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<script>
-document.getElementById('input-ocr-scan').addEventListener('change', function(e) {
-    if (this.files.length === 0) return;
-
-    const file = this.files[0];
-    const formData = new FormData();
-    formData.append('imagine_buletin', file);
-
-    const icon = document.getElementById('ocr-icon');
-    const spinner = document.getElementById('ocr-spinner');
-    
-    icon.classList.add('d-none');
-    spinner.classList.remove('d-none');
-
-    fetch('/cases/api/test-ocr/', {  
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === 'success') {
-            const extrase = data.date_structurate;
-            
-            const fieldMap = {
-                'nume_complet': 'input-nume',
-                'cnp': 'input-cnp',
-                'serie': 'input-serie',
-                'numar': 'input-numar',
-                'adresa': 'input-adresa'
-            };
-
-            for (const [key, id] of Object.entries(fieldMap)) {
-                if (extrase[key]) {
-                    const el = document.getElementById(id);
-                    if(el) {
-                        el.value = extrase[key];
-                        el.classList.add('is-valid');
-                        setTimeout(() => el.classList.remove('is-valid'), 3000);
-                    }
-                }
-            }
-        } else {
-            alert('A apărut o eroare la citirea documentului: ' + data.mesaj);
-        }
-    })
-    .catch(error => alert('Eroare de comunicare cu serverul.'))
-    .finally(() => {
-        icon.classList.remove('d-none');
-        spinner.classList.add('d-none');
-    });
-});
-</script>
+{# ============================================================ #}
+{# MODALURI                                                     #}
+{# ============================================================ #}
 
 <div class="modal fade" id="adaugaInfractiuneModal" tabindex="-1" aria-labelledby="infractiuneModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -950,6 +773,91 @@ document.getElementById('input-ocr-scan').addEventListener('change', function(e)
                 <div class="modal-footer border-top border-secondary border-opacity-10 px-4 py-3 bg-light">
                     <button type="button" class="btn btn-light border border-secondary border-opacity-25" data-bs-dismiss="modal">Anulează</button>
                     <button type="submit" name="btn_salveaza_infractiune" class="btn btn-primary px-4 shadow-sm fw-medium">Salvează încadrarea</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="adaugaParteModal" tabindex="-1" aria-labelledby="parteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-3">
+            <div class="modal-header bg-light border-bottom border-secondary border-opacity-10 px-4 pt-3 pb-3">
+                <h5 class="modal-title text-dark fw-bold d-flex align-items-center gap-2" style="font-size: 1.05rem;" id="parteModalLabel">
+                    <i class="bi bi-person-lines-fill text-primary"></i> Adaugă parte
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body px-4 py-4 django-form-wrapper">
+                    <div class="alert alert-primary bg-primary bg-opacity-10 border-0 border-start border-primary border-4 mb-4">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <h6 class="fw-bold mb-1 text-primary"><i class="bi bi-magic me-1"></i> Autocompletare inteligentă</h6>
+                                <p class="small text-muted mb-0">Încărcați o copie a actului de identitate pentru extragerea automată a datelor.</p>
+                            </div>
+                            <div>
+                                <input type="file" name="fisier_copie_ci" id="input-ocr-scan" style="display: none !important;" accept="image/*">
+                                <button type="button" class="btn btn-primary btn-sm px-3 fw-bold shadow-sm" onclick="document.getElementById('input-ocr-scan').click();">
+                                    <span id="ocr-spinner" class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true"></span>
+                                    <i id="ocr-icon" class="bi bi-camera-fill"></i> Scanează C.I.
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-check mt-3 pt-3 border-top border-primary border-opacity-25">
+                            <input class="form-check-input" type="checkbox" value="DA" id="check-salveaza-doc" name="salveaza_ca_document" checked>
+                            <label class="form-check-label small fw-medium text-dark" for="check-salveaza-doc">
+                                <i class="bi bi-floppy me-1"></i> Salvează automat copia C.I. în secțiunea <strong class="text-primary">"Documente / Acte Urmărire"</strong> a dosarului.
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">Nume complet</label>
+                        {{ form_parte.nume_complet }}
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">Calitate procesuală</label>
+                            {{ form_parte.calitate_procesuala }}
+                        </div>
+                        <div class="col-md-4 mt-3 mt-md-0">
+                            <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">CNP</label>
+                            {{ form_parte.cnp }}
+                        </div>
+                        <div class="col-md-2 mt-3 mt-md-0">
+                            <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">Serie</label>
+                            {{ form_parte.serie_ci }}
+                        </div>
+                        <div class="col-md-2 mt-3 mt-md-0">
+                            <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">Număr</label>
+                            {{ form_parte.numar_ci }}
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">Adresă (Domiciliu)</label>
+                        {{ form_parte.adresa }}
+                    </div>
+
+                    {# ── Câmp email nou ── #}
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">
+                            Adresă email
+                        </label>
+                        {{ form_parte.email }}
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">Mențiuni / detalii suplimentare</label>
+                        {{ form_parte.mentiuni }}
+                    </div>
+                </div>
+                <div class="modal-footer border-top border-secondary border-opacity-10 px-4 py-3 bg-light">
+                    <button type="button" class="btn btn-light border border-secondary border-opacity-25" data-bs-dismiss="modal">Anulează</button>
+                    <button type="submit" name="btn_salveaza_parte" class="btn btn-primary px-4 shadow-sm fw-medium">Salvează persoana</button>
                 </div>
             </form>
         </div>
@@ -1047,10 +955,8 @@ document.getElementById('input-ocr-scan').addEventListener('change', function(e)
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            
             <form method="POST" action="{% url 'cases:detalii_dosar' dosar.pk %}" enctype="multipart/form-data">
-                {% csrf_token %} 
-
+                {% csrf_token %}
                 <div class="modal-body px-4 py-4 django-form-wrapper">
                     {% if form_document.errors %}
                         <div class="alert alert-danger shadow-sm border-0 border-start border-danger border-4 py-2 px-3 mb-4">
@@ -1059,18 +965,15 @@ document.getElementById('input-ocr-scan').addEventListener('change', function(e)
                             <p class="mb-0 small">Verificați câmpurile marcate cu roșu mai jos.</p>
                         </div>
                     {% endif %}
-                    
                     <div class="mb-4">
                         <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">Titlu document</label>
                         {{ form_document.titlu }}
                     </div>
-                    
                     <div class="row mb-4">
                         <div class="col-md-6 mb-3 mb-md-0">
                             <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">Tip act</label>
                             {{ form_document.tip }}
                         </div>
-
                         <div class="col-md-6">
                             <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">Alege fișierul (opțional)</label>
                             {{ form_document.fisier }}
@@ -1081,31 +984,21 @@ document.getElementById('input-ocr-scan').addEventListener('change', function(e)
                             {% endif %}
                         </div>
                     </div>
-                    
                     <div class="row mb-4">
                         <div class="col-md-6 mb-3 mb-md-0">
                             <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">Data documentului</label>
                             {{ form_document.data_documentului }}
-                            {% if form_document.data_documentului.help_text %}
-                                <div class="form-text small text-muted mt-1">{{ form_document.data_documentului.help_text }}</div>
-                            {% endif %}
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">Data înregistrării</label>
                             {{ form_document.data_inregistrarii }}
-                            {% if form_document.data_inregistrarii.help_text %}
-                                <div class="form-text small text-muted mt-1">{{ form_document.data_inregistrarii.help_text }}</div>
-                            {% endif %}
                         </div>
                     </div>
-                    
                     <div class="mb-2">
                         <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">Descriere scurtă / Rezumat (opțional)</label>
                         {{ form_document.descriere_scurta }}
                     </div>
-                    
                 </div>
-                
                 <div class="modal-footer border-top border-secondary border-opacity-10 px-4 py-3 bg-light">
                     <button type="button" class="btn btn-light border border-secondary border-opacity-25" data-bs-dismiss="modal">Anulează</button>
                     <button type="submit" name="btn_salveaza_document" class="btn btn-primary px-4 shadow-sm fw-medium">Salvează documentul</button>
@@ -1124,24 +1017,21 @@ document.getElementById('input-ocr-scan').addEventListener('change', function(e)
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            
             <form method="POST" action="{% url 'cases:genereaza_act' dosar.pk %}">
                 {% csrf_token %}
                 <div class="modal-body px-4 py-4">
-                    
                     <div class="mb-4">
                         <label class="form-label fw-bold small text-uppercase text-muted">Alege tipul actului</label>
-                            <select class="form-select bg-light border-primary border-opacity-25" name="tip_act" id="selectTipAct" required>
-                                <option value="">-- Selectează un act procedural --</option>
-                                <option value="citatie">Citație</option>
-                                <option value="oiup">Ordonanță de începere a urmăririi penale</option>
-                                <option value="ref_clasare">Referat cu propunere de clasare</option>
-                                <option value="ord_clasare">Ordonanță de clasare</option>
-                                <option value="ref_renuntare">Referat propunere renunțare UP</option>
-                                <option value="ord_renuntare">Ordonanță renunțare la UP</option>
-                            </select>
+                        <select class="form-select bg-light border-primary border-opacity-25" name="tip_act" id="selectTipAct" required>
+                            <option value="">-- Selectează un act procedural --</option>
+                            <option value="citatie">Citație</option>
+                            <option value="oiup">Ordonanță de începere a urmăririi penale</option>
+                            <option value="ref_clasare">Referat cu propunere de clasare</option>
+                            <option value="ord_clasare">Ordonanță de clasare</option>
+                            <option value="ref_renuntare">Referat propunere renunțare UP</option>
+                            <option value="ord_renuntare">Ordonanță renunțare la UP</option>
+                        </select>
                     </div>
-
                     <div id="blocEmitent" class="mb-4 p-3 bg-light rounded border d-none">
                         <label class="form-label fw-bold small text-uppercase text-dark mb-2">Cine emite actul?</label>
                         <div class="d-flex gap-4">
@@ -1155,12 +1045,10 @@ document.getElementById('input-ocr-scan').addEventListener('change', function(e)
                             </div>
                         </div>
                     </div>
-
                     <div id="blocDataActului" class="mb-3 d-none">
                         <label class="form-label fw-bold small text-uppercase text-muted">Data emiterii actului</label>
                         <input type="date" class="form-control" name="data_actului" id="inputDataActului">
                     </div>
-
                     <div id="blocCitatie" class="d-none">
                         <div class="mb-3">
                             <label class="form-label fw-bold small text-uppercase text-muted">Persoana Citată</label>
@@ -1179,7 +1067,6 @@ document.getElementById('input-ocr-scan').addEventListener('change', function(e)
                             <input type="text" class="form-control" name="scop" placeholder="ex: audiere în calitate de suspect">
                         </div>
                     </div>
-
                     <div id="blocTemeiClasare" class="mb-3 d-none">
                         <label class="form-label fw-bold small text-uppercase text-muted">Temei clasare (Art. 16 CPP)</label>
                         <select class="form-select" name="temei_clasare">
@@ -1191,7 +1078,6 @@ document.getElementById('input-ocr-scan').addEventListener('change', function(e)
                             <option value="f">f) A intervenit amnistia sau prescripția</option>
                         </select>
                     </div>
-                    
                     <div id="blocComunicare" class="mb-2 d-none">
                         <label class="form-label fw-bold small text-uppercase text-muted mb-1">Se comunică către (Bifați):</label>
                         <div class="border rounded p-2 bg-white shadow-sm" style="max-height: 150px; overflow-y: auto;">
@@ -1199,8 +1085,8 @@ document.getElementById('input-ocr-scan').addEventListener('change', function(e)
                             <div class="form-check mb-1">
                                 <input class="form-check-input" type="checkbox" name="persoane_comunicare" value="{{ parte.id }}" id="chk_parte_{{ parte.id }}">
                                 <label class="form-check-label small" for="chk_parte_{{ parte.id }}" style="cursor: pointer;">
-                                    <span class="fw-medium text-dark">{{ parte.nume_complet }}</span> 
-                                    <span class="text-muted fst-italic">({{ parte.get_calitate_procesuala_display|default:parte.calitate_procesuala }})</span>
+                                    <span class="fw-medium text-dark">{{ parte.nume_complet }}</span>
+                                    <span class="text-muted fst-italic">({{ parte.get_calitate_procesuala_display }})</span>
                                 </label>
                             </div>
                             {% empty %}
@@ -1209,7 +1095,6 @@ document.getElementById('input-ocr-scan').addEventListener('change', function(e)
                         </div>
                         <small class="text-muted" style="font-size: 0.7rem;"><i class="bi bi-info-circle me-1"></i>Doar persoanele selectate vor apărea în document.</small>
                     </div>
-
                 </div>
                 <div class="modal-footer border-top border-secondary border-opacity-10 px-4 py-3 bg-light">
                     <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Anulează</button>
@@ -1218,144 +1103,372 @@ document.getElementById('input-ocr-scan').addEventListener('change', function(e)
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="trimiteEmailModal" tabindex="-1" aria-labelledby="trimiteEmailLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-3 overflow-hidden">
+            <div class="modal-header border-bottom border-secondary border-opacity-10 px-4 py-3"
+                 style="background:#f4f7fb; border-left:3px solid #2a6cb0;">
+                <h5 class="modal-title fw-bold d-flex align-items-center gap-2"
+                    style="font-size:0.95rem; color:#1e3a5f;" id="trimiteEmailLabel">
+                    <i class="bi bi-envelope-fill" style="color:#2a6cb0;"></i>
+                    Trimite document pe email
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="formTrimiteEmail" action="">
+                {% csrf_token %}
+                <div class="modal-body px-4 py-4">
+
+                    {# Document selectat #}
+                    <div class="d-flex align-items-center gap-3 p-3 rounded mb-4"
+                         style="background:#f4f7fb; border:1px solid #dde3ec;">
+                        <i class="bi bi-file-earmark-text fs-4 flex-shrink-0" style="color:#2a6cb0;"></i>
+                        <div>
+                            <div class="fw-bold text-dark" style="font-size:0.85rem;" id="email-doc-titlu">—</div>
+                            <div class="text-muted" style="font-size:0.75rem;">
+                                Dosar <span id="email-doc-numar" class="fw-semibold">—</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {# Destinatar #}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size:0.72rem;">
+                            Destinatar <span class="text-danger">*</span>
+                        </label>
+                        {# Dropdown rapid din persoanele dosarului cu email completat #}
+                        {% with parti_cu_email=dosar.parti_implicate.all %}
+                        {% if parti_cu_email %}
+                        <select class="form-select form-select-sm mb-2"
+                                id="select-parte-rapida"
+                                onchange="completeazaDestinatarDinDosar(this)"
+                                style="font-size:0.82rem; border-color:#dde3ec;">
+                            <option value="">— Completează din persoanele dosarului (opțional) —</option>
+                            {% for parte in parti_cu_email %}
+                                {% if parte.email %}
+                                <option value="{{ parte.email|escapejs }}"
+                                        data-nume="{{ parte.nume_complet|escapejs }}">
+                                    {{ parte.nume_complet }} ({{ parte.get_calitate_procesuala_display }}) — {{ parte.email }}
+                                </option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                        {% endif %}
+                        {% endwith %}
+                        <div class="row g-2">
+                            <div class="col-md-5">
+                                <input type="text" name="nume_destinatar" id="input-nume-destinatar"
+                                       class="form-control" placeholder="Nume destinatar sau instituție"
+                                       required style="font-size:0.85rem;">
+                            </div>
+                            <div class="col-md-7">
+                                <input type="email" name="email_destinatar" id="input-email-destinatar"
+                                       class="form-control" placeholder="adresa@email.ro"
+                                       required style="font-size:0.85rem;">
+                            </div>
+                        </div>
+                    </div>
+
+                    {# Subiect #}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size:0.72rem;">
+                            Subiect <span class="text-muted fw-normal">(se completează automat)</span>
+                        </label>
+                        <input type="text" name="subiect" id="input-subiect-email"
+                               class="form-control" style="font-size:0.85rem;">
+                    </div>
+
+                    {# Mesaj #}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-uppercase text-muted mb-1" style="font-size:0.72rem;">
+                            Mesaj <span class="text-muted fw-normal">(opțional — se completează automat)</span>
+                        </label>
+                        <textarea name="mesaj" id="input-mesaj-email" class="form-control"
+                                  rows="4" style="font-size:0.82rem; resize:vertical;"></textarea>
+                    </div>
+
+                    {# Istoric trimiteri — populat dinamic de JS #}
+                    <div id="istoric-trimiteri-section"></div>
+
+                </div>
+                <div class="modal-footer border-top border-secondary border-opacity-10 px-4 py-3 bg-light d-flex justify-content-between align-items-center">
+                    <span class="text-muted d-flex align-items-center gap-1" style="font-size:0.75rem;">
+                        <i class="bi bi-paperclip"></i> Documentul va fi trimis ca atașament.
+                    </span>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-light border border-secondary border-opacity-25 fw-medium" data-bs-dismiss="modal">Anulează</button>
+                        <button type="submit" class="btn btn-primary fw-medium px-4 shadow-sm">
+                            <i class="bi bi-send me-1"></i> Trimite
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{# ============================================================ #}
+{# SCRIPTURI                                                    #}
+{# ============================================================ #}
 
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const selTip = document.getElementById('selectTipAct');
-        const btnGen = document.getElementById('btnGenereaza');
-        
-        const bEmitent = document.getElementById('blocEmitent');
-        const bData = document.getElementById('blocDataActului');
-        const bCitatie = document.getElementById('blocCitatie');
-        const bTemei = document.getElementById('blocTemeiClasare');
-        const bComunicare = document.getElementById('blocComunicare');
+document.getElementById('input-ocr-scan').addEventListener('change', function(e) {
+    if (this.files.length === 0) return;
+    const file = this.files[0];
+    const formData = new FormData();
+    formData.append('imagine_buletin', file);
+    const icon = document.getElementById('ocr-icon');
+    const spinner = document.getElementById('ocr-spinner');
+    icon.classList.add('d-none');
+    spinner.classList.remove('d-none');
+    fetch('/cases/api/test-ocr/', { method: 'POST', body: formData })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            const extrase = data.date_structurate;
+            const fieldMap = { 'nume_complet': 'input-nume', 'cnp': 'input-cnp', 'serie': 'input-serie', 'numar': 'input-numar', 'adresa': 'input-adresa' };
+            for (const [key, id] of Object.entries(fieldMap)) {
+                if (extrase[key]) {
+                    const el = document.getElementById(id);
+                    if(el) { el.value = extrase[key]; el.classList.add('is-valid'); setTimeout(() => el.classList.remove('is-valid'), 3000); }
+                }
+            }
+        } else { alert('A apărut o eroare la citirea documentului: ' + data.mesaj); }
+    })
+    .catch(error => alert('Eroare de comunicare cu serverul.'))
+    .finally(() => { icon.classList.remove('d-none'); spinner.classList.add('d-none'); });
+});
+</script>
 
-        document.getElementById('inputDataActului').valueAsDate = new Date();
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const selTip = document.getElementById('selectTipAct');
+    const btnGen = document.getElementById('btnGenereaza');
+    const bEmitent = document.getElementById('blocEmitent');
+    const bData = document.getElementById('blocDataActului');
+    const bCitatie = document.getElementById('blocCitatie');
+    const bTemei = document.getElementById('blocTemeiClasare');
+    const bComunicare = document.getElementById('blocComunicare');
+    document.getElementById('inputDataActului').valueAsDate = new Date();
+    if(selTip) {
+        selTip.addEventListener('change', function() {
+            const val = this.value;
+            bEmitent.classList.add('d-none'); bData.classList.add('d-none'); bCitatie.classList.add('d-none'); bTemei.classList.add('d-none'); bComunicare.classList.add('d-none');
+            btnGen.disabled = true;
+            if(!val) return;
+            btnGen.disabled = false;
+            if(val === 'citatie') { bEmitent.classList.remove('d-none'); bCitatie.classList.remove('d-none'); }
+            else if(val === 'oiup') { bEmitent.classList.remove('d-none'); bData.classList.remove('d-none'); }
+            else if(val === 'ref_clasare') { bData.classList.remove('d-none'); bTemei.classList.remove('d-none'); }
+            else if(val === 'ord_clasare') { bData.classList.remove('d-none'); bTemei.classList.remove('d-none'); bComunicare.classList.remove('d-none'); }
+            else if(val === 'ref_renuntare') { bData.classList.remove('d-none'); }
+            else if(val === 'ord_renuntare') { bData.classList.remove('d-none'); bComunicare.classList.remove('d-none'); }
+        });
+    }
+});
+</script>
 
-        if(selTip) {
-            selTip.addEventListener('change', function() {
-                const val = this.value;
-                
-                bEmitent.classList.add('d-none');
-                bData.classList.add('d-none');
-                bCitatie.classList.add('d-none');
-                bTemei.classList.add('d-none');
-                bComunicare.classList.add('d-none');
-                btnGen.disabled = true;
-                
-                if(!val) return;
-                
-                btnGen.disabled = false;
-
-                if(val === 'citatie') {
-                    bEmitent.classList.remove('d-none');
-                    bCitatie.classList.remove('d-none');
-                } 
-                else if (val === 'oiup') {
-                    bEmitent.classList.remove('d-none');
-                    bData.classList.remove('d-none');
-                }
-                else if (val === 'ref_clasare') {
-                    bData.classList.remove('d-none');
-                    bTemei.classList.remove('d-none');
-                }
-                else if (val === 'ord_clasare') {
-                    bData.classList.remove('d-none');
-                    bTemei.classList.remove('d-none');
-                    bComunicare.classList.remove('d-none');
-                }
-                else if (val === 'ref_renuntare') {
-                    bData.classList.remove('d-none');
-                }
-                else if (val === 'ord_renuntare') {
-                    bData.classList.remove('d-none');
-                    bComunicare.classList.remove('d-none');
-                }
-            });
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const durataInput = document.getElementById('id_durata_zile');
+    const dataInceputInput = document.getElementById('id_data_inceput');
+    const dataSfarsitInput = document.getElementById('id_data_sfarsit');
+    if (durataInput && dataInceputInput && dataSfarsitInput) {
+        function calculeazaDataSfarsit() {
+            const durata = parseInt(durataInput.value);
+            const dataInceputVal = dataInceputInput.value;
+            if (!isNaN(durata) && dataInceputVal) {
+                const dataCalculata = new Date(dataInceputVal);
+                dataCalculata.setDate(dataCalculata.getDate() + durata - 1);
+                const an = dataCalculata.getFullYear();
+                const luna = String(dataCalculata.getMonth() + 1).padStart(2, '0');
+                const zi = String(dataCalculata.getDate()).padStart(2, '0');
+                dataSfarsitInput.value = `${an}-${luna}-${zi}`;
+                dataSfarsitInput.classList.add('bg-success', 'bg-opacity-10', 'text-success');
+                setTimeout(() => { dataSfarsitInput.classList.remove('bg-success', 'bg-opacity-10', 'text-success'); }, 500);
+                valideazaCronologia();
+            }
         }
-    });
+        function valideazaCronologia() {
+            if (dataInceputInput.value && dataSfarsitInput.value) {
+                const dI = new Date(dataInceputInput.value);
+                const dS = new Date(dataSfarsitInput.value);
+                dataSfarsitInput.setCustomValidity(dS < dI ? "Data de sfârșit nu poate fi înaintea datei de început!" : "");
+            }
+        }
+        durataInput.addEventListener('input', calculeazaDataSfarsit);
+        dataInceputInput.addEventListener('change', calculeazaDataSfarsit);
+        dataSfarsitInput.addEventListener('change', valideazaCronologia);
+    }
+});
 </script>
 
 {% if form_document.errors %}
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        var myModalElement = document.getElementById('adaugaDocumentModal');
-        var myModal = new bootstrap.Modal(myModalElement);
-        myModal.show();
-    });
+document.addEventListener("DOMContentLoaded", function() {
+    new bootstrap.Modal(document.getElementById('adaugaDocumentModal')).show();
+});
 </script>
 {% endif %}
-
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        // Câmpurile din formularul generat de Django
-        const durataInput = document.getElementById('id_durata_zile');
-        const dataInceputInput = document.getElementById('id_data_inceput');
-        const dataSfarsitInput = document.getElementById('id_data_sfarsit');
-
-        // Verificăm dacă suntem pe o pagină care are aceste câmpuri
-        if (durataInput && dataInceputInput && dataSfarsitInput) {
-            
-            // --- AUTOCOMPLETARE ŞI CALCUL AUTOMAT A DATEI DE SFARSIT ---
-            function calculeazaDataSfarsit() {
-                const durata = parseInt(durataInput.value);
-                const dataInceputVal = dataInceputInput.value;
-
-                // Dacă avem ambele valori completate valid
-                if (!isNaN(durata) && dataInceputVal) {
-                    const dataCalculata = new Date(dataInceputVal);
-                    
-                    // Zile pline vs. zile calendaristice
-                    // Matematic: 1 Ian + 30 zile = 31 Ian. 
-                    // Dacă ziua de început se socoteşte în calculul termenului (ex. expiră pe 30 Ian), adaugăm "- 1" după durata.
-                    dataCalculata.setDate(dataCalculata.getDate() + durata - 1); 
-
-                    // Formatăm data înapoi în standardul YYYY-MM-DD acceptat de input-ul HTML
-                    const an = dataCalculata.getFullYear();
-                    const luna = String(dataCalculata.getMonth() + 1).padStart(2, '0');
-                    const zi = String(dataCalculata.getDate()).padStart(2, '0');
-
-                    // Setăm valoarea în câmpul de final
-                    dataSfarsitInput.value = `${an}-${luna}-${zi}`;
-                    
-                    // Feedback vizual pentru a arăta că s-a autocompletat
-                    dataSfarsitInput.classList.add('bg-success', 'bg-opacity-10', 'text-success');
-                    setTimeout(() => {
-                        dataSfarsitInput.classList.remove('bg-success', 'bg-opacity-10', 'text-success');
-                    }, 500);
-
-                    valideazaCronologia(); // Verificare după autocompletare
-                }
-            }
-
-            // --- VALIDARE - DATA SFÂRŞIT NU POATE FI ANTERIOARĂ DATEI DE ÎNCEPUT ---
-            function valideazaCronologia() {
-                if (dataInceputInput.value && dataSfarsitInput.value) {
-                    const dInceput = new Date(dataInceputInput.value);
-                    const dSfarsit = new Date(dataSfarsitInput.value);
-
-                    if (dSfarsit < dInceput) {
-                        dataSfarsitInput.setCustomValidity("Data de sfârșit nu poate fi înaintea datei de început!");
-                    } else {
-                        dataSfarsitInput.setCustomValidity("");
-                    }
-                }
-            }
-
-            durataInput.addEventListener('input', calculeazaDataSfarsit);
-            dataInceputInput.addEventListener('change', calculeazaDataSfarsit);
-            dataSfarsitInput.addEventListener('change', valideazaCronologia);
-        }
-    });
-</script>
 
 {% if form_parte.errors %}
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        var myModal = new bootstrap.Modal(document.getElementById('adaugaParteModal'));
-        myModal.show();
-    });
+document.addEventListener("DOMContentLoaded", function() {
+    new bootstrap.Modal(document.getElementById('adaugaParteModal')).show();
+});
 </script>
 {% endif %}
+
+<script>
+const TRIMITERI_PER_DOC = {
+    {% for act in dosar.documente.all %}
+    "{{ act.pk }}": [
+        {% for t in act.trimiteri_email.all %}
+        {
+            "nume": "{{ t.nume_destinatar|escapejs }}",
+            "email": "{{ t.email_destinatar|escapejs }}",
+            "data": "{{ t.trimis_la|date:'d.m.Y H:i' }}",
+            "trimis_de": "{{ t.trimis_de.get_full_name|default:t.trimis_de.username|escapejs }}",
+            "varianta": "{{ t.varianta_trimisa|escapejs }}",
+            "reusit": {{ t.reusit|yesno:"true,false" }}
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ]{% if not forloop.last %},{% endif %}
+    {% endfor %}
+};
+
+function pregatesteTrimitereEmail(docPk, docTitlu, dosarNumar) {
+    document.getElementById('formTrimiteEmail').action = `/cases/document/${docPk}/trimite-email/`;
+    document.getElementById('email-doc-titlu').textContent = docTitlu;
+    document.getElementById('email-doc-numar').textContent  = dosarNumar;
+    document.getElementById('input-subiect-email').value = `Document dosar ${dosarNumar} — ${docTitlu}`;
+    document.getElementById('input-nume-destinatar').value  = '';
+    document.getElementById('input-email-destinatar').value = '';
+    document.getElementById('input-mesaj-email').value      = '';
+    const sel = document.getElementById('select-parte-rapida');
+    if (sel) sel.value = '';
+    afiseazaIstoricTrimiteri(docPk);
+}
+
+function completeazaDestinatarDinDosar(select) {
+    const opt = select.options[select.selectedIndex];
+    if (!opt.value) return;
+    document.getElementById('input-email-destinatar').value = opt.value;
+    document.getElementById('input-nume-destinatar').value  = opt.dataset.nume || '';
+}
+
+function afiseazaIstoricTrimiteri(docPk) {
+    const container = document.getElementById('istoric-trimiteri-section');
+    const trimiteri = TRIMITERI_PER_DOC[docPk] || [];
+    if (trimiteri.length === 0) { container.innerHTML = ''; return; }
+    const randuri = trimiteri.map(t => `
+        <tr>
+            <td style="font-size:0.78rem;">${t.data}</td>
+            <td style="font-size:0.78rem;">
+                <div class="fw-semibold text-dark">${t.nume}</div>
+                <div class="text-muted">${t.email}</div>
+            </td>
+            <td style="font-size:0.78rem; color:#475569;">${t.trimis_de}</td>
+            <td>
+                ${t.varianta === 'semnat'
+                    ? '<span class="badge-cs badge-cs-green" style="font-size:0.65rem;">Semnat</span>'
+                    : '<span class="badge-cs badge-cs-gray" style="font-size:0.65rem;">Original</span>'
+                }
+            </td>
+            <td>${t.reusit
+                ? '<span class="badge-cs badge-cs-green" style="font-size:0.65rem;">Trimis</span>'
+                : '<span class="badge-cs badge-cs-red" style="font-size:0.65rem;">Eșuat</span>'
+            }</td>
+        </tr>`).join('');
+    container.innerHTML = `
+        <div class="mt-1 pt-3 border-top border-secondary border-opacity-10">
+            <p class="text-muted fw-bold text-uppercase mb-2" style="font-size:0.68rem; letter-spacing:0.6px;">
+                <i class="bi bi-clock-history me-1"></i> Istoric trimiteri anterioare
+            </p>
+            <div class="table-responsive">
+                <table class="table mb-0">
+                    <thead><tr>
+                        <th style="font-size:0.68rem;">Data</th>
+                        <th style="font-size:0.68rem;">Destinatar</th>
+                        <th style="font-size:0.68rem;">Trimis de</th>
+                        <th style="font-size:0.68rem;">Variantă</th>
+                        <th style="font-size:0.68rem;">Status</th>
+                    </tr></thead>
+                    <tbody>${randuri}</tbody>
+                </table>
+            </div>
+        </div>`;
+}
+</script>
+
+<!-- Datalist cu sugestiile de infracțiuni -->
+<datalist id="lista-infractiuni">
+    <option value="Furt">
+    <option value="Furt calificat">
+    <option value="Tâlhărie">
+    <option value="Tâlhărie calificată">
+    <option value="Omor">
+    <option value="Lovirea sau alte violențe">
+    <option value="Vătămarea corporală din culpă">
+    <option value="Înșelăciune">
+    <option value="Conducerea unui vehicul sub influența alcoolului">
+</datalist>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Dicționarul cu infracțiunile frecvente
+    const dictionarInfractiuni = {
+        "Furt": { articol: "228", act: "Codul penal" },
+        "Furt calificat": { articol: "229", act: "Codul penal" },
+        "Tâlhărie": { articol: "233", act: "Codul penal" },
+        "Tâlhărie calificată": { articol: "234", act: "Codul penal" },
+        "Omor": { articol: "188", act: "Codul penal" },
+        "Lovirea sau alte violențe": { articol: "193", act: "Codul penal" },
+        "Vătămarea corporală din culpă": { articol: "196", act: "Codul penal" },
+        "Înșelăciune": { articol: "244", act: "Codul penal" },
+        "Conducerea unui vehicul sub influența alcoolului": { articol: "336", act: "Codul penal" }
+    };
+
+    // Preluăm câmpurile generate de Django Form pe baza ID-urilor
+    const inputIncadrare = document.getElementById('id_incadrare_juridica');
+    const inputArticol = document.getElementById('id_articol');
+    const selectActNormativ = document.getElementById('id_act_normativ');
+
+    if (inputIncadrare) {
+        // Atașăm datalist-ul la câmpul text "Încadrare Juridică"
+        inputIncadrare.setAttribute('list', 'lista-infractiuni');
+
+        // Ascultăm evenimentul de tastare/selecție
+        inputIncadrare.addEventListener('input', function() {
+            const valoareSelectata = this.value.trim();
+            
+            // Verificăm dacă valoarea există în dicționarul nostru
+            if (dictionarInfractiuni[valoareSelectata]) {
+                // 1. Completăm articolul
+                if (inputArticol) {
+                    inputArticol.value = dictionarInfractiuni[valoareSelectata].articol;
+                }
+                
+                // 2. Selectăm actul normativ din dropdown (Select)
+                if (selectActNormativ) {
+                    const textCautat = dictionarInfractiuni[valoareSelectata].act;
+                    // Iterăm prin opțiunile din dropdown pentru a găsi "Codul penal" etc.
+                    for (let i = 0; i < selectActNormativ.options.length; i++) {
+                        if (selectActNormativ.options[i].text.toLowerCase() === textCautat.toLowerCase() || 
+                            selectActNormativ.options[i].value.toLowerCase() === textCautat.toLowerCase()) {
+                            selectActNormativ.selectedIndex = i;
+                            break; // Oprim căutarea odată ce l-am găsit
+                        }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
 
 {% endblock %}

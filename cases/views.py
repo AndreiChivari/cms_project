@@ -6,7 +6,7 @@ from urllib3 import request
 from .models import Dosar, ParteImplicata, Infractiune, MasuraPreventiva, IstoricDesemnare, StadiuCercetare, SolutieDosar, Notificare, TermenProcedural
 from documents.forms import DocumentForm 
 from .forms import DosarForm, ParteImplicataForm, CreareDosarForm, InfractiuneForm, MasuraPreventivaForm, StadiuCercetareForm, SolutieDosarForm, TermenProceduralForm, TermenProceduralDoarForm 
-from documents.models import ActUrmarire
+from documents.models import ActUrmarire, TrimiterePrinEmail
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
@@ -27,6 +27,7 @@ import json
 from django.utils.dateparse import parse_datetime, parse_date
 from django.views.decorators.http import require_POST
 from .utils import render_to_pdf, curata_diacritice
+from django.core.mail import EmailMessage
 # Importuri pentru ocr
 import pytesseract
 from PIL import Image
@@ -302,11 +303,11 @@ def adaugare_dosar(request):
             mesaj_nou = f"Ai fost desemnat pe dosarul nou {dosar.numar_unic}."
             
             if dosar.ofiter_caz:
-                Notificare.objects.create(utilizator=dosar.ofiter_caz, mesaj=mesaj_nou, link=link_dosar)
+                Notificare.objects.create(tip=Notificare.Tip.GENERAL, utilizator=dosar.ofiter_caz, mesaj=mesaj_nou, link=link_dosar)
             if dosar.procuror_caz:
-                Notificare.objects.create(utilizator=dosar.procuror_caz, mesaj=mesaj_nou, link=link_dosar)
+                Notificare.objects.create(tip=Notificare.Tip.GENERAL, utilizator=dosar.procuror_caz, mesaj=mesaj_nou, link=link_dosar)
             if dosar.grefier_caz:
-                Notificare.objects.create(utilizator=dosar.grefier_caz, mesaj=mesaj_nou, link=link_dosar)
+                Notificare.objects.create(tip=Notificare.Tip.GENERAL, utilizator=dosar.grefier_caz, mesaj=mesaj_nou, link=link_dosar)
 
             return redirect('cases:detalii_dosar', pk=dosar.pk)
     else:
@@ -470,6 +471,21 @@ def detalii_dosar(request, pk):
                 document.dosar = dosar
                 document.autor = request.user
                 document.save()
+                
+                # Notificare pentru ceilalți membri ai echipei
+                for membru in [dosar.procuror_caz, dosar.ofiter_caz, dosar.grefier_caz]:
+                    if membru and membru != request.user:
+                        Notificare.objects.create(
+                            utilizator=membru,
+                            tip=Notificare.Tip.DOCUMENT,
+                            mesaj=(
+                                f'Document nou in dosarul {dosar.numar_unic}: '
+                                f'"{document.titlu or document.get_tip_display()}" '
+                                f'adaugat de {request.user.get_full_name() or request.user.username}.'
+                            ),
+                            link=reverse('cases:detalii_dosar', args=[dosar.pk]) + '#sec-documente'
+                        )
+                
                 return redirect('cases:detalii_dosar', pk=dosar.pk)
                 
         # Butonul de adăugare Parte
@@ -577,6 +593,7 @@ def editare_dosar(request, pk):
                         # Notificare pentru noul membru 
                         link_dosar = reverse('cases:detalii_dosar', args=[nou_dosar.pk])
                         Notificare.objects.create(
+                            tip=Notificare.Tip.GENERAL,
                             utilizator=nou_user, 
                             mesaj=f"Ai preluat mandatul de {rol_nume} pe dosarul {nou_dosar.numar_unic}.", 
                             link=link_dosar
@@ -875,7 +892,7 @@ def gestionare_stadii(request, pk):
             for destinatar in destinatari:
                 # Trimitem doar dacă postul e ocupat ȘI utilizatorul nu este cel care a făcut modificarea
                 if destinatar and destinatar != request.user:
-                    Notificare.objects.create(utilizator=destinatar, mesaj=mesaj_actiune, link=link_dosar)
+                    Notificare.objects.create(tip=Notificare.Tip.STADIU, utilizator=destinatar, mesaj=mesaj_actiune, link=link_dosar)
         
         # Salvăm Stadiul
         if 'salveaza_stadiu' in request.POST:
@@ -965,6 +982,15 @@ def sterge_notificare_ajax(request, pk):
         notificare.save()
         return JsonResponse({'status': 'success'})
     return JsonResponse({'status': 'error'}, status=400)
+
+@login_required
+@require_POST
+def marcheaza_toate_citite(request):
+    Notificare.objects.filter(
+        utilizator=request.user,
+        citita=False
+    ).update(citita=True)
+    return JsonResponse({'status': 'success'})
 
 @login_required
 def generare_rapoarte(request):
@@ -1226,7 +1252,7 @@ def harta_infractionalitatii(request):
 # Calea către executabilul Tesseract
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
-@csrf_exempt  # Dezactivăm temporar protecția CSRF pentru acest test
+@csrf_exempt
 def test_ocr_api(request):
     if request.method == 'POST' and request.FILES.get('imagine_buletin'):
         fisier_imagine = request.FILES['imagine_buletin']
@@ -1444,7 +1470,34 @@ def genereaza_act(request, pk):
         if tip_act == 'citatie':
             id_persoana = request.POST.get('persoana_citata')
             parte = get_object_or_404(ParteImplicata, pk=id_persoana)
+
+            infr_raw = getattr(dosar, 'infractiune_cercetata', 'faptele reclamate')
+            if infr_raw and len(infr_raw) > 0:
+                infr_cercetata = infr_raw[0].lower() + infr_raw[1:]
+            else:
+                infr_cercetata = "faptele reclamate"
             
+            prima_infractiune = dosar.infractiuni.first()
+            if prima_infractiune:
+                incad_raw = prima_infractiune.incadrare_juridica
+                if incad_raw and len(incad_raw) > 0:
+                    incadrare = incad_raw[0].lower() + incad_raw[1:]
+                else:
+                    incadrare = "nespecificată"
+                    
+                articol = prima_infractiune.articol
+                act_normativ = prima_infractiune.get_act_normativ_display() if hasattr(prima_infractiune, 'get_act_normativ_display') else prima_infractiune.act_normativ
+            else:
+                incadrare = "nespecificată"
+                articol = "---"
+                act_normativ = "---"
+            
+            data_raw = request.POST.get('data_actului')
+            data_formatata = "____/____/________"
+            if data_raw:
+                dt = datetime.strptime(data_raw, '%Y-%m-%d')
+                data_formatata = dt.strftime('%d.%m.%Y')
+
             # FORMATĂM DATA ȘI ORA PENTRU CITAȚIE
             data_ora_raw = request.POST.get('data_ora')
             data_ora_formatata = data_ora_raw 
@@ -1471,6 +1524,11 @@ def genereaza_act(request, pk):
             nume_fisier = f"Citatie_{parte.nume_complet.replace(' ', '_')}_{dosar.numar_unic}.docx"
             
             context_doc = {
+                'data_actului': data_formatata,
+                'infractiune_cercetata': infr_cercetata,
+                'incadrare_juridica': incadrare,
+                'articol': articol,
+                'act_normativ': act_normativ,
                 'numar_dosar': dosar.numar_unic,
                 'nume_persoana': parte.nume_complet,
                 'calitate': parte.get_calitate_procesuala_display() if hasattr(parte, 'get_calitate_procesuala_display') else parte.calitate_procesuala,
@@ -1514,6 +1572,9 @@ def genereaza_act(request, pk):
                 articol = "---"
                 act_normativ = "---"
 
+            stadiu_up = dosar.stadii_cercetare.filter(tip_stadiu='UP_INCEPUTA').order_by('data_incepere').first()
+            data_up = stadiu_up.data_incepere.strftime('%d.%m.%Y') if stadiu_up else "___/___/______"
+
             # Lista persoanelor alese pentru comunicare
             ids_comunicare = request.POST.getlist('persoane_comunicare') 
             parti_selectate = ParteImplicata.objects.filter(id__in=ids_comunicare)
@@ -1523,6 +1584,7 @@ def genereaza_act(request, pk):
             context_doc = {
                 'numar_dosar': dosar.numar_unic,
                 'data_actului': data_formatata,
+                'data_incepere_up': data_up,
                 'temei': request.POST.get('temei_clasare', ''), 
                 'functie': functie_antet,
                 'nume_semnatar': nume_semnatar,
@@ -1983,3 +2045,184 @@ def toggle_masura_indeplinita(request, pk):
         masura.save()
         return JsonResponse({'status': 'success', 'indeplinit': masura.indeplinit})
     return JsonResponse({'status': 'error', 'message': 'Nu aveți permisiunea.'}, status=403)
+
+@login_required
+@require_POST
+def trimite_document_email(request, pk):
+    document = get_object_or_404(ActUrmarire, pk=pk)
+    dosar = document.dosar
+ 
+    if not dosar.are_drepturi_editare(request.user):
+        raise PermissionDenied("Nu ai permisiunea de a trimite documente din acest dosar.")
+ 
+    email_destinatar = request.POST.get('email_destinatar', '').strip()
+    nume_destinatar  = request.POST.get('nume_destinatar', '').strip()
+    subiect          = request.POST.get('subiect', '').strip()
+    mesaj_text       = request.POST.get('mesaj', '').strip()
+ 
+    # Validare minimă
+    if not email_destinatar or not nume_destinatar:
+        messages.error(request, 'Completați numele și adresa de email ale destinatarului.')
+        return redirect('cases:detalii_dosar', pk=dosar.pk)
+ 
+    reusit = _trimite_email_document(
+        document=document,
+        email_destinatar=email_destinatar,
+        nume_destinatar=nume_destinatar,
+        subiect=subiect,
+        mesaj_text=mesaj_text,
+        trimis_de=request.user,
+    )
+ 
+    if reusit:
+        # Notificare internă pentru echipa dosarului
+        echipa = [dosar.procuror_caz, dosar.ofiter_caz, dosar.grefier_caz]
+        for membru in echipa:
+            if membru and membru != request.user:
+                Notificare.objects.create(
+                    tip=Notificare.Tip.EMAIL,
+                    utilizator=membru,
+                    mesaj=(
+                        f'Documentul "{document.titlu or document.get_tip_display()}" '
+                        f'din dosarul {dosar.numar_unic} a fost trimis prin email '
+                        f'catre {nume_destinatar} ({email_destinatar}) '
+                        f'de catre {request.user.get_full_name() or request.user.username}.'
+                    ),
+                    link=reverse('cases:detalii_dosar', args=[dosar.pk])
+                )
+        messages.success(
+            request,
+            f'Documentul a fost trimis cu succes către {nume_destinatar} ({email_destinatar}).'
+        )
+    else:
+        messages.error(
+            request,
+            'Trimiterea emailului a eșuat. Verificați conexiunea la serverul de email și încercați din nou.'
+        )
+ 
+    return redirect('cases:detalii_dosar', pk=dosar.pk)
+ 
+ 
+def _trimite_email_document(document, email_destinatar, nume_destinatar, subiect, mesaj_text, trimis_de):
+    """
+    Trimite documentul ca atașament prin email și salvează evidența trimiterii.
+    Returnează True dacă trimiterea a reușit, False altfel.
+    """
+    dosar = document.dosar
+    nume_fisier = document.titlu or document.get_tip_display()
+ 
+    # Subiect default dacă utilizatorul nu a completat
+    if not subiect:
+        subiect = f"Document dosar nr. {dosar.numar_unic} — {nume_fisier}"
+ 
+    # Mesaj default dacă utilizatorul nu a completat
+    if not mesaj_text:
+        mesaj_text = (
+            f"Stimate/Stimată {nume_destinatar},\n\n"
+            f'Va transmitem atasat documentul "{nume_fisier}" '
+            f"din dosarul penal nr. {dosar.numar_unic}.\n\n"
+            f"Cu stimă,\n"
+            f"{trimis_de.get_full_name() or trimis_de.username}\n"
+            f"Sistemul Informatic de Evidență a Dosarelor Penale"
+        )
+ 
+    reusit = False
+    try:
+        email = EmailMessage(
+            subject=subiect,
+            body=mesaj_text,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[email_destinatar],
+        )
+ 
+        # Atașăm fișierul documentului
+        if document.este_semnat and document.fisier_semnat:
+            fisier_de_trimis = document.fisier_semnat
+            filename         = f"{document.titlu or document.get_tip_display()}_SEMNAT.pdf"
+            varianta         = 'semnat'
+        else:
+            fisier_de_trimis = document.fisier
+            filename         = document.fisier.name.split('/')[-1]
+            varianta         = 'original'
+
+        with fisier_de_trimis.open('rb') as f:
+            email.attach(
+                filename=filename,
+                content=f.read(),
+                mimetype='application/octet-stream',
+            )
+ 
+        email.send(fail_silently=False)
+        reusit = True
+ 
+    except Exception as e:
+        # Logăm eroarea
+        print(f"[EMAIL ERROR] Trimitere document {document.pk}: {e}")
+ 
+    # Salvăm evidența trimiterii indiferent de rezultat
+    TrimiterePrinEmail.objects.create(
+        document=document,
+        trimis_de=trimis_de,
+        email_destinatar=email_destinatar,
+        nume_destinatar=nume_destinatar,
+        subiect=subiect,
+        mesaj=mesaj_text,
+        reusit=reusit,
+        varianta_trimisa=varianta,
+    )
+ 
+    return reusit
+
+@login_required
+def toate_notificarile(request):
+    filtru  = request.GET.get('filtru', '')
+    sortare = request.GET.get('sortare', 'nou')
+    tip     = request.GET.get('tip', '')
+
+    notificari = Notificare.objects.filter(utilizator=request.user)
+
+    if filtru == 'necitite':
+        notificari = notificari.filter(citita=False)
+
+    if tip:
+        notificari = notificari.filter(tip=tip)
+
+    if sortare == 'vechi':
+        notificari = notificari.order_by('data_crearii')
+    else:
+        notificari = notificari.order_by('-data_crearii')
+
+    from django.core.paginator import Paginator
+    paginator = Paginator(notificari, 20)
+    page_obj  = paginator.get_page(request.GET.get('page', 1))
+
+    nr_necitite = Notificare.objects.filter(
+        utilizator=request.user, citita=False
+    ).count()
+
+    return render(request, 'cases/toate_notificarile.html', {
+        'page_obj':    page_obj,
+        'filtru':      filtru,
+        'sortare':     sortare,
+        'tip':         tip,
+        'nr_necitite': nr_necitite,
+        'are_necitite': nr_necitite > 0,
+        'tipuri':      Notificare.Tip.choices,
+    })
+
+@login_required
+@require_POST
+def marcheaza_toate_citite_pagina(request):
+    """
+    Endpoint POST folosit de butonul din pagina toate_notificarile.
+    Marchează toate notificările utilizatorului ca citite și
+    redirecționează înapoi la pagină.
+    """
+    Notificare.objects.filter(
+        utilizator=request.user,
+        citita=False
+    ).update(citita=True)
+ 
+    messages.success(request, 'Toate notificările au fost marcate ca citite.')
+    return redirect('cases:toate_notificarile')
+ 

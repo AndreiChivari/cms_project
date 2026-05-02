@@ -28,7 +28,6 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 {% if user.is_authenticated %}
 
-                     {# ── PAGINI PRINCIPALE ── #}
                     <ul class="navbar-nav me-auto mb-2 mb-xl-0 gap-1 align-items-xl-center" style="font-size: 0.95rem;">  
                         <li class="nav-item">
                             <a class="nav-link px-2 px-xxl-3 transition-base text-white {% if request.resolver_match.url_name == 'dashboard' %}active fw-bold{% else %}opacity-75 hover-opacity-100 fw-medium{% endif %}" href="{% url 'cases:dashboard' %}">
@@ -78,62 +77,167 @@
                     {# -- DREAPTA: Notificări + User -- #}
                     <div class="d-flex align-items-center gap-2 gap-xl-3 mt-3 mt-xl-0">
                         
-                        {# -- CLOPOŢEL NOTIFICĂRI -- #}
+                        {# -- CLOPOȚEL NOTIFICĂRI -- #}
                         <div class="nav-item dropdown">
-                            <a class="navbar-notif-btn nav-link position-relative text-white opacity-75 hover-opacity-100 p-1" href="#" id="notificariDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="margin-top: 2px;">
-                                <i class="bi bi-bell-fill fs-5 text-warning"></i>
+                            <a class="navbar-notif-btn text-decoration-none"
+                               href="#" id="notificariDropdown" role="button"
+                               data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-bell-fill"></i>
                                 {% if nr_notificari > 0 %}
-                                <span id="badge-notificari" class="position-absolute translate-middle badge rounded-pill bg-danger border border-primary border-2 shadow-sm fw-bold" style="top: 25%; left: 75%; font-size: 0.6rem; padding: 0.35em 0.5em;">
-                                    {{ nr_notificari }}
-                                </span>
+                                <span class="notif-dot" id="badge-notificari"
+                                      aria-label="{{ nr_notificari }} notificări noi"></span>
                                 {% endif %}
                             </a>
-                            <ul class="dropdown-menu dropdown-menu-end shadow-lg border border-secondary border-opacity-10 rounded-3 mt-2 p-0 overflow-hidden" aria-labelledby="notificariDropdown" style="width: 320px; max-height: 400px;">
-                                <li>
-                                    <div class="dropdown-header border-bottom py-3 bg-light">
-                                        <h6 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2">
-                                            <i class="bi bi-bell"></i> Notificări Recente
-                                            {% if nr_notificari > 0 %}
-                                            <span class="ms-auto badge rounded-pill"
-                                                style="background:rgba(13,202,240,0.15);color:#0891b2;font-size:0.65rem;">
-                                                {{ nr_notificari }} noi
-                                            </span>
-                                            {% endif %}
-                                        </h6>
+                        
+                            <div class="dropdown-menu dropdown-menu-end shadow notificari-dropdown"
+                                 aria-labelledby="notificariDropdown">
+                        
+                                {# ── Header ── #}
+                                <div class="notif-dropdown-header">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-bell-fill" style="color:#2a6cb0;font-size:0.82rem;"></i>
+                                        <span style="font-size:0.8rem;font-weight:700;color:#1e3a5f;">Notificări recente</span>
+                                        {# ── Pill cu numărul — id fix pentru JS ── #}
+                                        <span id="notif-pill-count"
+                                              style="background:rgba(13,202,240,0.15);color:#0891b2;border-radius:20px;padding:1px 8px;font-size:0.65rem;font-weight:700;{% if not nr_notificari %}display:none;{% endif %}">
+                                            <span id="notif-pill-text">{{ nr_notificari }}</span> noi
+                                        </span>
                                     </div>
-                                </li>
-                                
-                                <div style="overflow-y: auto; max-height: 300px;">
-                                {% if nr_notificari > 0 %}
-                                    {% for notificare in notificari_necitite %}
-                                        <li id="notif-{{ notificare.pk }}" class="position-relative border-bottom border-secondary border-opacity-10">
-                                            <div class="d-flex align-items-start py-3 px-3 transition-base" style="background-color: #fdfdfd; cursor: pointer;" onmouseover="this.style.backgroundColor='#f8f9fa'" onmouseout="this.style.backgroundColor='#fdfdfd'">
-                                                <a class="text-decoration-none text-dark flex-grow-1 pe-3" href="{% url 'cases:citeste_notificare' notificare.pk %}">
-                                                    <div class="d-flex justify-content-between align-items-center mb-1">
-                                                        <small class="text-primary fw-bold" style="font-size: 0.7rem;"><i class="bi bi-circle-fill me-1" style="font-size: 0.4rem;"></i>NOU</small>
-                                                        <small class="text-muted fw-medium" style="font-size: 0.7rem;">{{ notificare.data_crearii|date:"d.m.Y H:i" }}</small>
-                                                    </div>
-                                                    <p class="mb-0 text-secondary" style="font-size: 0.85rem; line-height: 1.4;">{{ notificare.mesaj }}</p>
-                                                </a>
-                                                <button onclick="stergeNotificare(event, '{{ notificare.pk }}')" 
-                                                        class="btn btn-sm text-muted p-0 ms-1 opacity-50 hover-opacity-100 transition-base" 
-                                                        title="Marchează ca citită" 
-                                                        style="background: transparent; border: none; box-shadow: none;">
-                                                    <i class="bi bi-x-lg fs-5"></i>
-                                                </button>
+                                    <button id="notif-mark-all-btn"
+                                            class="notif-mark-all-btn"
+                                            onclick="marcheazaToateCitite(event)"
+                                            style="{% if not nr_notificari %}display:none;{% endif %}">
+                                        Marchează toate
+                                    </button>
+                                </div>
+                        
+                                {# ── Lista cu grupare temporală ── #}
+                                <div class="notif-scroll">
+                                    {% if nr_notificari > 0 %}
+                        
+                                        {% if notif_azi %}
+                                        <div class="notif-group-label">Azi</div>
+                                        {% for n in notif_azi %}
+                                        <div id="notif-{{ n.pk }}" class="notif-item">
+                                            <div class="notif-icon
+                                                {% if n.tip == 'DOCUMENT' %}notif-icon-document
+                                                {% elif n.tip == 'TERMEN' %}notif-icon-termen
+                                                {% elif n.tip == 'STADIU' %}notif-icon-stadiu
+                                                {% elif n.tip == 'PORTAL' %}notif-icon-portal
+                                                {% elif n.tip == 'MASURA' %}notif-icon-masura
+                                                {% elif n.tip == 'EMAIL' %}notif-icon-email
+                                                {% else %}notif-icon-general{% endif %}">
+                                                {% if n.tip == 'DOCUMENT' %}<i class="bi bi-file-earmark-text"></i>
+                                                {% elif n.tip == 'TERMEN' %}<i class="bi bi-calendar-event"></i>
+                                                {% elif n.tip == 'STADIU' %}<i class="bi bi-diagram-3-fill"></i>
+                                                {% elif n.tip == 'PORTAL' %}<i class="bi bi-globe"></i>
+                                                {% elif n.tip == 'MASURA' %}<i class="bi bi-shield-exclamation"></i>
+                                                {% elif n.tip == 'EMAIL' %}<i class="bi bi-envelope-fill"></i>
+                                                {% else %}<i class="bi bi-bell-fill"></i>{% endif %}
                                             </div>
-                                        </li>
-                                    {% endfor %}
-                                {% else %}
-                                    <li>
-                                        <div class="dropdown-item py-5 text-center text-muted">
-                                            <i class="bi bi-check2-circle fs-3 d-block mb-2 opacity-50"></i>
+                                            <a class="notif-body text-decoration-none" href="{% url 'cases:citeste_notificare' n.pk %}">
+                                                <div class="notif-meta">
+                                                    <span class="notif-nou-label"><span class="notif-nou-dot"></span> NOU</span>
+                                                    <span class="notif-time">{{ n.data_crearii|date:"H:i" }}</span>
+                                                </div>
+                                                <p class="notif-text mb-0">{{ n.mesaj }}</p>
+                                            </a>
+                                            <button class="notif-close-btn"
+                                                    onclick="stergeNotificare(event, '{{ n.pk }}')"
+                                                    title="Marchează ca citită">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        </div>
+                                        {% endfor %}
+                                        {% endif %}
+                        
+                                        {% if notif_ieri %}
+                                        <div class="notif-group-label">Ieri</div>
+                                        {% for n in notif_ieri %}
+                                        <div id="notif-{{ n.pk }}" class="notif-item">
+                                            <div class="notif-icon
+                                                {% if n.tip == 'DOCUMENT' %}notif-icon-document
+                                                {% elif n.tip == 'TERMEN' %}notif-icon-termen
+                                                {% elif n.tip == 'STADIU' %}notif-icon-stadiu
+                                                {% elif n.tip == 'PORTAL' %}notif-icon-portal
+                                                {% elif n.tip == 'MASURA' %}notif-icon-masura
+                                                {% elif n.tip == 'EMAIL' %}notif-icon-email
+                                                {% else %}notif-icon-general{% endif %}">
+                                                {% if n.tip == 'DOCUMENT' %}<i class="bi bi-file-earmark-text"></i>
+                                                {% elif n.tip == 'TERMEN' %}<i class="bi bi-calendar-event"></i>
+                                                {% elif n.tip == 'STADIU' %}<i class="bi bi-diagram-3-fill"></i>
+                                                {% elif n.tip == 'PORTAL' %}<i class="bi bi-globe"></i>
+                                                {% elif n.tip == 'MASURA' %}<i class="bi bi-shield-exclamation"></i>
+                                                {% elif n.tip == 'EMAIL' %}<i class="bi bi-envelope-fill"></i>
+                                                {% else %}<i class="bi bi-bell-fill"></i>{% endif %}
+                                            </div>
+                                            <a class="notif-body text-decoration-none" href="{% url 'cases:citeste_notificare' n.pk %}">
+                                                <div class="notif-meta">
+                                                    <span class="notif-nou-label"><span class="notif-nou-dot"></span> NOU</span>
+                                                    <span class="notif-time">{{ n.data_crearii|date:"H:i" }}</span>
+                                                </div>
+                                                <p class="notif-text mb-0">{{ n.mesaj }}</p>
+                                            </a>
+                                            <button class="notif-close-btn"
+                                                    onclick="stergeNotificare(event, '{{ n.pk }}')"
+                                                    title="Marchează ca citită">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        </div>
+                                        {% endfor %}
+                                        {% endif %}
+                        
+                                        {% if notif_mai_vechi %}
+                                        <div class="notif-group-label">Mai vechi</div>
+                                        {% for n in notif_mai_vechi %}
+                                        <div id="notif-{{ n.pk }}" class="notif-item">
+                                            <div class="notif-icon
+                                                {% if n.tip == 'DOCUMENT' %}notif-icon-document
+                                                {% elif n.tip == 'TERMEN' %}notif-icon-termen
+                                                {% elif n.tip == 'STADIU' %}notif-icon-stadiu
+                                                {% elif n.tip == 'PORTAL' %}notif-icon-portal
+                                                {% elif n.tip == 'MASURA' %}notif-icon-masura
+                                                {% elif n.tip == 'EMAIL' %}notif-icon-email
+                                                {% else %}notif-icon-general{% endif %}">
+                                                {% if n.tip == 'DOCUMENT' %}<i class="bi bi-file-earmark-text"></i>
+                                                {% elif n.tip == 'TERMEN' %}<i class="bi bi-calendar-event"></i>
+                                                {% elif n.tip == 'STADIU' %}<i class="bi bi-diagram-3-fill"></i>
+                                                {% elif n.tip == 'PORTAL' %}<i class="bi bi-globe"></i>
+                                                {% elif n.tip == 'MASURA' %}<i class="bi bi-shield-exclamation"></i>
+                                                {% elif n.tip == 'EMAIL' %}<i class="bi bi-envelope-fill"></i>
+                                                {% else %}<i class="bi bi-bell-fill"></i>{% endif %}
+                                            </div>
+                                            <a class="notif-body text-decoration-none" href="{% url 'cases:citeste_notificare' n.pk %}">
+                                                <div class="notif-meta">
+                                                    <span class="notif-nou-label"><span class="notif-nou-dot"></span> NOU</span>
+                                                    <span class="notif-time">{{ n.data_crearii|date:"H:i" }}</span>
+                                                </div>
+                                                <p class="notif-text mb-0">{{ n.mesaj }}</p>
+                                            </a>
+                                            <button class="notif-close-btn"
+                                                    onclick="stergeNotificare(event, '{{ n.pk }}')"
+                                                    title="Marchează ca citită">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        </div>
+                                        {% endfor %}
+                                        {% endif %}
+                        
+                                    {% else %}
+                                        <div class="py-5 text-center text-muted">
+                                            <i class="bi bi-check2-circle d-block fs-3 mb-2 opacity-40"></i>
                                             <span class="small fw-medium">Nu ai notificări noi momentan.</span>
                                         </div>
-                                    </li>
-                                {% endif %}
+                                    {% endif %}
                                 </div>
-                            </ul>
+                        
+                                {# ── Footer ── #}
+                                <div class="notif-dropdown-footer">
+                                    <a href="{% url 'cases:toate_notificarile' %}">
+                                        Vezi toate notificările <i class="bi bi-arrow-right ms-1"></i>
+                                    </a>
+                                </div>
+                            </div>
                         </div>
 
                         {# -- DROPDOWN UTILIZATOR -- #}
@@ -151,22 +255,18 @@
                             </a>
                             
                             <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2 rounded-3" aria-labelledby="navbarUserDropdown">
-                                
                                 <li>
                                     <div class="px-3 py-2 mb-1 border-bottom border-secondary border-opacity-10">
                                         <span class="d-block text-muted small" style="font-size: 0.7rem; letter-spacing: 0.5px; text-transform: uppercase;">Conectat ca</span>
                                         <span class="d-block fw-bold text-dark">{{ user.rol|default:"Utilizator" }}</span>
                                     </div>
                                 </li>
-                                
                                 <li>
                                     <a class="dropdown-item py-2 small d-flex align-items-center" href="{% url 'accounts:schimba_parola' %}">
                                         <i class="bi bi-key-fill text-muted me-2"></i> Schimbă parola
                                     </a>
                                 </li>
-                                
                                 <li><hr class="dropdown-divider opacity-10"></li>
-                                
                                 <li>
                                     <form method="POST" action="{% url 'logout' %}" class="m-0 p-0">
                                         {% csrf_token %}
@@ -175,7 +275,6 @@
                                         </button>
                                     </form>
                                 </li>
-                                
                             </ul>
                         </div>
                         
@@ -201,33 +300,91 @@
     <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
 
     <script>
-    function stergeNotificare(event, id) {
+    function stergeNotificare(event, pk) {
         event.preventDefault();
-        event.stopPropagation(); 
-        
-        fetch(`/cases/notificare/sterge/${id}/`, {
+        event.stopPropagation();
+
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value
+                       || getCookie('csrftoken');
+
+        fetch(`/cases/notificare/sterge/${pk}/`, {
             method: 'POST',
             headers: {
-                'X-CSRFToken': '{{ csrf_token }}',
+                'X-CSRFToken': csrfToken,
                 'Content-Type': 'application/json'
             }
         })
-        .then(response => response.json())
+        .then(r => r.json())
         .then(data => {
-            if(data.status === 'success') {
-                document.getElementById(`notif-${id}`).style.display = 'none';
-                
-                let badge = document.getElementById('badge-notificari');
-                if(badge) {
-                    let count = parseInt(badge.innerText) - 1;
-                    if(count > 0) {
-                        badge.innerText = count;
-                    } else {
-                        badge.style.display = 'none';
-                    }
-                }
+            if (data.status === 'success') {
+                const el = document.getElementById(`notif-${pk}`);
+                if (el) el.remove();
+                actualizeazaCounter();
             }
-        });
+        })
+        .catch(err => console.error('Eroare stergere notificare:', err));
+    }
+
+    function marcheazaToateCitite(event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value
+                       || getCookie('csrftoken');
+
+        fetch('/cases/notificari/marcheaza-toate/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Ștergem toate itemele din DOM
+                document.querySelectorAll('.notif-item').forEach(el => el.remove());
+                document.querySelectorAll('.notif-group-label').forEach(el => el.remove());
+                // Afișăm mesajul gol
+                const scroll = document.querySelector('.notif-scroll');
+                if (scroll) {
+                    scroll.innerHTML = `
+                        <div class="py-5 text-center text-muted">
+                            <i class="bi bi-check2-circle d-block fs-3 mb-2 opacity-40"></i>
+                            <span class="small fw-medium">Nu ai notificări noi momentan.</span>
+                        </div>`;
+                }
+                actualizeazaCounter();
+            }
+        })
+        .catch(err => console.error('Eroare marcare toate:', err));
+    }
+
+    function actualizeazaCounter() {
+        const ramas    = document.querySelectorAll('.notif-item').length;
+        const dot      = document.getElementById('badge-notificari');
+        const pill     = document.getElementById('notif-pill-count');
+        const pillText = document.getElementById('notif-pill-text');
+        const btn      = document.getElementById('notif-mark-all-btn');
+
+        if (ramas === 0) {
+            // Ascundem — nu ștergem, ca să nu se dubleze la redeschidere
+            if (dot)  dot.style.display  = 'none';
+            if (pill) pill.style.display = 'none';
+            if (btn)  btn.style.display  = 'none';
+        } else {
+            // Actualizăm numărul
+            if (pillText) pillText.textContent = ramas;
+            if (pill) pill.style.display = '';
+            if (dot)  dot.style.display  = '';
+        }
+    }
+
+    function getCookie(name) {
+        const val = `; ${document.cookie}`;
+        const parts = val.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return '';
     }
     </script>
 

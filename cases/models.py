@@ -173,6 +173,11 @@ class ParteImplicata(models.Model):
     mentiuni = models.TextField(blank=True, null=True, help_text="Alte date de contact, antecedente, etc.")
     serie_ci = models.CharField(max_length=10, blank=True, null=True, verbose_name="Serie C.I.")
     numar_ci = models.CharField(max_length=20, blank=True, null=True, verbose_name="Număr C.I.")
+    email = models.EmailField(
+    blank=True, 
+    null=True, 
+    verbose_name="Adresă email"
+)
 
     class Meta:
         verbose_name = "Parte Implicată"
@@ -414,13 +419,23 @@ class Notificare(models.Model):
     Conține mesajul notificării, link-ul către dosarul vizat și starea de citire. 
     """
 
+    class Tip(models.TextChoices):
+        DOCUMENT = 'DOCUMENT', 'Document adăugat'
+        TERMEN   = 'TERMEN',   'Termen procedural'
+        STADIU   = 'STADIU',   'Stadiu / soluție'
+        PORTAL   = 'PORTAL',   'Cerere portal'
+        MASURA   = 'MASURA',   'Măsură preventivă'
+        EMAIL    = 'EMAIL',    'Email trimis'
+        GENERAL  = 'GENERAL',  'General'
+
     # ForeignKey (1-la-mulți): un utilizator poate primi mai multe notificări; la ștergerea utilizatorului, notificările se șterg în cascadă.
     utilizator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notificari')
 
     # Conținutul notificării
     mesaj = models.CharField(max_length=255)
     link = models.CharField(max_length=255, help_text="URL-ul către dosarul vizat")
-
+    tip = models.CharField(max_length=20, choices=Tip.choices, default=Tip.GENERAL)
+    
     # Starea notificării
     citita = models.BooleanField(default=False)
     data_crearii = models.DateTimeField(auto_now_add=True)
@@ -514,3 +529,4 @@ class TermenProcedural(models.Model):
         if not self.titlu:
             self.titlu = f"{self.get_tip_termen_display()} ({self.dosar.numar_unic})"
         super().save(*args, **kwargs)
+

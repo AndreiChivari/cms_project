@@ -89,4 +89,11 @@ urlpatterns = [
 
     # Ruta pentru toggle îndeplinit măsură - Marchează/demarchează măsură ca îndeplinită
     path('calendar/masura/<int:pk>/toggle/', views.toggle_masura_indeplinita, name='toggle_masura_indeplinita'),
+
+    path('document/<int:pk>/trimite-email/', views.trimite_document_email, name='trimite_document_email'),
+
+    path('notificari/marcheaza-toate/', views.marcheaza_toate_citite, name='marcheaza_toate_citite'),
+
+    path('notificari/', views.toate_notificarile, name='toate_notificarile'),
+    path('notificari/marcheaza-toate-pagina/', views.marcheaza_toate_citite_pagina, name='marcheaza_toate_citite_pagina'),
 ]

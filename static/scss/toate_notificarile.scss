@@ -1,0 +1,66 @@
+// ============================================================
+// PAGINA TOATE NOTIFICĂRILE — adaugă în main.scss după
+// blocul existent de notificări din dropdown
+// ============================================================
+
+.notif-page-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 13px 16px;
+    border-bottom: 0.5px solid #eef2f7;
+    background: #fff;
+    transition: background 0.12s;
+
+    &:last-child { border-bottom: none; }
+
+    &:hover { background: #f8fafc; }
+
+    // Notificările necitite au un fundal ușor albăstrui
+    &.notif-page-item-nou {
+        background: #f0f7ff;
+        border-left: 3px solid #2a6cb0;
+
+        &:hover { background: #e8f1fb; }
+    }
+}
+
+.notif-page-body {
+    flex: 1;
+    min-width: 0;
+    color: inherit;
+}
+
+.notif-page-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.notif-page-tip {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #94a3b8;
+}
+
+.notif-page-time {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.notif-page-text {
+    font-size: 0.83rem;
+    color: #334155;
+    line-height: 1.45;
+}
+
+.notif-page-item-nou .notif-page-text {
+    color: #1e293b;
+    font-weight: 500;
+}

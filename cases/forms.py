@@ -167,7 +167,7 @@ class CreareDosarForm(forms.ModelForm):
 class ParteImplicataForm(forms.ModelForm):
     class Meta:
         model = ParteImplicata
-        fields = ['nume_complet', 'calitate_procesuala', 'cnp', 'adresa', 'mentiuni', 'serie_ci', 'numar_ci']
+        fields = ['nume_complet', 'calitate_procesuala', 'cnp', 'adresa', 'mentiuni', 'serie_ci', 'numar_ci', 'email']
         
         widgets = {
             'nume_complet': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nume și Prenume', 'id': 'input-nume'}),
@@ -183,6 +183,7 @@ class ParteImplicataForm(forms.ModelForm):
             'numar_ci': forms.TextInput(attrs={'class': 'form-control', 'id': 'input-numar'}),
             'adresa': forms.TextInput(attrs={'class': 'form-control', 'id': 'input-adresa'}),
             'mentiuni': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Date de contact, antecedente etc.'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'adresa@email.ro'}),
         }
 
     # VALIDARE BACKEND pentru CNP (în plus față de validarea frontend) - 13 cifre, prima cifră nu poate fi 0

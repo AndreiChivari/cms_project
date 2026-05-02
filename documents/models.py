@@ -120,3 +120,35 @@ class ActUrmarire(models.Model):
             
         # 3. Ceilalți utilizatori nu au drepturi de editare (nici adminul nu are drepturi, pentru a proteja integritatea documentelor)
         return False
+    
+class TrimiterePrinEmail(models.Model):
+    document = models.ForeignKey(
+        ActUrmarire,
+        on_delete=models.CASCADE,
+        related_name='trimiteri_email'
+    )
+    trimis_de = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='emailuri_trimise'
+    )
+    trimis_la = models.DateTimeField(auto_now_add=True)
+    email_destinatar = models.EmailField()
+    nume_destinatar = models.CharField(max_length=200)
+    subiect = models.CharField(max_length=255)
+    mesaj = models.TextField(blank=True)
+    reusit = models.BooleanField(default=True)
+    varianta_trimisa = models.CharField(
+        max_length=10,
+        choices=[('original', 'Original'), ('semnat', 'Semnat')],
+        default='original'
+    )
+
+    class Meta:
+        verbose_name = "Trimitere email document"
+        verbose_name_plural = "Trimiteri email documente"
+        ordering = ['-trimis_la']
+
+    def __str__(self):
+        return f"{self.document.titlu} → {self.email_destinatar} ({self.trimis_la.strftime('%d.%m.%Y')})"
